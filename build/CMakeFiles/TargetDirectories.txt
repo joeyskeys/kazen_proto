@@ -1,0 +1,5 @@
+/Users/joey/Desktop/workspace/self/kazen_proto/build/CMakeFiles/rebuild_cache.dir
+/Users/joey/Desktop/workspace/self/kazen_proto/build/CMakeFiles/edit_cache.dir
+/Users/joey/Desktop/workspace/self/kazen_proto/build/tests/CMakeFiles/rebuild_cache.dir
+/Users/joey/Desktop/workspace/self/kazen_proto/build/tests/CMakeFiles/edit_cache.dir
+/Users/joey/Desktop/workspace/self/kazen_proto/build/tests/CMakeFiles/film_test.dir
