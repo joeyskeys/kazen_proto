@@ -34,7 +34,7 @@ Film::Film(unsigned int w, unsigned int h, std::string&& f)
 
 bool Film::write(void* data)
 {
-    out->write_image(OIIO::TypeDesc::UINT8, data);
+    output->write_image(OIIO::TypeDesc::UINT8, data);
     return true;
 }
 

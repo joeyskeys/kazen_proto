@@ -5,20 +5,14 @@
 #include <OpenImageIO/imageio.h>
 
 #include "base/types.h"
-
-class Pixel {
-public:
-    float r = 0.f;
-    float g = 0.f;
-    float b = 0.f;
-};
+#include "core/pixel.h"
 
 class Tile {
 public:
     Tile(uint oc, uint oy, uint w, uint h);
 
-    set_pixel_world(uint x, uint y, Pixel&& p);
-    set_pixel_local(uint x, uint y, Pixel&& p);
+    void set_pixel_world(uint x, uint y, Pixel&& p);
+    void set_pixel_local(uint x, uint y, Pixel&& p);
 
 private:
     uint origin_x;

@@ -5,10 +5,15 @@
 template <typename T, unsigned int N>
 class Vec {
 public:
+    Vec() {
+        for (int i = 0; i < N; i++)
+            arr[i] = T(0);
+    }
+
     template <typename ...Ts>
     Vec(Ts... args) {
         static_assert(sizeof...(Ts) == N);
-        v = { static_cast<T>(args)... };
+        arr = { static_cast<T>(args)... };
     }
 
     inline T& x() {
@@ -29,7 +34,7 @@ public:
         return arr[3];
     }
 
-    auto operator +(const vec& rhs) const {
+    auto operator +(const Vec& rhs) const {
         Vec tmp;
         for (int i = 0; i < N; i++)
             tmp.arr[i] = arr[i] + rhs.arr[i];

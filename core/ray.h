@@ -10,11 +10,11 @@ public:
     }
 
     Vec3f at(const float t) const {
-        return o + t * d;
+        return origin + t * direction;
     }
 
     // Members
     Vec3f   origin;
     Vec3f   direction;
-    T       time;
+    float   time;
 };
