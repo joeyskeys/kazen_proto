@@ -1,5 +1,4 @@
 
-message("Test out")
 add_executable(film_test film_test.cpp)
 target_link_libraries(film_test
     ${OIIO_LIBRARIES}

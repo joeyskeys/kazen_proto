@@ -15,7 +15,7 @@ find_library(OIIO_LIB OpenImageIO
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(OIIO DEFAULT_MSG
     OIIO_INCLUDE_DIRS
-    OIIO_LIBRARY_DIR)
+    OIIO_LIB)
 
 if(OIIO_FOUND)
     set(OIIO_LIBRARIES ${OIIO_LIB})
