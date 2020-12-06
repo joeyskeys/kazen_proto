@@ -97,7 +97,7 @@ public:
         }
     }
 
-private:
+protected:
     std::array<T, N> arr;
 };
 

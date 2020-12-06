@@ -4,10 +4,13 @@
 #include <array>
 #include <algorithm>
 
+#include "spectrum.h"
+
 class Pixel {
 public:
     template<typename T>
-    auto convert_to() {
+    auto convert_to()
+    {
         auto type_convert = [](float c) {
             return std::clamp(
                 std::numeric_limits<T>::max() * c,
@@ -20,6 +23,15 @@ public:
             type_convert(g),
             type_convert(b)
         };
+    }
+
+    Pixel& operator=(const RGBSpectrum& s)
+    {
+        r = s.r();
+        g = s.g();
+        b = s.b();
+
+        return *this;
     }
 
     float r = 0.f;

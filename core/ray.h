@@ -6,10 +6,11 @@ class Ray {
 public:
     Ray(Vec3f o, Vec3f d)
         : origin(o)
-        , direction(d) {
-    }
+        , direction(d)
+    {}
 
-    Vec3f at(const float t) const {
+    Vec3f at(const float t) const
+    {
         return origin + t * direction;
     }
 
