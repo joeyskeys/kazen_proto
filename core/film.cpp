@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 
 #include "film.h"
 
@@ -31,7 +32,6 @@ Film::Film(unsigned int w, unsigned int h, const std::string& f)
 {
     output = OIIO::ImageOutput::create(f);
     spec = OIIO::ImageSpec(w, h, 3, OIIO::TypeDesc::UINT8);
-    output->open(f, spec);
 }
 
 Film::Film(unsigned int w, unsigned int h, std::string&& f)
@@ -41,12 +41,13 @@ Film::Film(unsigned int w, unsigned int h, std::string&& f)
 {
     output = OIIO::ImageOutput::create(f);
     spec = OIIO::ImageSpec(w, h, 3, OIIO::TypeDesc::UINT8);
+    output->open(f, spec);
 }
 
-bool Film::write(void* data)
+bool Film::write(void* data, OIIO::TypeDesc pixel_format)
 {
-    output->open(f, spec);
-    output->write_image(OIIO::TypeDesc::UINT8, data);
+    output->open(filename, spec);
+    output->write_image(pixel_format, data);
     return true;
 }
 
@@ -54,21 +55,31 @@ void Film::generate_tiles(uint xres, uint yres)
 {
     tile_res_x = xres;
     tile_res_y = yres;
-    uint regular_tile_width = width / xres;
-    uint regular_tile_height = height / yres;
+    
+    tile_width = width / xres;
+    tile_height = height / yres;
 
     for (int j = 0; j < yres; j++) {
-        uint tile_height = j == yres - 1 ? regular_tile_height : height - regular_tile_height * (yres - 1);
+        uint cur_tile_height = j == yres - 1 ? tile_height : height - tile_height * (yres - 1);
         for (int i = 0; i < xres; i++) {
-            uint tile_width = i == xres - 1 ? regular_tile_width : width - regular_tile_width * (xres - 1);
-            tiles.emplace_back(Tile(i * regular_tile_width, j * regular_tile_height, tile_width, tile_height));
+            uint cur_tile_width = i == xres - 1 ? tile_width : width - tile_width * (xres - 1);
+            tiles.emplace_back(Tile(i * tile_width, j * tile_height, cur_tile_width, cur_tile_height));
         }
     }
 }
 
 bool Film::write_tiles()
 {
-    for (auto& tile : tiles)
-        output->write_tile(tile.origin_x, tile.origin_y, 0, OIIO::TypeDesc::FLOAT, tile.get_data_ptr());
+    spec.tile_width = tile_width;
+    spec.tile_height = tile_height;
+    output->open(filename, spec);
+
+    auto xstride = spec.nchannels * sizeof(float);
+    for (auto& tile : tiles) {
+        auto ystride = xstride * std::min(width - tile.origin_x, tile_width);
+        output->write_tile(tile.origin_x, tile.origin_y, 0,
+            OIIO::TypeDesc::FLOAT, tile.get_data_ptr(),
+            xstride, ystride);
+    }
     return true;
 }

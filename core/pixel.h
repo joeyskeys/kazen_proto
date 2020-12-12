@@ -9,8 +9,7 @@
 class Pixel {
 public:
     template<typename T>
-    auto convert_to()
-    {
+    auto convert_to() {
         auto type_convert = [](float c) {
             return std::clamp(
                 std::numeric_limits<T>::max() * c,
@@ -25,8 +24,7 @@ public:
         };
     }
 
-    Pixel& operator=(const RGBSpectrum& s)
-    {
+    Pixel& operator=(const RGBSpectrum& s) {
         r = s.r();
         g = s.g();
         b = s.b();

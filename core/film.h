@@ -16,8 +16,7 @@ public:
     void set_pixel_color(uint x, uint y, const RGBSpectrum& s);
     void set_tile_color(const RGBSpectrum& s);
 
-    inline float* const get_data_ptr()
-    {
+    inline float* const get_data_ptr() {
         return reinterpret_cast<float*>(buf.get());
     }
 
@@ -36,28 +35,29 @@ public:
     Film(uint w, uint h, const std::string& f);
     Film(uint w, uint h, std::string&& f);
 
-    bool write(void* data);
+    bool write(void* data, OIIO::TypeDesc pixel_format);
 
     void generate_tiles(const uint xres=4, const uint yres=4);
     bool write_tiles();
 
-    inline void set_film_color(const RGBSpectrum& s)
-    {
+    inline void set_film_color(const RGBSpectrum& s) {
         for (auto& tile : tiles)
             tile.set_tile_color(s);
     }
 
-    inline void set_tile_color(const RGBSpectrum& s, const uint xidx, const uint yidx)
-    {
+    inline void set_tile_color(const RGBSpectrum& s, const uint xidx, const uint yidx) {
         tiles[tile_res_x * yidx + xidx].set_tile_color(s);
     }
 
-private:
+public:
     const uint width;
     const uint height;
     std::string  filename;
 
     uint tile_res_x, tile_res_y;
+    uint tile_width, tile_height;
+
+private:
     std::vector<Tile> tiles;
 
     std::unique_ptr<OIIO::ImageOutput>  output;
