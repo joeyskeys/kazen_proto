@@ -1,18 +1,21 @@
 #pragma once
 
 #include <array>
+#include <algorithm>
+#include <cassert>
 
 template <typename T, unsigned int N>
 class Vec {
 public:
     Vec() {
-        for (int i = 0; i < N; i++)
-            arr[i] = T(0);
+        //for (int i = 0; i < N; i++)
+            //arr[i] = T(0);
+        std::fill(arr.begin(), arr.end(), static_cast<T>(0));
     }
 
     template <typename ...Ts>
     Vec(Ts... args) {
-        static_assert(sizeof...(Ts) == N);
+        static_assert(sizeof...(Ts) == N, "dimensional error");
         arr = { static_cast<T>(args)... };
     }
 
@@ -25,12 +28,12 @@ public:
     }
 
     inline T& z() {
-        static_assert(N > 2);
+        static_assert(N > 2, "This vec does not have z component");
         return arr[2];
     }
 
     inline T& w() {
-        static_assert(N > 3);
+        static_assert(N > 3, "This vec does not have w component");
         return arr[3];
     }
 
@@ -75,6 +78,16 @@ public:
 
     friend auto operator *(const float s, const Vec& rhs) {
         return rhs * s;
+    }
+
+    T& operator [](const uint idx) {
+        assert(idx < N);
+        return arr[idx];
+    }
+
+    const T& operator [](const uint idx) const {
+        assert(idx < N);
+        return arr[idx];
     }
 
     T dot(const Vec& rhs) const {
