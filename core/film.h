@@ -49,6 +49,10 @@ public:
         tiles[tile_res_x * yidx + xidx].set_tile_color(s);
     }
 
+    inline auto get_tile_count() {
+        return tiles.size();
+    }
+
 public:
     const uint width;
     const uint height;
@@ -57,9 +61,9 @@ public:
     uint tile_res_x, tile_res_y;
     uint tile_width, tile_height;
 
-private:
     std::vector<Tile> tiles;
 
+private:
     std::unique_ptr<OIIO::ImageOutput>  output;
     OIIO::ImageSpec     spec;
 };

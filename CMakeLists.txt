@@ -21,13 +21,23 @@ set(CORE_HEADERS
     core/color.h
     core/film.h
     core/ray.h
-    core/spectrum.h)
+    core/spectrum.h
+    core/transform.h
+    core/camera.h
+    core/integrator.h
+    core/scene.h)
 
 set(CORE_SOURCES
     core/film.cpp
-    core/ray.cpp)
+    core/ray.cpp
+    core/integrator.cpp)
 
 add_library(kazen_proto_lib
     ${CORE_SOURCES})
+
+add_executable(kazen proto/main.cpp)
+target_link_libraries(kazen
+    ${OIIO_LIBRARIES}
+    kazen_proto_lib)
 
 add_subdirectory(tests)

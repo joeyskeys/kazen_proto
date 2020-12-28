@@ -30,6 +30,11 @@ private:
 template <typename T, unsigned int N>
 class Mat {
 public:
+
+    using ValueType = T;
+
+    static constexpr uint dimension = N;
+    
     Mat() {
         std::fill(arr.begin(), arr.end(), static_cast<T>(0));
     }
@@ -165,18 +170,13 @@ public:
                 minv[icol][icol] = static_cast<T>(1);
                 for (int j = 0; j < N; j++) minv[j][icol] *= pivinv;
 
-                std::cout << "scaling" << std::endl;
-                std::cout << minv << std::endl;
-
                 // Subtract this row from others to zero out their columns
-                std::cout << "subtracting" << std::endl;
                 for (int j = 0; j < N; j++) {
                     if (j != icol) {
                         T save = minv[icol][j];
                         minv[icol][j] = static_cast<T>(0);
-                        for (int k = 0; k < N; k++) minv[k][j] -= minv[k][icol];
+                        for (int k = 0; k < N; k++) minv[k][j] -= minv[k][icol] * save;
                     }
-                    std::cout << minv << std::endl;
                 }
             }
 
@@ -201,6 +201,12 @@ public:
         }
 
         return os;
+    }
+
+    static Mat identity() {
+        Mat ret;
+        for (int i = 0; i < N; i++)
+            ret[i][i] = static_cast<T>(1);
     }
 
 private:

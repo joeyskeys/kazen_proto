@@ -14,6 +14,12 @@ public:
         arr[2] = b;
     }
 
+    RGBSpectrum(Vec3f vec) {
+        arr[0] = vec.x();
+        arr[1] = vec.y();
+        arr[2] = vec.z();
+    }
+
     inline float& r() {
         return arr[0];
     }
@@ -37,4 +43,14 @@ public:
     inline const float b() const {
         return arr[2];
     }
+
+    /*
+    RGBSpectrum operator *(const float scalar) const {
+        return RGBSpectrum(arr[0] * scalar, arr[1] * scalar, arr[2] * scalar);
+    }
+
+    friend RGBSpectrum operator *(const float scalar, const RGBSpectrum& spec) {
+        return spec * scalar;
+    }
+    */
 };

@@ -2,11 +2,19 @@
 
 #include <array>
 #include <algorithm>
+#include <cmath>
 #include <cassert>
+
+#include "types.h"
 
 template <typename T, unsigned int N>
 class Vec {
 public:
+
+    using ValueType = T;
+
+    static constexpr uint dimension = N;
+
     Vec() {
         //for (int i = 0; i < N; i++)
             //arr[i] = T(0);
@@ -107,7 +115,25 @@ public:
             tmp[0] = arr[1] * rhs.arr[2] - arr[2] * rhs.arr[1];
             tmp[1] = arr[2] * rhs.arr[0] - arr[0] * rhs.arr[2];
             tmp[2] = arr[0] * rhs.arr[1] - arr[1] * rhs.arr[0];
+            return tmp;
         }
+    }
+
+    void normalize() {
+        T sum{0};
+        for (auto& e : arr)
+            sum += e * e;
+        T rcp = 1. / std::sqrt(static_cast<double>(sum));
+        for (auto& e : arr)
+            e *= rcp;
+    }
+
+    auto normalized() const {
+        T sum{0};
+        for (auto& e : arr)
+            sum += e * e;
+        T rcp = 1. / std::sqrt(static_cast<double>(sum));
+        return *this * rcp;
     }
 
 protected:
