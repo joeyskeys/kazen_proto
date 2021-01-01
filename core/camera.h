@@ -14,27 +14,28 @@ public:
         const float near,
         const float far,
         const float fov,
-        const float ratio,
         Film* const film)
         : position(p)
         , lookat(l)
         , up(u)
         , near(near)
-        , fov(far)
-        , ratio(ratio)
+        , far(far)
+        , fov(fov)
         , film(film)
     {
+        ratio =  static_cast<float>(film->width) / static_cast<float>(film->height);
+
         auto dir = (lookat - position).normalized();
         horizontal = dir.cross(up);
-        vertical = horizontal.cross(dir);
+        vertical = dir.cross(horizontal);
 
         auto fov_in_radian = to_radian(fov);
         film_plane_height = near * std::tan(fov_in_radian);
-        film_plane_width = film_plane_width * ratio;
-        lower_left_corner = position
+        film_plane_width = film_plane_height * ratio;
+        upper_left_corner = position
             + dir * near
-            - film_plane_width * horizontal
-            - film_plane_height * vertical;
+            - film_plane_width * 0.5f * horizontal
+            - film_plane_height * 0.5f * vertical;
     }
 
     Ray generate_ray(uint x, uint y) {
@@ -42,10 +43,7 @@ public:
         // fov denotes the vertical fov
         auto fov_in_radian = to_radian(fov);
 
-        auto horizontal_vec = film_plane_width * (static_cast<float>(x) / film->width - 0.5f);
-        auto vertical_vec = film_plane_height * (static_cast<float>(y) / film->height - 0.5f);
-
-        auto direction = lower_left_corner
+        auto direction = upper_left_corner
             + horizontal * film_plane_width * (static_cast<float>(x) / film->width)
             + vertical * film_plane_height * (static_cast<float>(y) / film->height);
 
@@ -58,7 +56,7 @@ private:
     Vec3f up;
     Vec3f horizontal;
     Vec3f vertical;
-    Vec3f lower_left_corner;
+    Vec3f upper_left_corner;
     float near;
     float far;
     float fov;

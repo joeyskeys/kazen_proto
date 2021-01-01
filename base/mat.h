@@ -207,6 +207,8 @@ public:
         Mat ret;
         for (int i = 0; i < N; i++)
             ret[i][i] = static_cast<T>(1);
+
+        return ret;
     }
 
 private:

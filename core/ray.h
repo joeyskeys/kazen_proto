@@ -9,7 +9,7 @@ public:
         , direction(d)
     {}
 
-    Vec3f at(const float t) const {
+    inline Vec3f at(const float t) const {
         return origin + t * direction;
     }
 

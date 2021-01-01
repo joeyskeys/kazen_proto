@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cassert>
+#include <iostream>
 
 #include "types.h"
 
@@ -71,21 +72,43 @@ public:
         return *this;
     }
 
-    auto operator *(const float s) const {
+    auto operator *(const T s) const {
         Vec tmp;
         for (int i = 0; i < N; i++)
             tmp.arr[i] = arr[i] * s;
         return tmp;
     }
 
-    auto operator *=(const float s) const {
+    auto operator *=(const T s) const {
         for (int i = 0; i < N; i++)
             arr[i] *= s;
         return *this;
     }
 
-    friend auto operator *(const float s, const Vec& rhs) {
+    friend auto operator *(const T s, const Vec& rhs) {
         return rhs * s;
+    }
+
+    auto operator /(const T s) const {
+        Vec tmp = *this;
+        auto inv = static_cast<T>(1) / s;
+        for (int i = 0; i < N; i++)
+            tmp.arr[i] *= inv;
+        return tmp;
+    }
+    
+    auto operator /=(const T s) {
+        auto inv = static_cast<T>(1);
+        for (int i = 0; i < N; i++)
+            arr[i] *= inv;
+        return *this;
+    }
+
+    bool operator ==(const Vec& rhs) {
+        bool eq = true;
+        for (int i = 0; i < N; i++)
+            eq &= arr[i] == rhs.arr[i];
+        return eq;
     }
 
     T& operator [](const uint idx) {
@@ -134,6 +157,25 @@ public:
             sum += e * e;
         T rcp = 1. / std::sqrt(static_cast<double>(sum));
         return *this * rcp;
+    }
+
+    auto length_squared() const {
+        T sum{0};
+        for (auto& e : arr)
+            sum += e * e;
+        return sum;
+    }
+
+    inline auto length() const {
+        return sqrt(length_squared());
+    }
+
+    friend std::ostream& operator <<(std::ostream& os, const Vec& v) {
+        for (auto& e : v.arr)
+            std::cout << e << " ";
+        std::cout << std::endl;
+
+        return os;
     }
 
 protected:

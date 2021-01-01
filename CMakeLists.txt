@@ -25,11 +25,13 @@ set(CORE_HEADERS
     core/transform.h
     core/camera.h
     core/integrator.h
-    core/scene.h)
+    core/scene.h
+    core/shape.h)
 
 set(CORE_SOURCES
     core/film.cpp
     core/ray.cpp
+    core/shape.cpp
     core/integrator.cpp)
 
 add_library(kazen_proto_lib

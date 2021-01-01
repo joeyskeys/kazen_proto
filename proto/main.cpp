@@ -12,12 +12,15 @@ int main() {
         Vec3f{0.f, 1.f, 0.f},
         1.f,
         100.f,
-        45.f,
-        16.f / 9.f,
+        60.f,
         &film
     };
 
     Integrator integrator{&cam, &film};
+
+    Sphere s{Transformf(), Vec3f{0.f, 0.f, -20.f}, 1.5f};
+    integrator.sphere = &s;
+
     integrator.render();
 
     film.write_tiles();

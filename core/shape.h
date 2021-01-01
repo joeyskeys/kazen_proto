@@ -3,9 +3,11 @@
 #include "transform.h"
 #include "intersection.h"
 
+class Ray;
+
 class Shape {
 public:
-    Shape(const Transform& l2w)
+    Shape(const Transformf& l2w)
         : local_to_world(l2w)
         , world_to_local(l2w.inverse())
     {}
@@ -13,12 +15,12 @@ public:
     virtual bool intersect(const Ray& r, Intersection& isect) const = 0;
     
     // Members
-    Transform local_to_world, world_to_local;
+    Transformf local_to_world, world_to_local;
 };
 
 class Sphere : public Shape {
 public:
-    Sphere(const Transform& l2w, const Vec3f c, const float r)
+    Sphere(const Transformf& l2w, const Vec3f c, const float r)
         : Shape(l2w)
         , center(c)
         , radius(r)
@@ -33,7 +35,7 @@ public:
 
 class Triangle : public Shape {
 public:
-    Triangle(const Transform& l2w, const Vec3f& a, const Vec3& b, const Vec3& c)
+    Triangle(const Transformf& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c)
         : Shape(l2w)
     {
         verts[0] = a;
@@ -43,12 +45,12 @@ public:
 
     bool intersect(const Ray& r, Intersection& isect) const override;
 
-    Vec3f verts[3]
+    Vec3f verts[3];
 };
 
 class TriangleMesh : public Shape {
 public:
-    TriangleMesh(const Transform& l2w)
+    TriangleMesh(const Transformf& l2w)
         : Shape(l2w)
     {}
 

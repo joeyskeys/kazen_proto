@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mat.h"
+#include "base/mat.h"
 #include "base/utils.h"
 
 template <typename T>
@@ -10,8 +10,8 @@ public:
     using ValueType = T;
 
     Transform()
-        : mat(Mat<T>::identity())
-        , mat_inv(Mat<T>::identity())
+        : mat(Mat4<T>::identity())
+        , mat_inv(Mat4<T>::identity())
     {}
 
     Transform(const Mat4<T>& m)
@@ -24,12 +24,12 @@ public:
         mat_inv = m.inverse();
     }
 
-    Transform(Mat4<T>& m, Mat4<T>& inv)
+    Transform(const Mat4<T>& m, const Mat4<T>& inv)
         : mat(m)
         , mat_inv(inv)
     {}
 
-    inline Transform inverse() {
+    inline Transform inverse() const {
         return Transform(mat_inv, mat);
     }
 
@@ -48,7 +48,7 @@ public:
         auto a = axis.normalized();
         auto angle_in_radian = to_radian<T>(angle);
         T sin_theta = std::sin(angle_in_radian);
-        T cos_theta = std::cos(angle_in_radian)
+        T cos_theta = std::cos(angle_in_radian);
 
         // Compute rotation of first basis vector
         Mat4<T> rot;
@@ -87,4 +87,7 @@ public:
 private:
     Mat4<T> mat = Mat4<T>::identity();
     Mat4<T> mat_inv = Mat4<T>::identity();
-}
+};
+
+using Transformf = Transform<float>;
+using Transformd = Transform<double>;
