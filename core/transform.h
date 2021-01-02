@@ -2,29 +2,26 @@
 
 #include "base/mat.h"
 #include "base/utils.h"
+#include "ray.h"
 
-template <typename T>
 class Transform {
 public:
-
-    using ValueType = T;
-
     Transform()
-        : mat(Mat4<T>::identity())
-        , mat_inv(Mat4<T>::identity())
+        : mat(Mat4f::identity())
+        , mat_inv(Mat4f::identity())
     {}
 
-    Transform(const Mat4<T>& m)
+    Transform(const Mat4f& m)
         : mat(m) {
         mat_inv = m.inverse();
     }
 
-    Transform(Mat4<T>&& m)
+    Transform(Mat4f&& m)
         : mat(m) {
         mat_inv = m.inverse();
     }
 
-    Transform(const Mat4<T>& m, const Mat4<T>& inv)
+    Transform(const Mat4f& m, const Mat4f& inv)
         : mat(m)
         , mat_inv(inv)
     {}
@@ -33,10 +30,10 @@ public:
         return Transform(mat_inv, mat);
     }
 
-    Transform& translate(const Vec3<T>& t) {
+    inline Transform& translate(const Vec3f& t) {
         for (int i = 0; i < t.dimension; i++) {
-            mat[i][3] += t[i];
-            mat_inv[i][3] -= t[i];
+            mat[3][i] += t[i];
+            mat_inv[3][i] -= t[i];
         }
 
         return *this;
@@ -44,28 +41,28 @@ public:
 
     //void translate(const T& x, const T& y, const T& z);
 
-    Transform& rotate(const Vec3<T>& axis, const T& angle) {
+    Transform& rotate(const Vec3f& axis, const float& angle) {
         auto a = axis.normalized();
-        auto angle_in_radian = to_radian<T>(angle);
-        T sin_theta = std::sin(angle_in_radian);
-        T cos_theta = std::cos(angle_in_radian);
+        auto angle_in_radian = to_radian<float>(angle);
+        auto sin_theta = std::sin(angle_in_radian);
+        auto cos_theta = std::cos(angle_in_radian);
 
         // Compute rotation of first basis vector
-        Mat4<T> rot;
-        rot[0][0] = a.x() * a.x() + (1. - a.x() * a.x()) * cos_theta;
-        rot[1][0] = a.x() * a.y() * (1. - cos_theta) - a.z() * sin_theta;
-        rot[2][0] = a.x() * a.z() * (1. - cos_theta) + a.y() * sin_theta;
-        rot[3][0] = 0.;
+        Mat4f rot;
+        rot[0][0] = a.x() * a.x() + (1.f - a.x() * a.x()) * cos_theta;
+        rot[1][0] = a.x() * a.y() * (1.f - cos_theta) - a.z() * sin_theta;
+        rot[2][0] = a.x() * a.z() * (1.f - cos_theta) + a.y() * sin_theta;
+        rot[3][0] = 0.f;
 
-        rot[0][1] = a.x() * a.y() * (1. - cos_theta) + a.z() * sin_theta;
-        rot[1][1] = a.y() * a.y() + (1. - a.y() * a.y()) * cos_theta;
-        rot[2][1] = a.y() * a.z() * (1. - cos_theta) - a.x() * sin_theta;
-        rot[3][1] = 0.;
+        rot[0][1] = a.x() * a.y() * (1.f - cos_theta) + a.z() * sin_theta;
+        rot[1][1] = a.y() * a.y() + (1.f - a.y() * a.y()) * cos_theta;
+        rot[2][1] = a.y() * a.z() * (1.f - cos_theta) - a.x() * sin_theta;
+        rot[3][1] = 0.f;
 
-        rot[0][2] = a.x() * a.z() * (1. - cos_theta) - a.y() * sin_theta;
-        rot[1][2] = a.y() * a.z() * (1. - cos_theta) + a.x() * sin_theta;
-        rot[2][2] = a.z() * a.z() + (1. - a.z() * a.z()) * cos_theta;
-        rot[2][3] = 0;
+        rot[0][2] = a.x() * a.z() * (1.f - cos_theta) - a.y() * sin_theta;
+        rot[1][2] = a.y() * a.z() * (1.f - cos_theta) + a.x() * sin_theta;
+        rot[2][2] = a.z() * a.z() + (1.f - a.z() * a.z()) * cos_theta;
+        rot[2][3] = 0.f;
 
         // Column majored matrix, apply transform in the left
         mat = rot * mat;
@@ -75,7 +72,7 @@ public:
         return *this;
     }
 
-    Transform& scale(const Vec3<T>& s) {
+    inline Transform& scale(const Vec3f& s) {
         for (int i = 0; i < s.dimension; i++) {
             mat[i][i] *= s[i];
             mat_inv[i][i] /= s[i];
@@ -84,10 +81,26 @@ public:
         return *this;
     }
 
-private:
-    Mat4<T> mat = Mat4<T>::identity();
-    Mat4<T> mat_inv = Mat4<T>::identity();
-};
+    inline Vec3f apply(const Vec3f& v, bool is_vector=false) const {
+        return (mat * Vec4f(v, is_vector ? 0.f : 1.f)).reduct<3>();
+    }
 
-using Transformf = Transform<float>;
-using Transformd = Transform<double>;
+    inline Vec4f apply(const Vec4f& v) const {
+        return mat * v;
+    }
+
+    Ray apply(const Ray& r) const {
+        auto origin_t = apply(r.origin);
+        auto direction_t = apply(r.direction, true);
+        return Ray{origin_t, direction_t, r.time, r.tmin, r.tmax};
+    }
+
+    friend std::ostream& operator <<(std::ostream& os, const Transform& t) {
+        os << "Transform :\n" << t.mat << std::endl;
+        return os;
+    }
+
+private:
+    Mat4f mat = Mat4f::identity();
+    Mat4f mat_inv = Mat4f::identity();
+};

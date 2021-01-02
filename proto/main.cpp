@@ -18,7 +18,9 @@ int main() {
 
     Integrator integrator{&cam, &film};
 
-    Sphere s{Transformf(), Vec3f{0.f, 0.f, -20.f}, 1.5f};
+    Transform t;
+    t.translate(Vec3f{0.f, 0.f, -20.f});
+    Sphere s{t, 1.5f};
     integrator.sphere = &s;
 
     integrator.render();

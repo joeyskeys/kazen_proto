@@ -195,9 +195,9 @@ public:
     friend std::ostream& operator <<(std::ostream& os, const Mat& mat) {
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
-                std::cout << mat.arr[j * N + i] << " ";
+                os << mat.arr[j * N + i] << " ";
             }
-            std::cout << std::endl;
+            os << std::endl;
         }
 
         return os;

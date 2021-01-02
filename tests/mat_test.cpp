@@ -25,4 +25,15 @@ int main()
     std::cout << "mat4 : \n" << mat4 << std::endl;
     std::cout << "mat4 inverse : \n" << mat4_rev << std::endl;
     std::cout << mat4 * mat4_rev << std::endl;
+
+    Mat4f mat4t{
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        1, 2, 3, 1
+    };
+    Vec4f v4{0.f, 0.f, 0.f, 1.f};
+
+    std::cout << "translate mat : " << mat4t << std::endl;
+    std::cout << "vec mul : \n" << mat4t * v4 << std::endl;
 }

@@ -8,7 +8,9 @@
 
 #include "types.h"
 
-template <typename T, unsigned int N>
+#include <type_traits>
+
+template <typename T, uint N>
 class Vec {
 public:
 
@@ -17,15 +19,25 @@ public:
     static constexpr uint dimension = N;
 
     Vec() {
-        //for (int i = 0; i < N; i++)
-            //arr[i] = T(0);
         std::fill(arr.begin(), arr.end(), static_cast<T>(0));
     }
 
-    template <typename ...Ts>
+    template <typename ...Ts, typename = std::enable_if_t<(... && std::is_arithmetic_v<Ts>)>>
     Vec(Ts... args) {
-        static_assert(sizeof...(Ts) == N, "dimensional error");
+        static_assert(sizeof...(Ts) == N, "Dimensional error");
         arr = { static_cast<T>(args)... };
+    }
+
+    template <uint M, typename ...Ts>
+    Vec(const Vec<T, M>& v, Ts... args) {
+        static_assert(M + sizeof...(Ts) == N, "The amount of components differs");
+        static_assert(M > 1 && M < N, "The sub vector should have less components");
+        std::array<T, N - M> sub = { static_cast<T>(args)... };
+        for (int i = 0; i < M; i++)
+            arr[i] = v[i];
+        constexpr int subcnt = N - M;
+        for (int i = 0; i < subcnt; i++)
+            arr[M + i] = sub[i];
     }
 
     inline T& x() {
@@ -44,6 +56,15 @@ public:
     inline T& w() {
         static_assert(N > 3, "This vec does not have w component");
         return arr[3];
+    }
+
+    template <uint M>
+    Vec<T, M> reduct() const {
+        static_assert(M > 1 && M < N, "Invalid component number");
+        Vec<T, M> tmp;
+        for (int i = 0; i < M; i++)
+            tmp[i] = arr[i];
+        return tmp;
     }
 
     auto operator +(const Vec& rhs) const {
@@ -172,8 +193,8 @@ public:
 
     friend std::ostream& operator <<(std::ostream& os, const Vec& v) {
         for (auto& e : v.arr)
-            std::cout << e << " ";
-        std::cout << std::endl;
+            os << e << " ";
+        os << std::endl;
 
         return os;
     }

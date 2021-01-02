@@ -3,9 +3,12 @@
 #include "ray.h"
 
 bool Sphere::intersect(const Ray& r, Intersection& isect) const {
-    auto oc = r.origin - center;
-    auto a = r.direction.dot(r.direction);
-    auto half_b = oc.dot(r.direction);
+    auto r_local = world_to_local.apply(r);
+    //std::cout << "ray origin : " << r_local.origin << std::endl;
+
+    auto oc = r_local.origin - center;
+    auto a = r_local.direction.dot(r_local.direction);
+    auto half_b = oc.dot(r_local.direction);
     auto c = oc.length_squared() - radius * radius;
     auto discriminant = half_b * half_b - a * c;
 

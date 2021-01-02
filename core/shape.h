@@ -1,41 +1,28 @@
 #pragma once
 
 #include "transform.h"
-#include "intersection.h"
+#include "hitable.h"
 
 class Ray;
 
-class Shape {
+class Sphere : public Hitable {
 public:
-    Shape(const Transformf& l2w)
-        : local_to_world(l2w)
-        , world_to_local(l2w.inverse())
-    {}
-
-    virtual bool intersect(const Ray& r, Intersection& isect) const = 0;
-    
-    // Members
-    Transformf local_to_world, world_to_local;
-};
-
-class Sphere : public Shape {
-public:
-    Sphere(const Transformf& l2w, const Vec3f c, const float r)
+    Sphere(const Transform& l2w, const float r, const Vec3f& c=Vec3f{0.f, 0.f, 0.f})
         : Shape(l2w)
-        , center(c)
         , radius(r)
+        , center(c)
     {}
 
     bool intersect(const Ray& r, Intersection& isect) const override;
 
     // Members
-    Vec3f center;
     float radius;
+    Vec3f center;
 };
 
-class Triangle : public Shape {
+class Triangle : public Hitable {
 public:
-    Triangle(const Transformf& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c)
+    Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c)
         : Shape(l2w)
     {
         verts[0] = a;
@@ -48,9 +35,9 @@ public:
     Vec3f verts[3];
 };
 
-class TriangleMesh : public Shape {
+class TriangleMesh : public Hitable {
 public:
-    TriangleMesh(const Transformf& l2w)
+    TriangleMesh(const Transform& l2w)
         : Shape(l2w)
     {}
 

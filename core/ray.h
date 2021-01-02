@@ -1,12 +1,17 @@
 #pragma once
 
+#include <limits>
+
 #include "base/vec.h"
 
 class Ray {
 public:
-    Ray(Vec3f o, Vec3f d)
+    Ray(Vec3f o, Vec3f d, const float time=0.f, const float tmin=0.f, const float tmax=std::numeric_limits<float>::max())
         : origin(o)
         , direction(d)
+        , time(time)
+        , tmin(tmin)
+        , tmax(tmax)
     {}
 
     inline Vec3f at(const float t) const {
@@ -16,5 +21,7 @@ public:
     // Members
     Vec3f   origin;
     Vec3f   direction;
+    float   tmin;
+    float   tmax;
     float   time;
 };
