@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/vec.h"
+#include "material.h"
 
 struct Intersection {
     Vec3f p;
@@ -10,4 +11,5 @@ struct Intersection {
     Vec3f b;
     Vec3f bary;
     Vec2f uv;
+    MaterialPtr mat;
 };

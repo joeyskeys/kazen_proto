@@ -44,7 +44,15 @@ public:
         return arr[0];
     }
 
+    inline const T& x() const {
+        return arr[0];
+    }
+
     inline T& y() {
+        return arr[1];
+    }
+    
+    inline const T& y() const {
         return arr[1];
     }
 
@@ -53,7 +61,17 @@ public:
         return arr[2];
     }
 
+    inline const T& z() const {
+        static_assert(N > 2, "This vec does not have z component");
+        return arr[2];
+    }
+
     inline T& w() {
+        static_assert(N > 3, "This vec does not have w component");
+        return arr[3];
+    }
+
+    inline const T& w() const {
         static_assert(N > 3, "This vec does not have w component");
         return arr[3];
     }
@@ -78,6 +96,13 @@ public:
         for (int i = 0; i < N; i++)
             arr[i] += rhs.arr[i];
         return *this;
+    }
+
+    auto operator -() const {
+        Vec tmp;
+        for (int i = 0; i < N; i++)
+            tmp.arr[i] = -arr[i];
+        return tmp;
     }
 
     auto operator -(const Vec& rhs) const {
@@ -202,6 +227,16 @@ public:
 protected:
     std::array<T, N> arr;
 };
+
+template <typename T, uint N>
+inline T dot(const Vec<T, N>& a, const Vec<T, N>& b) {
+    return a.dot(b);
+}
+
+template <typename T, uint N>
+inline auto cross(const Vec<T, N>& a, const Vec<T, N>& b) {
+    return a.cross(b);
+}
 
 template <typename T>
 using Vec2 = Vec<T, 2>;

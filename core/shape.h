@@ -2,10 +2,16 @@
 
 #include "transform.h"
 #include "hitable.h"
+#include "material.h"
 
 class Ray;
 
-class Sphere : public Hitable {
+class Shape : public Hitable {
+protected:
+    MaterialPtr mat;
+}
+
+class Sphere : public Shape {
 public:
     Sphere(const Transform& l2w, const float r, const Vec3f& c=Vec3f{0.f, 0.f, 0.f})
         : Shape(l2w)
@@ -20,7 +26,7 @@ public:
     Vec3f center;
 };
 
-class Triangle : public Hitable {
+class Triangle : public Shape {
 public:
     Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c)
         : Shape(l2w)
@@ -35,7 +41,7 @@ public:
     Vec3f verts[3];
 };
 
-class TriangleMesh : public Hitable {
+class TriangleMesh : public Shape {
 public:
     TriangleMesh(const Transform& l2w)
         : Shape(l2w)
