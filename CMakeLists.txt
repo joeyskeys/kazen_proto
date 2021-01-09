@@ -32,7 +32,8 @@ set(CORE_SOURCES
     core/film.cpp
     core/ray.cpp
     core/shape.cpp
-    core/integrator.cpp)
+    core/integrator.cpp
+    core/material.cpp)
 
 add_library(kazen_proto_lib
     ${CORE_SOURCES})

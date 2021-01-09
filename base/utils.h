@@ -79,7 +79,7 @@ inline float tan_2_theta(const Vec3f& w) {
 
 inline float cos_phi(const Vec3f& w) {
     float v_sin_theta = sin_theta(w);
-    return (v_sin_theta == 0.f) ? 1.f : std::clamp(w.x() / v_sin_theta, -1.f 1.f);
+    return (v_sin_theta == 0.f) ? 1.f : std::clamp(w.x() / v_sin_theta, -1.f, 1.f);
 }
 
 inline float sin_phi(const Vec3f& w) {

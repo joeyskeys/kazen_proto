@@ -7,9 +7,14 @@
 class Ray;
 
 class Shape : public Hitable {
+public:
+    Shape(const Transform& l2w)
+        : Hitable(l2w)
+    {}
+
 protected:
     MaterialPtr mat;
-}
+};
 
 class Sphere : public Shape {
 public:

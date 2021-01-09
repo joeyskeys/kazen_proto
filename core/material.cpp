@@ -19,4 +19,16 @@ RGBSpectrum LambertianBxDF::f(const Vec3f& wo, const Vec3f& wi) const {
     return color * M_1_PI;
 }
 
-RGBSpectrum 
+RGBSpectrum Material::calculate_response(Intersection& isect, const Ray& ray) const {
+    Vec3f wo = -ray.direction;
+    Vec3f wi;
+    RGBSpectrum spec;
+
+    Vec2f u = random2f();
+    float pdf = 0.f;
+    float p = 1.f;
+
+    spec = bxdf->sample_f(wo, wi, u, pdf);
+
+    return spec;
+}

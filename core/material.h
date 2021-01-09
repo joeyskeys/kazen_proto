@@ -3,6 +3,7 @@
 #include "base/vec.h"
 #include "base/utils.h"
 #include "spectrum.h"
+#include "ray.h"
 
 class BxDF {
 public:
@@ -23,9 +24,26 @@ private:
     RGBSpectrum color;
 };
 
+using BxDFPtr = BxDF*;
+
+struct Intersection;
+
 class Material {
-    RGBSpectrum calculate_response(const Vec3f& wo, float& p) const;
-    RGBSpectrum calculate_response(const Vec3f& wo, Vec3f& wi, float& p) const;
+public:
+    RGBSpectrum calculate_response(Intersection& isect, const Ray& ray) const;
+
+    BxDFPtr bxdf;
 };
 
 using MaterialPtr = Material*;
+
+struct Intersection {
+    Vec3f p;
+    Vec3f n;
+    Vec3f ng;
+    Vec3f t;
+    Vec3f b;
+    Vec3f bary;
+    Vec2f uv;
+    MaterialPtr mat;
+};

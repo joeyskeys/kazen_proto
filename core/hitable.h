@@ -1,8 +1,9 @@
 #pragma once
 
-#include "intersection.h"
 #include "ray.h"
 #include "transform.h"
+
+class Intersection;
 
 class HitableInterface {
 public:
@@ -18,6 +19,6 @@ public:
 
 protected:
     Transform local_to_world, world_to_local;
-}
+};
 
 using HitablePtr = Hitable*;

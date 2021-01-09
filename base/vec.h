@@ -125,9 +125,15 @@ public:
         return tmp;
     }
 
-    auto operator *=(const T s) const {
+    auto operator *=(const T s) {
         for (int i = 0; i < N; i++)
             arr[i] *= s;
+        return *this;
+    }
+
+    auto operator *=(const Vec& rhs) {
+        for (int i = 0; i < N; i++)
+            arr[i] *= rhs.arr[i];
         return *this;
     }
 
