@@ -1,6 +1,9 @@
 #include "core/camera.h"
 #include "core/film.h"
 #include "core/integrator.h"
+#include "core/material.h"
+#include "core/shape.h"
+#include "core/accel.h"
 
 int main() {
     Film film{400, 300, "test.jpg"};
@@ -18,10 +21,29 @@ int main() {
 
     Integrator integrator{&cam, &film};
 
-    Transform t;
-    t.translate(Vec3f{0.f, 0.f, -20.f});
-    Sphere s{t, 1.5f};
-    integrator.sphere = &s;
+    Transform t1;
+    t1.translate(Vec3f{0.f, 5.f, -20.f});
+    Sphere s{t1, 5.f};
+
+    LambertianBxDF lamb{RGBSpectrum{0.8f, 0.4f, 0.4f}};
+    Material mat;
+    mat.bxdf = &lamb;
+    s.mat = &mat;
+    //integrator.sphere = &s;
+
+    Transform t2;
+    t2.translate(Vec3f{0.f, -100.f, -20.f});
+    Sphere s_bottom{t2, 100.f};
+
+    LambertianBxDF lamb2{RGBSpectrum{0.5, 0.5f, 0.5f}};
+    Material mat2;
+    mat2.bxdf = &lamb2;
+    s_bottom.mat = &mat2;
+
+    ListAccel list;
+    list.add_hitable(&s);
+    list.add_hitable(&s_bottom);
+    integrator.accel_ptr = &list;
 
     integrator.render();
 

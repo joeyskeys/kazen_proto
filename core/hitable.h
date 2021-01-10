@@ -7,10 +7,10 @@ class Intersection;
 
 class HitableInterface {
 public:
-    virtual bool intersect(const Ray& r, Intersection& isect) const = 0;
+    virtual bool intersect(Ray& r, Intersection& isect) const = 0;
 };
 
-class Hitable : HitableInterface {
+class Hitable : public HitableInterface {
 public:
     Hitable(const Transform& l2w)
         : local_to_world(l2w)

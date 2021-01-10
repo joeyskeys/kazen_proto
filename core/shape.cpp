@@ -2,7 +2,7 @@
 #include "shape.h"
 #include "ray.h"
 
-bool Sphere::intersect(const Ray& r, Intersection& isect) const {
+bool Sphere::intersect(Ray& r, Intersection& isect) const {
     auto r_local = world_to_local.apply(r);
 
     auto oc = r_local.origin - center;
@@ -17,34 +17,38 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     auto t0 = (-half_b - sqrtf(discriminant)) / a;
     auto t1 = (-half_b + sqrtf(discriminant)) / a;
 
-    if (t0 > r.tmax || t1 < r.tmin) return false;
+    //if (t0 > r.tmax || t1 < r.tmin) return false;
+    if (t0 > r.tmax || t1 < r.t) return false;
     float t = t0;
     bool is_backface = false;
-    if (t <= 0) {
+    //if (t <= 0) {
+    if (t <= r.t) {
         t = t1;
         is_backface = true;
         if (t > r.tmax) return false;
     }
 
-    isect.p = r.at(t);
-    isect.n = (isect.p - center) / radius;
+    r.t = t;
+    isect.position = r.at(t);
+    isect.normal = (isect.position - center) / radius;
     if (is_backface)
-        isect.n = -isect.n;
+        isect.normal = -isect.normal;
 
-    if (isect.n == Vec3f(0.f, 1.f, 0.f))
-        isect.t = Vec3f{0.f, 0.f, -1.f}.cross(isect.n);
+    if (isect.normal == Vec3f(0.f, 1.f, 0.f))
+        isect.tangent = Vec3f{0.f, 0.f, -1.f}.cross(isect.normal);
     else
-        isect.t = Vec3f{0.f, 1.f, 0.f}.cross(isect.n);
+        isect.tangent = Vec3f{0.f, 1.f, 0.f}.cross(isect.normal);
 
-    isect.b = isect.t.cross(isect.n);
+    isect.bitangent = isect.tangent.cross(isect.normal);
+    isect.mat = mat;
     
     return true;
 }
 
-bool Triangle::intersect(const Ray& r, Intersection& isect) const {
+bool Triangle::intersect(Ray& r, Intersection& isect) const {
     return true;
 }
 
-bool TriangleMesh::intersect(const Ray& r, Intersection& isect) const {
+bool TriangleMesh::intersect(Ray& r, Intersection& isect) const {
     return true;
 }

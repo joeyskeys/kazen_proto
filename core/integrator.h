@@ -4,7 +4,8 @@
 
 #include "camera.h"
 #include "film.h"
-#include "shape.h"
+//#include "shape.h"
+#include "accel.h"
 
 class Integrator {
 public:
@@ -15,7 +16,8 @@ public:
 
     void render();
 
-    Sphere*     sphere;
+    //Sphere*     sphere;
+    ListAccel*  accel_ptr;
 
 protected:
     Camera*     camera_ptr;

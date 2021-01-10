@@ -12,7 +12,7 @@ public:
         : Hitable(l2w)
     {}
 
-protected:
+public:
     MaterialPtr mat;
 };
 
@@ -24,7 +24,7 @@ public:
         , center(c)
     {}
 
-    bool intersect(const Ray& r, Intersection& isect) const override;
+    bool intersect(Ray& r, Intersection& isect) const override;
 
     // Members
     float radius;
@@ -41,7 +41,7 @@ public:
         verts[2] = c;
     }
 
-    bool intersect(const Ray& r, Intersection& isect) const override;
+    bool intersect(Ray& r, Intersection& isect) const override;
 
     Vec3f verts[3];
 };
@@ -52,5 +52,5 @@ public:
         : Shape(l2w)
     {}
 
-    bool intersect(const Ray& r, Intersection& isect) const override;
+    bool intersect(Ray& r, Intersection& isect) const override;
 };

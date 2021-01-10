@@ -30,7 +30,7 @@ struct Intersection;
 
 class Material {
 public:
-    RGBSpectrum calculate_response(Intersection& isect, const Ray& ray) const;
+    RGBSpectrum calculate_response(Intersection& isect, Ray& ray) const;
 
     BxDFPtr bxdf;
 };
@@ -38,12 +38,16 @@ public:
 using MaterialPtr = Material*;
 
 struct Intersection {
-    Vec3f p;
-    Vec3f n;
-    Vec3f ng;
-    Vec3f t;
-    Vec3f b;
+    Vec3f position;
+    Vec3f normal;
+    Vec3f shading_normal;
+    Vec3f tangent;
+    Vec3f bitangent;
+    Vec3f wo;
+    Vec3f wi;
     Vec3f bary;
     Vec2f uv;
+    float ray_t;
+    bool  backface;
     MaterialPtr mat;
 };
