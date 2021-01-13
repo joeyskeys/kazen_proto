@@ -6,8 +6,8 @@ bool Sphere::intersect(Ray& r, Intersection& isect) const {
     auto r_local = world_to_local.apply(r);
 
     auto oc = r_local.origin - center;
-    auto a = r_local.direction.dot(r_local.direction);
-    auto half_b = oc.dot(r_local.direction);
+    auto a = r_local.direction.length_squared();
+    auto half_b = dot(oc, r_local.direction);
     auto c = oc.length_squared() - radius * radius;
     auto discriminant = half_b * half_b - a * c;
 
@@ -18,20 +18,21 @@ bool Sphere::intersect(Ray& r, Intersection& isect) const {
     auto t1 = (-half_b + sqrtf(discriminant)) / a;
 
     //if (t0 > r.tmax || t1 < r.tmin) return false;
-    if (t0 > r.tmax || t1 < r.t) return false;
+    if (t0 < r.tmin || t1 > r.tmax) return false;
     float t = t0;
-    bool is_backface = false;
+    isect.backface = false;
     //if (t <= 0) {
-    if (t <= r.t) {
+    if (t <= r.tmin) {
         t = t1;
-        is_backface = true;
+        isect.backface = true;
         if (t > r.tmax) return false;
     }
 
-    r.t = t;
+    isect.ray_t = t;
     isect.position = r.at(t);
-    isect.normal = (isect.position - center) / radius;
-    if (is_backface)
+    //isect.normal = (isect.position - center) / radius;
+    isect.normal = (isect.position - center).normalized();
+    if (isect.backface)
         isect.normal = -isect.normal;
 
     if (isect.normal == Vec3f(0.f, 1.f, 0.f))

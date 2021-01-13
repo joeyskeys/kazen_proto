@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <limits>
 
 #include "integrator.h"
 #include "material.h"
@@ -20,19 +21,18 @@ void Integrator::render() {
 
                 for (int k = 0; k < depth; k++) {
                     //if (sphere->intersect(ray, isect)) {
+                    isect.ray_t = std::numeric_limits<float>::max();
                     if (accel_ptr->intersect(ray, isect)) {
                         auto mat_ptr = isect.mat;
                         auto wo = -ray.direction;
                         float p;
                         beta *= mat_ptr->calculate_response(isect, ray);
-                        std::cout << "depth : " << k << std::endl;
-                        //beta = isect.normal;
+                        if (k > 0)
+                            std::cout << "depth : " << k << std::endl;
+                        beta = isect.normal;
 
                         ray.origin = isect.position;
                         ray.direction = isect.wi;
-                        ray.t = ray.tmin;
-
-                        break;
                     }
                     else {                
                         auto front_vec = Vec3f{0.f, 0.f, -1.f};

@@ -5,10 +5,9 @@
 #include <cmath>
 #include <cassert>
 #include <iostream>
+#include <type_traits>
 
 #include "types.h"
-
-#include <type_traits>
 
 template <typename T, uint N>
 class Vec {
