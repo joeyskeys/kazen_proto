@@ -16,8 +16,7 @@ bool ListAccel::intersect(Ray& r, Intersection& isect) const {
     for (auto& h : hitables) {
         if (h->intersect(r, tmp_sect) && tmp_sect.ray_t < isect.ray_t) {
             hit = true;
-            curr_t = tmp_sect.ray_t;
-            r.tmax = curr_t;
+            r.tmax = tmp_sect.ray_t;
             isect = tmp_sect;
         }
     }

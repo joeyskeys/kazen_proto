@@ -17,8 +17,7 @@ bool Sphere::intersect(Ray& r, Intersection& isect) const {
     auto t0 = (-half_b - sqrtf(discriminant)) / a;
     auto t1 = (-half_b + sqrtf(discriminant)) / a;
 
-    //if (t0 > r.tmax || t1 < r.tmin) return false;
-    if (t0 < r.tmin || t1 > r.tmax) return false;
+    if (t0 > r.tmax || t1 < r.tmin) return false;
     float t = t0;
     isect.backface = false;
     //if (t <= 0) {
