@@ -8,9 +8,9 @@
 void Integrator::render() {
     auto film_width = film_ptr->width;
     auto film_height = film_ptr->height;
-    float depth = 1;
+    float depth = 50;
 
-    constexpr static int sample_count = 5;
+    constexpr static int sample_count = 50;
 
     for (auto& tile : film_ptr->tiles) {
         for (int j = 0; j < tile.height; j++) {
@@ -23,21 +23,23 @@ void Integrator::render() {
                 for (int s = 0; s < sample_count; s++) {
 
                     RGBSpectrum beta{1.f, 1.f, 1.f};
-                    spec = RGBSpectrum{0.f, 0.f, 0.f};
+                    bool hit = false;
                     for (int k = 0; k < depth; k++) {
                         //if (sphere->intersect(ray, isect)) {
+                        if (k == depth - 1)
+                            beta = RGBSpectrum{0.f, 0.f, 0.f};
+
                         isect.ray_t = std::numeric_limits<float>::max();
                         if (accel_ptr->intersect(ray, isect)) {
                             auto mat_ptr = isect.mat;
                             auto wo = -ray.direction;
                             float p;
                             beta *= mat_ptr->calculate_response(isect, ray);
-                            if (k > 0)
-                                std::cout << "depth : " << k << std::endl;
-                            //beta = isect.normal;
 
                             ray.origin = isect.position;
                             ray.direction = isect.wi;
+
+                            hit = true;
                         }
                         else {                
                             auto front_vec = Vec3f{0.f, 0.f, -1.f};
@@ -47,7 +49,11 @@ void Integrator::render() {
                         }
                     }
 
+                    if (hit)
+                        std::cout << "beta : " << beta;
                     spec += beta;
+                    if (hit)
+                        std::cout << "spec : " << spec;
                 }
 
                 spec /= sample_count;

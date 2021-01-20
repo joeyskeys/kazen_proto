@@ -5,13 +5,13 @@
 
 #include "base/vec.h"
 
-Vec3f sample_hemisphere(const Vec2f& u) {
+inline Vec3f sample_hemisphere(const Vec2f& u) {
     float theta = u.x() * M_PI_2;
     float phi = u.y() * M_PI * 2.f;
     float v_cos_theta = std::cos(theta);
     float v_sin_theta = std::sin(theta);
 
-    return Vec3f{v_sin_theta * std::cos(phi), v_cos_theta, v_sin_theta * std::sin(phi)};
+    return normalize(Vec3f{v_sin_theta * std::cos(phi), v_cos_theta, v_sin_theta * std::sin(phi)});
 }
 
 inline float randomf() {

@@ -49,6 +49,18 @@ T to_degree(const T radian) {
  *  1. To avoid ambiguous, all the variables start with a v.
  */
 
+inline Vec3f world_to_tangent(const Vec3f& w, const Vec3f& n, const Vec3f& t, const Vec3f& b) {
+    return Vec3f{dot(w, t), dot(w, n), dot(w, b)};
+}
+
+inline Vec3f tangent_to_world(const Vec3f& w, const Vec3f& n, const Vec3f& t, const Vec3f& b) {
+    return Vec3f{
+        t.x() * w.x() + n.x() * w.y() + b.x() * w.z(),
+        t.y() * w.x() + n.y() * w.y() + b.y() * w.z(),
+        t.z() * w.x() + n.z() * w.y() + b.z() * w.z()
+    };
+}
+
 inline float cos_theta(const Vec3f& w) {
     return w.y();
 }

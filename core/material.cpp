@@ -11,17 +11,19 @@ float BxDF::pdf(const Vec3f& wo, const Vec3f& wi) const {
 
 RGBSpectrum BxDF::sample_f(const Vec3f& wo, Vec3f& wi, const Vec2f& u, float& p) const {
     wi = sample_hemisphere(u);
+    //wi = normalize(Vec3f{0.f, 1.f, 0.f} + random3f());
     if (wo.y() < 0.f) wi.z() *= -1.f;
     p = pdf(wo, wi);
     return f(wo, wi);
 }
 
 RGBSpectrum LambertianBxDF::f(const Vec3f& wo, const Vec3f& wi) const {
-    return color * M_1_PI;
+    //return color * M_1_PI;
+    return color;
 }
 
 RGBSpectrum Material::calculate_response(Intersection& isect, Ray& ray) const {
-    Vec3f wo = -ray.direction;
+    Vec3f wo = world_to_tangent(-ray.direction, isect.normal, isect.tangent, isect.bitangent);
     Vec3f wi;
     RGBSpectrum spec;
 
@@ -33,7 +35,9 @@ RGBSpectrum Material::calculate_response(Intersection& isect, Ray& ray) const {
     spec = f / pdf;
 
     isect.wo = -ray.direction;
-    isect.wi = wi;
+    isect.wi = tangent_to_world(wi, isect.normal, isect.tangent, isect.bitangent);
 
-    return spec;
+    //return spec;
+    //return RGBSpectrum{0.5f, 0.5f, 0.5f};
+    return f;
 }

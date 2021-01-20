@@ -149,7 +149,7 @@ public:
     }
     
     auto operator /=(const T s) {
-        auto inv = static_cast<T>(1);
+        auto inv = static_cast<T>(1) / s;
         for (int i = 0; i < N; i++)
             arr[i] *= inv;
         return *this;
@@ -241,6 +241,11 @@ inline T dot(const Vec<T, N>& a, const Vec<T, N>& b) {
 template <typename T, uint N>
 inline auto cross(const Vec<T, N>& a, const Vec<T, N>& b) {
     return a.cross(b);
+}
+
+template <typename T, uint N>
+inline Vec<T, N> normalize(const Vec<T, N>& w) {
+    return w.normalized();
 }
 
 template <typename T>

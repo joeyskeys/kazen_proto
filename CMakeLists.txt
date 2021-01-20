@@ -30,6 +30,7 @@ set(CORE_HEADERS
     core/accel.h)
 
 set(CORE_SOURCES
+    core/camera.cpp
     core/film.cpp
     core/ray.cpp
     core/shape.cpp

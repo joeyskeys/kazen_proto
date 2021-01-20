@@ -10,11 +10,11 @@ int main() {
     film.generate_tiles();
 
     Camera cam{
-        Vec3f{0.f, 0.f, 0.f},
-        Vec3f{0.f, 0.f, -1.f},
+        Vec3f{3.f, 10.f, 10.f},
+        Vec3f{0.f, 0.f, -15.f},
         Vec3f{0.f, 1.f, 0.f},
         1.f,
-        100.f,
+        1000.f,
         60.f,
         &film
     };
@@ -25,17 +25,17 @@ int main() {
     t1.translate(Vec3f{0.f, 5.f, -20.f});
     Sphere s{t1, 5.f};
 
-    LambertianBxDF lamb{RGBSpectrum{0.8f, 0.4f, 0.4f}};
+    LambertianBxDF lamb{RGBSpectrum{0.8f, 0.4f, 0.1f}};
     Material mat;
     mat.bxdf = &lamb;
     s.mat = &mat;
-    //integrator.sphere = &s;
+    //integrator.sphere = &s
 
     Transform t2;
-    t2.translate(Vec3f{0.f, -100.f, -20.f});
-    Sphere s_bottom{t2, 100.f};
+    t2.translate(Vec3f{0.f, -1000.f, -20.f});
+    Sphere s_bottom{t2, 1000.f};
 
-    LambertianBxDF lamb2{RGBSpectrum{0.5, 0.5f, 0.5f}};
+    LambertianBxDF lamb2{RGBSpectrum{0.1, 0.9f, 0.1f}};
     Material mat2;
     mat2.bxdf = &lamb2;
     s_bottom.mat = &mat2;

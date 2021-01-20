@@ -17,7 +17,7 @@ public:
         Film* const film)
         : position(p)
         , lookat(l)
-        , up(u)
+        , up(u.normalized())
         , near(near)
         , far(far)
         , fov(fov)
@@ -25,9 +25,9 @@ public:
     {
         ratio =  static_cast<float>(film->width) / static_cast<float>(film->height);
 
-        auto dir = (lookat - position).normalized();
-        horizontal = dir.cross(up);
-        vertical = dir.cross(horizontal);
+        auto dir = normalize(lookat - position);
+        horizontal = normalize(dir.cross(up));
+        vertical = normalize(dir.cross(horizontal));
 
         auto fov_in_radian = to_radian(fov);
         film_plane_height = near * std::tan(fov_in_radian);
@@ -38,17 +38,7 @@ public:
             - film_plane_height * 0.5f * vertical;
     }
 
-    Ray generate_ray(uint x, uint y) {
-        // Default to perspective camera for now
-        // fov denotes the vertical fov
-        auto fov_in_radian = to_radian(fov);
-
-        auto direction = upper_left_corner
-            + horizontal * film_plane_width * (static_cast<float>(x) / film->width)
-            + vertical * film_plane_height * (static_cast<float>(y) / film->height);
-
-        return Ray(position, direction.normalized());
-    }
+    Ray generate_ray(uint x, uint y);
 
 private:
     Vec3f position;
