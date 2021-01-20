@@ -36,6 +36,8 @@ void Integrator::render() {
 
                             ray.origin = isect.position;
                             ray.direction = isect.wi;
+                            ray.tmin = 0;
+                            ray.tmax = std::numeric_limits<float>::max();
 
                             hit = true;
                         }

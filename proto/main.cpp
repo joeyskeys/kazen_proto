@@ -10,8 +10,8 @@ int main() {
     film.generate_tiles();
 
     Camera cam{
-        Vec3f{3.f, 10.f, 10.f},
-        Vec3f{0.f, 0.f, -15.f},
+        Vec3f{3.f, 8.f, 0.f},
+        Vec3f{0.f, 5.f, -20.f},
         Vec3f{0.f, 1.f, 0.f},
         1.f,
         1000.f,
