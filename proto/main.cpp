@@ -35,7 +35,7 @@ int main() {
     t2.translate(Vec3f{0.f, -1000.f, -20.f});
     Sphere s_bottom{t2, 1000.f};
 
-    LambertianBxDF lamb2{RGBSpectrum{0.1, 0.9f, 0.1f}};
+    LambertianBxDF lamb2{RGBSpectrum{0.5f, 0.5f, 0.5f}};
     Material mat2;
     mat2.bxdf = &lamb2;
     s_bottom.mat = &mat2;
