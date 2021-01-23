@@ -29,8 +29,8 @@ bool Sphere::intersect(Ray& r, Intersection& isect) const {
 
     isect.ray_t = t;
     isect.position = r.at(t);
-    //isect.normal = (isect.position - center) / radius;
-    isect.normal = (isect.position - center).normalized();
+    isect.normal = (isect.position - center) / radius;
+    //isect.normal = (isect.position - center).normalized();
     if (isect.backface)
         isect.normal = -isect.normal;
 

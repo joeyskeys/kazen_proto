@@ -12,7 +12,7 @@ float BxDF::pdf(const Vec3f& wo, const Vec3f& wi) const {
 RGBSpectrum BxDF::sample_f(const Vec3f& wo, Vec3f& wi, const Vec2f& u, float& p) const {
     wi = sample_hemisphere(u);
     //wi = normalize(Vec3f{0.f, 1.f, 0.f} + random3f());
-    if (wo.y() < 0.f) wi.z() *= -1.f;
+    if (wo.y() < 0.f) wi.y() *= -1.f;
     p = pdf(wo, wi);
     return f(wo, wi);
 }
@@ -34,8 +34,16 @@ RGBSpectrum Material::calculate_response(Intersection& isect, Ray& ray) const {
     auto f = bxdf->sample_f(wo, wi, u, pdf);
     spec = f / pdf;
 
+    std::cout << "backface : " << isect.backface << std::endl;
+    std::cout << "normal : " << isect.normal;
+    std::cout << "tangent : " << isect.tangent;
+    std::cout << "bitangent : " << isect.bitangent;
     isect.wo = -ray.direction;
+    std::cout << "local wi : " << wi;
     isect.wi = tangent_to_world(wi, isect.normal, isect.tangent, isect.bitangent);
+    std::cout << "world wi : " << isect.wi;
+    std::cout << "local wo : " << wo;
+    std::cout << "world wo : " << -ray.direction;
 
     //return spec;
     //return RGBSpectrum{0.5f, 0.5f, 0.5f};

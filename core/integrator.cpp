@@ -8,7 +8,7 @@
 void Integrator::render() {
     auto film_width = film_ptr->width;
     auto film_height = film_ptr->height;
-    float depth = 50;
+    float depth = 20;
 
     constexpr static int sample_count = 5;
 
@@ -28,7 +28,7 @@ void Integrator::render() {
 
                     for (int k = 0; k < depth; k++) {
                         isect.ray_t = std::numeric_limits<float>::max();
-                        if (accel_ptr->intersect(ray, isect) && k < depth - 1) {
+                        if (accel_ptr->intersect(ray, isect) && !isect.backface && k < depth - 1) {
                             auto mat_ptr = isect.mat;
                             auto wo = -ray.direction;
                             float p;
@@ -39,6 +39,9 @@ void Integrator::render() {
                             ray.tmin = 0;
                             ray.tmax = std::numeric_limits<float>::max();
 
+                            //std::cout << "backface : " << isect.backface << std::endl;
+                            //std::cout << "hit point : " << ray.origin << ", wi : " << ray.direction;
+
                             hit = true;
                         }
                         else {                
@@ -46,9 +49,13 @@ void Integrator::render() {
                             auto t = 0.5f * (ray.direction.y() + 1.f);
                             beta *= (1.f - t) * RGBSpectrum{1.f, 1.f, 1.f} + t * RGBSpectrum{0.5f, 0.7f, 1.f};
                             spec += beta;
+                            //if (hit)
+                                //std::cout << "s " << s << ", depth : " << k << ", beta : " << beta;
                             break;
                         }
                     }
+
+                    //std::cout << "s " << s << " beta : " << beta;
                 }
 
                 spec /= sample_count;
