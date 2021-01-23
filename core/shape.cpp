@@ -28,19 +28,20 @@ bool Sphere::intersect(Ray& r, Intersection& isect) const {
     }
 
     isect.ray_t = t;
-    isect.position = r.at(t);
-    isect.normal = (isect.position - center) / radius;
-    //isect.normal = (isect.position - center).normalized();
+    // small bias to avoid self intersection
+    isect.position = local_to_world.apply(r_local.at(t) * 1.00001f);
+    isect.normal = (r_local.at(t) - center) / radius;
     if (isect.backface)
         isect.normal = -isect.normal;
 
     if (isect.normal == Vec3f(0.f, 1.f, 0.f))
-        isect.tangent = Vec3f{0.f, 0.f, -1.f}.cross(isect.normal);
+        isect.tangent = normalize(Vec3f{0.f, 0.f, -1.f}.cross(isect.normal));
     else
-        isect.tangent = Vec3f{0.f, 1.f, 0.f}.cross(isect.normal);
+        isect.tangent = normalize(Vec3f{0.f, 1.f, 0.f}.cross(isect.normal));
 
-    isect.bitangent = isect.tangent.cross(isect.normal);
+    isect.bitangent = normalize(isect.tangent.cross(isect.normal));
     isect.mat = mat;
+    isect.obj_id = obj_id;
     
     return true;
 }

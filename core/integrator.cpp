@@ -10,7 +10,7 @@ void Integrator::render() {
     auto film_height = film_ptr->height;
     float depth = 20;
 
-    constexpr static int sample_count = 5;
+    constexpr static int sample_count = 50;
 
     for (auto& tile : film_ptr->tiles) {
         for (int j = 0; j < tile.height; j++) {
@@ -21,6 +21,9 @@ void Integrator::render() {
 
                 for (int s = 0; s < sample_count; s++) {
 
+                    uint x = tile.origin_x + i;
+                    uint y = tile.origin_y + j;
+
                     auto ray = camera_ptr->generate_ray(tile.origin_x + i, tile.origin_y + j);
                     RGBSpectrum beta{1.f, 1.f, 1.f};
                     bool hit = false;
@@ -28,7 +31,7 @@ void Integrator::render() {
 
                     for (int k = 0; k < depth; k++) {
                         isect.ray_t = std::numeric_limits<float>::max();
-                        if (accel_ptr->intersect(ray, isect) && !isect.backface && k < depth - 1) {
+                        if (accel_ptr->intersect(ray, isect) && k < depth - 1) {
                             auto mat_ptr = isect.mat;
                             auto wo = -ray.direction;
                             float p;
@@ -39,8 +42,13 @@ void Integrator::render() {
                             ray.tmin = 0;
                             ray.tmax = std::numeric_limits<float>::max();
 
-                            //std::cout << "backface : " << isect.backface << std::endl;
-                            //std::cout << "hit point : " << ray.origin << ", wi : " << ray.direction;
+                            /*
+                            if (isect.obj_id == 1 && k > 0) {
+                                std::cout << "k : " << k << ", beta value on bottom : " << beta;
+                                std::cout << "position  : " << isect.position;
+                                std::cout << "ray dir : " << ray.direction;
+                            }
+                            */
 
                             hit = true;
                         }

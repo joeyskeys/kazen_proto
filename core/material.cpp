@@ -34,16 +34,24 @@ RGBSpectrum Material::calculate_response(Intersection& isect, Ray& ray) const {
     auto f = bxdf->sample_f(wo, wi, u, pdf);
     spec = f / pdf;
 
+    
+    /*
     std::cout << "backface : " << isect.backface << std::endl;
+    std::cout << "position : " << isect.position;
     std::cout << "normal : " << isect.normal;
     std::cout << "tangent : " << isect.tangent;
     std::cout << "bitangent : " << isect.bitangent;
+    */
+    
     isect.wo = -ray.direction;
-    std::cout << "local wi : " << wi;
     isect.wi = tangent_to_world(wi, isect.normal, isect.tangent, isect.bitangent);
+
+    /*
+    std::cout << "local wi : " << wi;
     std::cout << "world wi : " << isect.wi;
     std::cout << "local wo : " << wo;
     std::cout << "world wo : " << -ray.direction;
+    */
 
     //return spec;
     //return RGBSpectrum{0.5f, 0.5f, 0.5f};

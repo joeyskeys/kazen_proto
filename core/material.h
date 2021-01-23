@@ -50,4 +50,5 @@ struct Intersection {
     float ray_t;
     bool  backface;
     MaterialPtr mat;
+    uint  obj_id;
 };
