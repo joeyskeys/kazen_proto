@@ -27,9 +27,10 @@ bool Sphere::intersect(Ray& r, Intersection& isect) const {
         if (t > r.tmax) return false;
     }
 
+    // Calculate in local space
     isect.ray_t = t;
     // small bias to avoid self intersection
-    isect.position = local_to_world.apply(r_local.at(t) * 1.00001f);
+    isect.position = r_local.at(t) * 1.00001f;
     isect.normal = (r_local.at(t) - center) / radius;
     if (isect.backface)
         isect.normal = -isect.normal;
@@ -42,6 +43,9 @@ bool Sphere::intersect(Ray& r, Intersection& isect) const {
     isect.bitangent = normalize(isect.tangent.cross(isect.normal));
     isect.mat = mat;
     isect.obj_id = obj_id;
+
+    // Transform back to world space
+    isect = local_to_world.apply(isect);
     
     return true;
 }

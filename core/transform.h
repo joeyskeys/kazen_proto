@@ -3,6 +3,7 @@
 #include "base/mat.h"
 #include "base/utils.h"
 #include "ray.h"
+#include "material.h"
 
 class Transform {
 public:
@@ -87,6 +88,23 @@ public:
 
     inline Vec4f apply(const Vec4f& v) const {
         return mat * v;
+    }
+
+    Intersection apply(const Intersection& isect) const {
+        Intersection ret;
+        ret.position = apply(isect.position);
+        ret.normal = (mat_inv.transpose() * Vec4f(isect.normal, 0.f)).reduct<3>();
+        ret.shading_normal = isect.shading_normal;
+        ret.tangent = apply(isect.tangent, true);
+        ret.bitangent = apply(isect.bitangent, true);
+        ret.bary = isect.bary;
+        ret.uv = isect.uv;
+        ret.ray_t = isect.ray_t;
+        ret.backface = isect.backface;
+        ret.mat = isect.mat;
+        ret.obj_id = isect.obj_id;
+
+        return ret;
     }
 
     Ray apply(const Ray& r) const {

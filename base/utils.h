@@ -127,3 +127,7 @@ inline bool refract(const Vec3f& wi, const Vec3f& n, const float eta, Vec3f& wt)
 inline bool same_hemisphere(const Vec3f& w, const Vec3f& n) {
     return w.y() * n.y() > 0.f;
 }
+
+inline Vec3f reflect(const Vec3f& w, const Vec3f& n) {
+    -v + 2.f * dot(w, n) * n;
+}

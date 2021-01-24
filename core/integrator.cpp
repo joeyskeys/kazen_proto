@@ -8,9 +8,9 @@
 void Integrator::render() {
     auto film_width = film_ptr->width;
     auto film_height = film_ptr->height;
-    float depth = 20;
+    float depth = 10;
 
-    constexpr static int sample_count = 50;
+    constexpr static int sample_count = 5;
 
     for (auto& tile : film_ptr->tiles) {
         for (int j = 0; j < tile.height; j++) {
