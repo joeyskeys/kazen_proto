@@ -27,7 +27,7 @@ RGBSpectrum MetalBxDF::f(const Vec3f& wo, const Vec3f& wi, const Intersection& i
 }
 
 RGBSpectrum MetalBxDF::sample_f(const Vec3f& wo, Vec3f& wi, const Intersection& isect, const Vec2f& u, float& p) const {
-    wi = reflect(wo, isect.normal);
+    wi = reflect(wo, Vec3f{0.f, 1.f, 0.f});
     return f(wo, wi, isect);
 }
 
@@ -42,7 +42,7 @@ RGBSpectrum Material::calculate_response(Intersection& isect, Ray& ray) const {
     float pdf = 0.f;
     float p = 1.f;
 
-    auto f = bxdf->sample_f(wo, wi, u, pdf);
+    auto f = bxdf->sample_f(wo, wi, isect, u, pdf);
     spec = f / pdf;
 
     isect.wo = -ray.direction;

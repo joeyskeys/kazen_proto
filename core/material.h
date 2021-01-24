@@ -29,7 +29,7 @@ class BxDF {
 public:
     virtual RGBSpectrum f(const Vec3f& wo, const Vec3f& wi, const Intersection& isect) const = 0;
     virtual float       pdf(const Vec3f& wo, const Vec3f& wi) const;
-    virtual RGBSpectrum sample_f(const Vec3f& wo, Vec3f& wi, const Itersection& isect, const Vec2f& u, float& p) const;
+    virtual RGBSpectrum sample_f(const Vec3f& wo, Vec3f& wi, const Intersection& isect, const Vec2f& u, float& p) const;
 };
 
 class LambertianBxDF : public BxDF {
@@ -45,6 +45,7 @@ private:
 };
 
 class MetalBxDF : public BxDF {
+public:
     MetalBxDF(const RGBSpectrum& c)
         : color(c)
     {}
@@ -54,7 +55,7 @@ class MetalBxDF : public BxDF {
 
 private:
     RGBSpectrum color;
-}
+};
 
 using BxDFPtr = BxDF*;
 
