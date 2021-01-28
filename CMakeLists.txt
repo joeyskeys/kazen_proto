@@ -12,6 +12,8 @@ include_directories(${CMAKE_SOURCE_DIR}/thirdparty)
 find_package(OIIO)
 include_directories(${OIIO_INCLUDE_DIRS})
 
+find_package(TBB)
+
 set(BASE_HEADERS
     base/mat.h
     base/types.h
@@ -44,6 +46,7 @@ add_library(kazen_proto_lib
 add_executable(kazen proto/main.cpp)
 target_link_libraries(kazen
     ${OIIO_LIBRARIES}
+    ${TBB_LIBRARIES}
     kazen_proto_lib)
 
 add_subdirectory(tests)

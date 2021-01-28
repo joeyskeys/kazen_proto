@@ -2,8 +2,11 @@
 #include <iostream>
 #include <limits>
 
+#include <tbb/tbb.h>
+
 #include "integrator.h"
 #include "material.h"
+#include "state.h"
 
 void Integrator::render() {
     auto film_width = film_ptr->width;
@@ -12,64 +15,71 @@ void Integrator::render() {
 
     constexpr static int sample_count = 5;
 
-    for (auto& tile : film_ptr->tiles) {
-        for (int j = 0; j < tile.height; j++) {
-            for (int i = 0; i < tile.width; i++) {
-                Intersection isect;
-                RGBSpectrum l{0.f, 0.f, 0.f};
-                RGBSpectrum spec{0.f, 0.f, 0.f};
+    auto render_start = get_time();
 
-                for (int s = 0; s < sample_count; s++) {
+    //for (auto& tile : film_ptr->tiles) {
+    tbb::parallel_for (tbb::blocked_range<size_t>(0, film_ptr->tiles.size()), [&](const tbb::blocked_range<size_t>& r) {
+        auto tile_start = get_time();
 
-                    uint x = tile.origin_x + i;
-                    uint y = tile.origin_y + j;
+        for (int t = r.begin(); t != r.end(); ++t) {
+            Tile& tile = film_ptr->tiles[t];
 
-                    auto ray = camera_ptr->generate_ray(tile.origin_x + i, tile.origin_y + j);
-                    RGBSpectrum beta{1.f, 1.f, 1.f};
-                    bool hit = false;
-                    Ray tmp_ray = ray;
+            for (int j = 0; j < tile.height; j++) {
+                for (int i = 0; i < tile.width; i++) {
+                    Intersection isect;
+                    RGBSpectrum l{0.f, 0.f, 0.f};
+                    RGBSpectrum spec{0.f, 0.f, 0.f};
 
-                    for (int k = 0; k < depth; k++) {
-                        isect.ray_t = std::numeric_limits<float>::max();
-                        if (accel_ptr->intersect(ray, isect) && k < depth - 1) {
-                            auto mat_ptr = isect.mat;
-                            auto wo = -ray.direction;
-                            float p;
-                            beta *= mat_ptr->calculate_response(isect, ray);
+                    for (int s = 0; s < sample_count; s++) {
 
-                            ray.origin = isect.position;
-                            ray.direction = isect.wi;
-                            ray.tmin = 0;
-                            ray.tmax = std::numeric_limits<float>::max();
+                        uint x = tile.origin_x + i;
+                        uint y = tile.origin_y + j;
 
-                            /*
-                            if (isect.obj_id == 1 && k > 0) {
-                                std::cout << "k : " << k << ", beta value on bottom : " << beta;
-                                std::cout << "position  : " << isect.position;
-                                std::cout << "ray dir : " << ray.direction;
+                        auto ray = camera_ptr->generate_ray(tile.origin_x + i, tile.origin_y + j);
+                        RGBSpectrum beta{1.f, 1.f, 1.f};
+                        bool hit = false;
+                        Ray tmp_ray = ray;
+
+                        auto sample_start = get_time();
+
+                        for (int k = 0; k < depth; k++) {
+                            isect.ray_t = std::numeric_limits<float>::max();
+                            if (accel_ptr->intersect(ray, isect) && k < depth - 1) {
+                                auto mat_ptr = isect.mat;
+                                auto wo = -ray.direction;
+                                float p;
+                                beta *= mat_ptr->calculate_response(isect, ray);
+
+                                ray.origin = isect.position;
+                                ray.direction = isect.wi;
+                                ray.tmin = 0;
+                                ray.tmax = std::numeric_limits<float>::max();
+
+                                hit = true;
                             }
-                            */
-
-                            hit = true;
-                        }
-                        else {                
-                            auto front_vec = Vec3f{0.f, 0.f, -1.f};
-                            auto t = 0.5f * (ray.direction.y() + 1.f);
-                            beta *= (1.f - t) * RGBSpectrum{1.f, 1.f, 1.f} + t * RGBSpectrum{0.5f, 0.7f, 1.f};
-                            spec += beta;
-                            //if (hit)
-                                //std::cout << "s " << s << ", depth : " << k << ", beta : " << beta;
-                            break;
+                            else {                
+                                auto front_vec = Vec3f{0.f, 0.f, -1.f};
+                                auto t = 0.5f * (ray.direction.y() + 1.f);
+                                beta *= (1.f - t) * RGBSpectrum{1.f, 1.f, 1.f} + t * RGBSpectrum{0.5f, 0.7f, 1.f};
+                                spec += beta;
+                                break;
+                            }
                         }
                     }
 
-                    //std::cout << "s " << s << " beta : " << beta;
+                    spec /= sample_count;
+
+                    tile.set_pixel_color(i, j, spec);
                 }
-
-                spec /= sample_count;
-
-                tile.set_pixel_color(i, j, spec);
             }
         }
-    }
+
+        auto tile_end = get_time();
+        auto tile_duration = std::chrono::duration_cast<std::chrono::milliseconds>(tile_end - tile_start);
+        std::cout << "sample duration : " << tile_duration.count() << " ms\n";
+    });
+
+    auto render_end = get_time();
+    auto render_duration = std::chrono::duration_cast<std::chrono::milliseconds>(render_end - render_start);
+    std::cout << "render duration : " << render_duration.count() << " ms\n";
 }
