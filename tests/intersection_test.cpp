@@ -21,6 +21,7 @@ int main() {
     //lamb.sample_f(local_wo, wi, isect, Vec2f{0.8f, 0.4f}, p);
     metal.sample_f(local_wo, wi, isect, Vec2f{0.1f, 0.1f}, p);
 
+    /*
     std::cout << "hit : " << hit << std::endl;
     std::cout << "position : " << isect.position;
     std::cout << "normal : " << isect.normal;
@@ -30,6 +31,18 @@ int main() {
     std::cout << "world wo : " << -r.direction;
     std::cout << "local wi : " << wi;
     std::cout << "world wi : " << tangent_to_world(wi, isect.normal, isect.tangent, isect.bitangent);
+    */
+
+    auto tt = Transform();
+    tt.translate(Vec3f{0.f, 0.f, -10.f});
+    Triangle tri{tt, Vec3f{0.f, 0.f, 0.f}, Vec3f{2.f, 0.f, 0.f}, Vec3f{0.f, 2.f, 0.f}};
+    Ray r2{Vec3f{2.f, 1.5f, 2.f}, Vec3f{0.f, 0.f, -1.f}};
+    hit = tri.intersect(r2, isect);
+
+    std::cout << "hit : " << hit << std::endl;
+    std::cout << "position : " << isect.position;
+    std::cout << "normal : " << isect.normal;
+    std::cout << "t : " << isect.ray_t << std::endl;
     
     return 0;
 }

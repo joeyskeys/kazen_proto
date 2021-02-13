@@ -259,7 +259,10 @@ using Vec4 = Vec<T, 4>;
 
 using Vec2f = Vec2<float>;
 using Vec2d = Vec2<double>;
+using Vec2i = Vec2<int>;
 using Vec3f = Vec3<float>;
 using Vec3d = Vec3<double>;
+using Vec3i = Vec3<int>;
 using Vec4f = Vec4<float>;
 using Vec4d = Vec4<double>;
+using Vec4i = Vec4<int>;

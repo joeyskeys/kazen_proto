@@ -39,6 +39,11 @@ int main() {
     mat2.bxdf = &metal1;
     s2.mat = &mat2;
 
+    Transform tt;
+    tt.translate(Vec3f{0.f, 0.f, -10.f});
+    Triangle t{tt, Vec3f{0.f, 0.f, 0.f}, Vec3f{2.f, 0.f, 0.f}, Vec3f{0.f, 2.f, 0.f}};
+    t.mat = &mat;
+
     Transform tb;
     tb.translate(Vec3f{0.f, -1000.f, -20.f});
     Sphere s_bottom{tb, 1, 1000.f};
@@ -51,6 +56,7 @@ int main() {
     ListAccel list;
     list.add_hitable(&s);
     list.add_hitable(&s2);
+    list.add_hitable(&t);
     list.add_hitable(&s_bottom);
     integrator.accel_ptr = &list;
 

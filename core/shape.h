@@ -4,6 +4,8 @@
 #include "hitable.h"
 #include "material.h"
 
+#include <vector>
+
 class Ray;
 
 class Shape : public Hitable {
@@ -50,9 +52,14 @@ public:
 
 class TriangleMesh : public Shape {
 public:
-    TriangleMesh(const Transform& l2w)
+    TriangleMesh(const Transform& l2w, std::vector<Vec3f>&& vs, std::vector<Vec3i>&& idx)
         : Shape(l2w, 0)
+        , verts(vs)
+        , indice(idx)
     {}
 
     bool intersect(Ray& r, Intersection& isect) const override;
+
+    std::vector<Vec3f> verts;
+    std::vector<Vec3i> indice;
 };
