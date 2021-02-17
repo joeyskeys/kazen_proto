@@ -13,6 +13,10 @@ find_package(OIIO)
 include_directories(${OIIO_INCLUDE_DIRS})
 
 find_package(TBB)
+include_directories(${TBB_INCLUDE_DIRS})
+
+find_package(ASSIMP)
+include_directories(${ASSIMP_INCLUDE_DIRS})
 
 set(BASE_HEADERS
     base/mat.h

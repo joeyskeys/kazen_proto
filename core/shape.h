@@ -1,10 +1,11 @@
 #pragma once
 
+#include <vector>
+#include <optional>
+
 #include "transform.h"
 #include "hitable.h"
 #include "material.h"
-
-#include <vector>
 
 class Ray;
 
@@ -63,3 +64,5 @@ public:
     std::vector<Vec3f> verts;
     std::vector<Vec3i> indice;
 };
+
+std::vector<TriangleMesh> load_triangle_mesh(const std::string& file_path);

@@ -1,6 +1,14 @@
+#include <filesystem>
+
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 #include "shape.h"
 #include "ray.h"
+#include "transform.h"
+
+namespace fs = std::filesystem; 
 
 bool Sphere::intersect(Ray& r, Intersection& isect) const {
     auto r_local = world_to_local.apply(r);
@@ -20,7 +28,6 @@ bool Sphere::intersect(Ray& r, Intersection& isect) const {
     if (t0 > r.tmax || t1 < r.tmin) return false;
     float t = t0;
     isect.backface = false;
-    //if (t <= 0) {
     if (t <= r.tmin) {
         t = t1;
         isect.backface = true;
@@ -94,6 +101,9 @@ bool TriangleMesh::intersect(Ray& r, Intersection& isect) const {
     bool hit = false;
 
     for (auto& idx : indice) {
+        // TODO : compare the performance difference between
+        // constructing triangle on the fly and converting it
+        // to triangle list.
         Vec3f tri[3];
         tri[0] = verts[idx[0]];
         tri[1] = verts[idx[1]];
@@ -107,4 +117,52 @@ bool TriangleMesh::intersect(Ray& r, Intersection& isect) const {
     }
 
     return false;
+}
+
+static TriangleMesh process_mesh(aiMesh* mesh, const aiScene* scene) {
+    std::vector<Vec3f> vs(mesh->mNumVertices);
+    std::vector<Vec3i> idx(mesh->mNumFaces);
+
+    for (uint i = 0; i < mesh->mNumVertices; i++) {
+        vs[i][0] = mesh->mVertices[i].x;
+        vs[i][1] = mesh->mVertices[i].y;
+        vs[i][2] = mesh->mVertices[i].z;
+    }
+
+    for (uint i = 0; i < mesh->mNumFaces; i++) {
+        idx[i][0] = mesh->mFaces[i].mIndices[0];
+        idx[i][1] = mesh->mFaces[i].mIndices[1];
+        idx[i][2] = mesh->mFaces[i].mIndices[2];
+    }
+
+    return TriangleMesh(Transform{}, std::move(vs), std::move(idx));
+}
+
+static void process_node(aiNode* node, const aiScene* scene, std::vector<TriangleMesh>& meshes) {
+    for (uint i = 0; i < node->mNumMeshes; i++) {
+        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+        meshes.emplace_back(process_mesh(mesh, scene));
+    }
+
+    for (uint i = 0; i < node->mNumChildren; i++) {
+        process_node(node->mChildren[i], scene, meshes);
+    }
+}
+
+std::vector<TriangleMesh> load_triangle_mesh(const std::string& file_path) {
+    std::vector<TriangleMesh> meshes;
+
+    if (!fs::exists(file_path))
+        return meshes;
+
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(file_path, aiProcess_Triangulate);
+
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+        return meshes;
+    }
+
+    process_node(scene->mRootNode, scene, meshes);
+
+    return meshes;
 }

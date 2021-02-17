@@ -1,8 +1,7 @@
+#include <cmath>
 
 #include "material.h"
 #include "sampling.h"
-
-#include <cmath>
 
 float BxDF::pdf(const Vec3f& wo, const Vec3f& wi) const {
     // Different from pbrt, do not check same hemisphere here.

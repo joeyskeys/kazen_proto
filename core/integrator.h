@@ -4,7 +4,6 @@
 
 #include "camera.h"
 #include "film.h"
-//#include "shape.h"
 #include "accel.h"
 
 class Integrator {
