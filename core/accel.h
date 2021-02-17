@@ -17,3 +17,17 @@ public:
 private:
     std::vector<HitablePtr> hitables;
 };
+
+class BVHNode {
+public:
+    BVHNode* children[2];
+};
+
+class BVHAccel : public Accel {
+public:
+    void add_hitable(const HitablePtr h);
+    bool intersect(Ray& r, Intersection& isect) const override;
+
+private:
+    
+};
