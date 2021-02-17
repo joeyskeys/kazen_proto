@@ -76,8 +76,11 @@ static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, Intersec
 
     float t = dot(v2v0, qvec) * det_inv;
 
-    isect.position = r.at(t);
+    isect.position = r.at(t - 0.00001f);
     isect.normal = cross(v1v0, v2v0).normalized();
+    // TODO : calculate dpdu & dpdv.
+    isect.tangent = v1v0.normalized();
+    isect.bitangent = cross(isect.tangent, isect.normal);
     isect.ray_t = t;
     isect.backface = t < 0.f ? true : false;
 
@@ -88,12 +91,13 @@ bool Triangle::intersect(Ray& r, Intersection& isect) const {
     auto local_r = world_to_local.apply(r);
 
     auto ret = moller_trumbore_intersect(local_r, verts, isect);
-    if (ret) {
+    if (ret && !isect.backface) {
         isect.mat = mat;
         isect = local_to_world.apply(isect);
+        return true;
     }
 
-    return ret;
+    return false;
 }
 
 bool TriangleMesh::intersect(Ray& r, Intersection& isect) const {
@@ -109,8 +113,9 @@ bool TriangleMesh::intersect(Ray& r, Intersection& isect) const {
         tri[1] = verts[idx[1]];
         tri[2] = verts[idx[2]];
         hit = moller_trumbore_intersect(local_r, tri, isect);
-        if (hit) {
+        if (hit && !isect.backface) {
             isect.mat = mat;
+            isect.obj_id = 2;
             isect = local_to_world.apply(isect);
             return true;
         }
@@ -152,11 +157,13 @@ static void process_node(aiNode* node, const aiScene* scene, std::vector<Triangl
 std::vector<TriangleMesh> load_triangle_mesh(const std::string& file_path) {
     std::vector<TriangleMesh> meshes;
 
-    if (!fs::exists(file_path))
+    if (!fs::exists(fs::absolute(file_path))) {
+        std::cout << "file : " << file_path << " does not exist" << std::endl;
         return meshes;
+    }
 
     Assimp::Importer importer;
-    const aiScene *scene = importer.ReadFile(file_path, aiProcess_Triangulate);
+    const aiScene *scene = importer.ReadFile(file_path, aiProcess_Triangulate | aiProcess_JoinIdenticalVertices | aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         return meshes;

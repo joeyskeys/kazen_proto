@@ -10,7 +10,7 @@ int main() {
     film.generate_tiles();
 
     Camera cam{
-        Vec3f{7.f, 8.f, 5.f},
+        Vec3f{7.f, 8.f, 15.f},
         Vec3f{0.f, 3.f, -20.f},
         Vec3f{0.f, 1.f, 0.f},
         1.f,
@@ -53,10 +53,15 @@ int main() {
     matb.bxdf = &lamb2;
     s_bottom.mat = &matb;
 
+    auto triangle_meshes = load_triangle_mesh("../resource/obj/cube.obj");
+    auto triangle_mesh = triangle_meshes[0];
+    triangle_mesh.mat = &mat;
+
     ListAccel list;
     list.add_hitable(&s);
     list.add_hitable(&s2);
     list.add_hitable(&t);
+    list.add_hitable(&triangle_mesh);
     list.add_hitable(&s_bottom);
     integrator.accel_ptr = &list;
 
