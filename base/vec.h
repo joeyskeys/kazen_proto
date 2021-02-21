@@ -155,6 +155,10 @@ public:
         return *this;
     }
 
+    friend auto operator /(const T s, const Vec& rhs) {
+        return rhs * (static_cast<T>(1) / s);
+    }
+
     bool operator ==(const Vec& rhs) {
         bool eq = true;
         for (int i = 0; i < N; i++)

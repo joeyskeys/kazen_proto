@@ -30,6 +30,7 @@ public:
     {}
 
     bool intersect(Ray& r, Intersection& isect) const override;
+    bool bbox(AABB& box) const override;
 
     // Members
     float radius;
@@ -47,6 +48,7 @@ public:
     }
 
     bool intersect(Ray& r, Intersection& isect) const override;
+    bool bbox(AABB& box) const override;
 
     Vec3f verts[3];
 };
@@ -60,6 +62,7 @@ public:
     {}
 
     bool intersect(Ray& r, Intersection& isect) const override;
+    bool bbox(AABB& box) const override;
 
     std::vector<Vec3f> verts;
     std::vector<Vec3i> indice;

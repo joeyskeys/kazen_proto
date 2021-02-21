@@ -2,12 +2,14 @@
 
 #include "ray.h"
 #include "transform.h"
+#include "aabb.h"
 
 class Intersection;
 
 class HitableInterface {
 public:
     virtual bool intersect(Ray& r, Intersection& isect) const = 0;
+    virtual bool bbox(AABB& box) const = 0;
 };
 
 class Hitable : public HitableInterface {
