@@ -4,12 +4,13 @@
 
 #include "base/vec.h"
 
+template <typename T>
 class AABB {
 public:
     AABB() {}
-    AABB(const Vec3f& min, const Vec3f& max)
-        : min(min)
-        , max(max)
+    AABB(const Vec3<T>& min_vert, const Vec3<T>& max_vert)
+        : min(min_vert)
+        , max(max_vert)
     {}
 
     bool intersect(Ray& r, double tmin, double tmax) {
@@ -38,5 +39,30 @@ public:
         return true;
     }
 
-    Vec3f min, max;
+    AABB union(const AABB& rhs) {
+        auto new_min = min(min, rhs.min);
+        auto new_max = max(max, rhs.max);
+        return AABB{new_min, new_max};
+    }
+
+    AABB union(const Vec3<T>& rhs) {
+        auto new_min = min(min, rhs);
+        auto new_max = max(max, rhs);
+        return AABB{new_min, new_max};
+    }
+
+    Vec3<T> min, max;
 };
+
+template <typename T>
+inline AABB<T> union(const AABB<T>& a, const AABB<T>& b) {
+    return a.union(b);
+}
+
+template <typename T>
+inline AABB<T> union(const AABB<T>& a, const Vec3<T>& b) {
+    return a.union(b);
+}
+
+using AABBf = AABB<float>;
+using AABBd = AABB<double>;

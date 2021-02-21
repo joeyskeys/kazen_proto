@@ -57,6 +57,12 @@ bool Sphere::intersect(Ray& r, Intersection& isect) const {
     return true;
 }
 
+AABBf Sphere::bbox() const {
+    auto center_in_world = local_to_world.apply(center);
+    auto radius_vec = Vec3f{radius, radius, radius};
+    return AABBf{center_in_world - radius_vec, center_in_world + radius_vec};
+}
+
 static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, Intersection& isect) {
     Vec3f v1v0 = verts[1] - verts[0];
     Vec3f v2v0 = verts[2] - verts[0];
@@ -100,6 +106,17 @@ bool Triangle::intersect(Ray& r, Intersection& isect) const {
     return false;
 }
 
+static inline AABBf bbox_of_triangle(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) {
+    return union(AABBf{min(v0, v1), max(v0, v1)}, v2);
+}
+
+bool Triangle::bbox(AABBf& box) const {
+    auto v0_in_world = local_to_world.apply(verts[0]);
+    auto v1_in_world = local_to_world.apply(verts[1]);
+    auto v2_in_world = local_to_world.apply(verts[2]);
+    return bbox_of_triangle(v0_in_world, v1_in_world, v2_in_world);
+}
+
 bool TriangleMesh::intersect(Ray& r, Intersection& isect) const {
     auto local_r = world_to_local.apply(r);
     bool hit = false;
@@ -122,6 +139,18 @@ bool TriangleMesh::intersect(Ray& r, Intersection& isect) const {
     }
 
     return false;
+}
+
+bool TriangleMesh::bbox(AABBf& box) const {
+    AABB box;
+    for (auto& idx : indice) {
+        auto v0 = local_to_world(verts[idx[0]]);
+        auto v1 = local_to_world(verts[idx[1]]);
+        auto v2 = local_to_world(verts[idx[2]]);
+        box = union(box, bbox_of_triangle(v0, v1, v2));
+    }
+
+    return box;
 }
 
 static TriangleMesh process_mesh(aiMesh* mesh, const aiScene* scene) {

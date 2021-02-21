@@ -252,6 +252,22 @@ inline Vec<T, N> normalize(const Vec<T, N>& w) {
     return w.normalized();
 }
 
+template <typename T, uint N>
+inline Vec<T, N> min(const Vec<T, N>& a, const Vec<T, N>& b) {
+    Vec<T, N> tmp;
+    for (int i = 0; i < N; i++)
+        tmp[i] = std::min(a[i], b[i]);
+    return tmp;
+}
+
+template <typename T, uint N>
+inline Vec<T, N> max(const Vec<T, N>& a, const Vec<T, N>& b) {
+    Vec<T, N> tmp;
+    for (int i = 0; i < N; i++)
+        tmp[i] = std::max(a[i], b[i]);
+    return tmp;
+}
+
 template <typename T>
 using Vec2 = Vec<T, 2>;
 

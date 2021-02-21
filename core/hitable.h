@@ -8,8 +8,11 @@ class Intersection;
 
 class HitableInterface {
 public:
+    // Intersection method
     virtual bool intersect(Ray& r, Intersection& isect) const = 0;
-    virtual bool bbox(AABB& box) const = 0;
+
+    // Return the bounding box in world space
+    virtual AABBf bbox() const = 0;
 };
 
 class Hitable : public HitableInterface {
