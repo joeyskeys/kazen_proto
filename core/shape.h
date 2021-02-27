@@ -62,7 +62,7 @@ public:
     {}
 
     bool intersect(Ray& r, Intersection& isect) const override;
-    bool bbox(AABB& box) const override;
+    AABBf bbox() const override;
 
     std::vector<Vec3f> verts;
     std::vector<Vec3i> indice;

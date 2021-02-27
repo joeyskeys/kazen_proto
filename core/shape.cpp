@@ -107,10 +107,10 @@ bool Triangle::intersect(Ray& r, Intersection& isect) const {
 }
 
 static inline AABBf bbox_of_triangle(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) {
-    return union(AABBf{min(v0, v1), max(v0, v1)}, v2);
+    return bound_union(AABBf{min(v0, v1), max(v0, v1)}, v2);
 }
 
-bool Triangle::bbox(AABBf& box) const {
+AABBf Triangle::bbox() const {
     auto v0_in_world = local_to_world.apply(verts[0]);
     auto v1_in_world = local_to_world.apply(verts[1]);
     auto v2_in_world = local_to_world.apply(verts[2]);
@@ -141,13 +141,13 @@ bool TriangleMesh::intersect(Ray& r, Intersection& isect) const {
     return false;
 }
 
-bool TriangleMesh::bbox(AABBf& box) const {
-    AABB box;
+AABBf TriangleMesh::bbox() const {
+    AABBf box;
     for (auto& idx : indice) {
-        auto v0 = local_to_world(verts[idx[0]]);
-        auto v1 = local_to_world(verts[idx[1]]);
-        auto v2 = local_to_world(verts[idx[2]]);
-        box = union(box, bbox_of_triangle(v0, v1, v2));
+        auto v0 = local_to_world.apply(verts[idx[0]]);
+        auto v1 = local_to_world.apply(verts[idx[1]]);
+        auto v2 = local_to_world.apply(verts[idx[2]]);
+        box = bound_union(box, bbox_of_triangle(v0, v1, v2));
     }
 
     return box;

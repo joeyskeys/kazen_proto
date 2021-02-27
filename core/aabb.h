@@ -13,7 +13,7 @@ public:
         , max(max_vert)
     {}
 
-    bool intersect(Ray& r, double tmin, double tmax) {
+    bool intersect(Ray& r) const {
         auto inv_dir = 1.f / r.direction;
         for (int i = 0; i < 3; i++) {
             /*
@@ -30,22 +30,22 @@ public:
             auto t1 = (max[i] - r.origin[i]) * inv_dir[i];
             if (inv_dir[i] < 0.f)
                 std::swap(t0, t1);
-            tmin = t0 > tmin ? t0 : tmin;
-            tmax = t1 < tmax ? t1 : tmax;
-            if (tmax <= tmin)
+            r.tmin = t0 > r.tmin ? t0 : r.tmin;
+            r.tmax = t1 < r.tmax ? t1 : r.tmax;
+            if (r.tmax <= r.tmin)
                 return false;
         }
 
         return true;
     }
 
-    AABB union(const AABB& rhs) {
+    AABB bound_union(const AABB& rhs) const {
         auto new_min = min(min, rhs.min);
         auto new_max = max(max, rhs.max);
         return AABB{new_min, new_max};
     }
 
-    AABB union(const Vec3<T>& rhs) {
+    AABB bound_union(const Vec3<T>& rhs) const {
         auto new_min = min(min, rhs);
         auto new_max = max(max, rhs);
         return AABB{new_min, new_max};
@@ -55,13 +55,13 @@ public:
 };
 
 template <typename T>
-inline AABB<T> union(const AABB<T>& a, const AABB<T>& b) {
-    return a.union(b);
+inline AABB<T> bound_union(const AABB<T>& a, const AABB<T>& b) {
+    return a.bound_union(b);
 }
 
 template <typename T>
-inline AABB<T> union(const AABB<T>& a, const Vec3<T>& b) {
-    return a.union(b);
+inline AABB<T> bound_union(const AABB<T>& a, const Vec3<T>& b) {
+    return a.bound_union(b);
 }
 
 using AABBf = AABB<float>;

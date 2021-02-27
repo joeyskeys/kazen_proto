@@ -17,13 +17,20 @@ public:
 
 class Hitable : public HitableInterface {
 public:
+    Hitable() {}
+    
     Hitable(const Transform& l2w)
         : local_to_world(l2w)
         , world_to_local(l2w.inverse())
     {}
 
+    AABBf bbox() const override {
+        return bound;
+    }
+
 protected:
     Transform local_to_world, world_to_local;
+    AABBf bound;
 };
 
 using HitablePtr = Hitable*;

@@ -1,33 +1,24 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 
 #include "hitable.h"
 
-class Accel : public HitableInterface {
+class ListAccel : public Hitable {
 public:
-
-};
-
-class ListAccel : public Accel {
-public:
-    void add_hitable(const HitablePtr h);
+    void add_hitable(Hitable&& h);
     bool intersect(Ray& r, Intersection& isect) const override;
 
 private:
-    std::vector<HitablePtr> hitables;
+    std::vector<std::shared_ptr<Hitable>> hitables;
 };
 
-class BVHNode {
+class BVHAccel : public Hitable {
 public:
-    BVHNode* children[2];
-};
-
-class BVHAccel : public Accel {
-public:
-    void add_hitable(const HitablePtr h);
+    BVHAccel(const std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end);
     bool intersect(Ray& r, Intersection& isect) const override;
 
 private:
-    
+    std::shared_ptr<Hitable> children[2];
 };

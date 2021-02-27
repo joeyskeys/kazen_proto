@@ -27,3 +27,9 @@ inline auto random2f() {
 inline auto random3f() {
     return Vec3f{randomf(), randomf(), randomf()};
 }
+
+inline int randomi(int range) {
+    static std::uniform_int_distribution<> dist(0, range);
+    static std::mt19937 gen;
+    return dist(gen);
+}
