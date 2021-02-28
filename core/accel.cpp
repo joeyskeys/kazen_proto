@@ -4,7 +4,7 @@
 #include "material.h"
 #include "sampling.h"
 
-void ListAccel::add_hitable(Hitable&& h) {
+void ListAccel::add_hitable(std::shared_ptr<Hitable>&& h) {
     bound_union(bound, h.bbox());
     hitables.emplace_back(h);
 }

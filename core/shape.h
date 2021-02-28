@@ -11,8 +11,9 @@ class Ray;
 
 class Shape : public Hitable {
 public:
-    Shape(const Transform& l2w, const uint& id)
+    Shape(const Transform& l2w, const MaterialPtr m, const uint& id)
         : Hitable(l2w)
+        , mat(m)
         , obj_id(id)
     {}
 
@@ -23,8 +24,8 @@ public:
 
 class Sphere : public Shape {
 public:
-    Sphere(const Transform& l2w, const uint& id, const float r, const Vec3f& c=Vec3f{0.f, 0.f, 0.f})
-        : Shape(l2w, id)
+    Sphere(const Transform& l2w, const uint& id, const float r, const MaterialPtr m, const Vec3f& c=Vec3f{0.f, 0.f, 0.f})
+        : Shape(l2w, id, m)
         , radius(r)
         , center(c)
     {}
@@ -39,8 +40,8 @@ public:
 
 class Triangle : public Shape {
 public:
-    Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c)
-        : Shape(l2w, 0)
+    Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c, const MaterialPtr m)
+        : Shape(l2w, 0, m)
     {
         verts[0] = a;
         verts[1] = b;
@@ -55,8 +56,8 @@ public:
 
 class TriangleMesh : public Shape {
 public:
-    TriangleMesh(const Transform& l2w, std::vector<Vec3f>&& vs, std::vector<Vec3i>&& idx)
-        : Shape(l2w, 0)
+    TriangleMesh(const Transform& l2w, std::vector<Vec3f>&& vs, std::vector<Vec3i>&& idx, const MaterialPtr m)
+        : Shape(l2w, 0, m)
         , verts(vs)
         , indice(idx)
     {}

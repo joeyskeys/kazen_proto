@@ -107,7 +107,7 @@ bool Triangle::intersect(Ray& r, Intersection& isect) const {
 }
 
 static inline AABBf bbox_of_triangle(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) {
-    return bound_union(AABBf{min(v0, v1), max(v0, v1)}, v2);
+    return bound_union(AABBf{vec_min(v0, v1), vec_max(v0, v1)}, v2);
 }
 
 AABBf Triangle::bbox() const {

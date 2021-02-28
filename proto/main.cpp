@@ -20,49 +20,48 @@ int main() {
     };
 
     Integrator integrator{&cam, &film};
+    ListAccel list;
 
     Transform t1;
     t1.translate(Vec3f{0.f, 5.f, -20.f});
-    Sphere s{t1, 0, 5.f};
 
     LambertianBxDF lamb{RGBSpectrum{0.8f, 0.4f, 0.1f}};
     Material mat;
     mat.bxdf = &lamb;
-    s.mat = &mat;
+
+    list.add_hitable(std::make_shared<Sphere>(t1, 0, 5.f, mat));
 
     Transform t2;
     t2.translate(Vec3f{10.f, 3.f, -20.f});
-    Sphere s2{t2, 1, 3.f};
 
     MetalBxDF metal1{RGBSpectrum{0.9f, 0.9f, 0.5f}};
     Material mat2;
     mat2.bxdf = &metal1;
-    s2.mat = &mat2;
+
+    list.add_hitable(std::make_shared<Sphere>(t2, 1, 3.f, mat2));
 
     Transform tt;
     tt.translate(Vec3f{0.f, 0.f, -10.f});
     Triangle t{tt, Vec3f{0.f, 0.f, 0.f}, Vec3f{2.f, 0.f, 0.f}, Vec3f{0.f, 2.f, 0.f}};
     t.mat = &mat;
 
+    list.add_hitable(std::make_shared<Triangle>(tt, Vec3f{0.f, 0.f, 0.f}, Vec3f{2.f, 0.f, 0.f}, Vec3f{0.f, 2.f, 0.f}, mat));
+
     Transform tb;
     tb.translate(Vec3f{0.f, -1000.f, -20.f});
-    Sphere s_bottom{tb, 1, 1000.f};
 
     LambertianBxDF lamb2{RGBSpectrum{0.5f, 0.5f, 0.5f}};
     Material matb;
     matb.bxdf = &lamb2;
-    s_bottom.mat = &matb;
+
+    list.add_hitable(std::make_shared<Sphere>(tb, 1, 1000.f, matb));
 
     auto triangle_meshes = load_triangle_mesh("../resource/obj/cube.obj");
     auto triangle_mesh = triangle_meshes[0];
     triangle_mesh.mat = &mat;
 
-    ListAccel list;
-    list.add_hitable(&s);
-    list.add_hitable(&s2);
-    list.add_hitable(&t);
-    list.add_hitable(&triangle_mesh);
-    list.add_hitable(&s_bottom);
+    list.add_hitable(std::make_shared<Triangle)
+
     integrator.accel_ptr = &list;
 
     integrator.render();

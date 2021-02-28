@@ -7,7 +7,7 @@
 
 class ListAccel : public Hitable {
 public:
-    void add_hitable(Hitable&& h);
+    void add_hitable(std::shared_ptr<Hitable>&& h);
     bool intersect(Ray& r, Intersection& isect) const override;
 
 private:

@@ -253,7 +253,7 @@ inline Vec<T, N> normalize(const Vec<T, N>& w) {
 }
 
 template <typename T, uint N>
-inline Vec<T, N> min(const Vec<T, N>& a, const Vec<T, N>& b) {
+inline Vec<T, N> vec_min(const Vec<T, N>& a, const Vec<T, N>& b) {
     Vec<T, N> tmp;
     for (int i = 0; i < N; i++)
         tmp[i] = std::min(a[i], b[i]);
@@ -261,7 +261,7 @@ inline Vec<T, N> min(const Vec<T, N>& a, const Vec<T, N>& b) {
 }
 
 template <typename T, uint N>
-inline Vec<T, N> max(const Vec<T, N>& a, const Vec<T, N>& b) {
+inline Vec<T, N> vec_max(const Vec<T, N>& a, const Vec<T, N>& b) {
     Vec<T, N> tmp;
     for (int i = 0; i < N; i++)
         tmp[i] = std::max(a[i], b[i]);
