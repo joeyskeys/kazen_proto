@@ -42,8 +42,7 @@ int main() {
 
     Transform tt;
     tt.translate(Vec3f{0.f, 0.f, -10.f});
-    Triangle t{tt, Vec3f{0.f, 0.f, 0.f}, Vec3f{2.f, 0.f, 0.f}, Vec3f{0.f, 2.f, 0.f}};
-    t.mat = &mat;
+    Triangle t{tt, Vec3f{0.f, 0.f, 0.f}, Vec3f{2.f, 0.f, 0.f}, Vec3f{0.f, 2.f, 0.f}, &mat};
 
     list.add_hitable(std::make_shared<Triangle>(tt, Vec3f{0.f, 0.f, 0.f}, Vec3f{2.f, 0.f, 0.f}, Vec3f{0.f, 2.f, 0.f}, mat));
 
@@ -56,13 +55,13 @@ int main() {
 
     list.add_hitable(std::make_shared<Sphere>(tb, 1, 1000.f, matb));
 
-    auto triangle_meshes = load_triangle_mesh("../resource/obj/cube.obj");
-    auto triangle_mesh = triangle_meshes[0];
-    triangle_mesh.mat = &mat;
+    auto triangle_meshes = load_triangle_mesh("../resource/obj/cube.obj", &mat);
 
-    list.add_hitable(std::make_shared<Triangle)
+    list.add_hitables(triangle_meshes);
+    BVHAccel bvh(list.hitables, 0, list.size() - 1);
 
-    integrator.accel_ptr = &list;
+    //integrator.accel_ptr = &list;
+    integrator.accel_ptr = &bvh;
 
     integrator.render();
 

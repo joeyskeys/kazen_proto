@@ -5,8 +5,15 @@
 #include "sampling.h"
 
 void ListAccel::add_hitable(std::shared_ptr<Hitable>&& h) {
-    bound_union(bound, h.bbox());
+    bound_union(bound, h->bbox());
     hitables.emplace_back(h);
+}
+
+void ListAccel::add_hitables(const std::vector<std::shared_ptr<Hitable>>& hs) {
+    for (auto& h : hs) {
+        bound_union(bound, h->bbox());
+        hitables.emplace_back(h);
+    }
 }
 
 bool ListAccel::intersect(Ray& r, Intersection& isect) const {

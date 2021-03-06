@@ -16,7 +16,8 @@ public:
     void render();
 
     //Sphere*     sphere;
-    ListAccel*  accel_ptr;
+    //ListAccel*  accel_ptr;
+    HitablePtr  accel_ptr;
 
 protected:
     Camera*     camera_ptr;

@@ -1,4 +1,4 @@
-#include <filesystem>
+#include <boost/filesystem.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -8,7 +8,7 @@
 #include "ray.h"
 #include "transform.h"
 
-namespace fs = std::filesystem; 
+namespace fs = boost::filesystem; 
 
 bool Sphere::intersect(Ray& r, Intersection& isect) const {
     auto r_local = world_to_local.apply(r);
@@ -153,7 +153,7 @@ AABBf TriangleMesh::bbox() const {
     return box;
 }
 
-static TriangleMesh process_mesh(aiMesh* mesh, const aiScene* scene) {
+static std::shared_ptr<TriangleMesh> process_mesh(aiMesh* mesh, const aiScene* scene, const MaterialPtr m) {
     std::vector<Vec3f> vs(mesh->mNumVertices);
     std::vector<Vec3i> idx(mesh->mNumFaces);
 
@@ -169,22 +169,22 @@ static TriangleMesh process_mesh(aiMesh* mesh, const aiScene* scene) {
         idx[i][2] = mesh->mFaces[i].mIndices[2];
     }
 
-    return TriangleMesh(Transform{}, std::move(vs), std::move(idx));
+    return std::make_shared<TriangleMesh>(Transform{}, std::move(vs), std::move(idx), m);
 }
 
-static void process_node(aiNode* node, const aiScene* scene, std::vector<TriangleMesh>& meshes) {
+static void process_node(aiNode* node, const aiScene* scene, std::vector<std::shared_ptr<Hitable>>& meshes, const MaterialPtr m) {
     for (uint i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        meshes.emplace_back(process_mesh(mesh, scene));
+        meshes.emplace_back(process_mesh(mesh, scene, m));
     }
 
     for (uint i = 0; i < node->mNumChildren; i++) {
-        process_node(node->mChildren[i], scene, meshes);
+        process_node(node->mChildren[i], scene, meshes, m);
     }
 }
 
-std::vector<TriangleMesh> load_triangle_mesh(const std::string& file_path) {
-    std::vector<TriangleMesh> meshes;
+std::vector<std::shared_ptr<Hitable>> load_triangle_mesh(const std::string& file_path, const MaterialPtr m) {
+    std::vector<std::shared_ptr<Hitable>> meshes;
 
     if (!fs::exists(fs::absolute(file_path))) {
         std::cout << "file : " << file_path << " does not exist" << std::endl;
@@ -198,7 +198,7 @@ std::vector<TriangleMesh> load_triangle_mesh(const std::string& file_path) {
         return meshes;
     }
 
-    process_node(scene->mRootNode, scene, meshes);
+    process_node(scene->mRootNode, scene, meshes, m);
 
     return meshes;
 }

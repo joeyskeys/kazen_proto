@@ -25,7 +25,7 @@ public:
 class Sphere : public Shape {
 public:
     Sphere(const Transform& l2w, const uint& id, const float r, const MaterialPtr m, const Vec3f& c=Vec3f{0.f, 0.f, 0.f})
-        : Shape(l2w, id, m)
+        : Shape(l2w, m, id)
         , radius(r)
         , center(c)
     {}
@@ -41,7 +41,7 @@ public:
 class Triangle : public Shape {
 public:
     Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c, const MaterialPtr m)
-        : Shape(l2w, 0, m)
+        : Shape(l2w, m, 0)
     {
         verts[0] = a;
         verts[1] = b;
@@ -56,8 +56,8 @@ public:
 
 class TriangleMesh : public Shape {
 public:
-    TriangleMesh(const Transform& l2w, std::vector<Vec3f>&& vs, std::vector<Vec3i>&& idx, const MaterialPtr m)
-        : Shape(l2w, 0, m)
+    TriangleMesh(const Transform& l2w, std::vector<Vec3f>&& vs, std::vector<Vec3i>&& idx, const MaterialPtr m=nullptr)
+        : Shape(l2w, m, 0)
         , verts(vs)
         , indice(idx)
     {}
@@ -69,4 +69,4 @@ public:
     std::vector<Vec3i> indice;
 };
 
-std::vector<TriangleMesh> load_triangle_mesh(const std::string& file_path);
+std::vector<std::shared_ptr<Hitable>> load_triangle_mesh(const std::string& file_path, const MaterialPtr m);
