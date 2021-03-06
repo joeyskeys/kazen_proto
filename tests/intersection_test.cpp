@@ -2,8 +2,10 @@
 #include "core/shape.h"
 #include "core/transform.h"
 #include "core/material.h"
+#include "core/accel.h"
 
 #include <iostream>
+#include <memory>
 
 int main() {
     Transform t;
@@ -43,6 +45,12 @@ int main() {
     std::cout << "position : " << isect.position;
     std::cout << "normal : " << isect.normal;
     std::cout << "t : " << isect.ray_t << std::endl;
+
+    ListAccel list;
+    list.add_hitable(std::make_shared<Sphere>(t, 0, 1.f));
+
+    auto sh = std::make_shared<Transform>();
+    auto acc = std::make_shared<BVHAccel>(list.hitables, 0, list.size() - 1);
     
     return 0;
 }

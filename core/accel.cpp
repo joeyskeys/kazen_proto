@@ -53,21 +53,19 @@ bool z_compare(const std::shared_ptr<Hitable>& a, const std::shared_ptr<Hitable>
 }
 
 BVHAccel::BVHAccel(const std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end) {
-    auto local_hitables = hitables;
-
     int axis = randomi(2);
     auto comparator = axis == 0 ? x_compare :
                       axis == 1 ? y_compare :
                       z_compare;
 
-    size_t object_span = hitables.size();
+    size_t object_span = end - start;
 
     if (object_span == 1) {
-        children[0] = children[1] = local_hitables[start];
+        children[0] = children[1] = hitables[start];
     }
     else if (object_span == 2) {
         if (comparator(hitables[start], hitables[start + 1])) {
-            children[0] = local_hitables[start];
+            children[0] = hitables[start];
             children[1] = hitables[start + 1];
         }
         else {
@@ -76,10 +74,10 @@ BVHAccel::BVHAccel(const std::vector<std::shared_ptr<Hitable>>& hitables, size_t
         }
     }
     else {
-        std::sort(local_hitables.begin() + start, local_hitables.begin() + end, comparator);
+        std::sort(hitables.begin() + start, hitables.begin() + end, comparator);
         auto mid = start + object_span / 2;
-        children[0] = std::make_shared<BVHAccel>(local_hitables, start, mid);
-        children[1] = std::make_shared<BVHAccel>(local_hitables, mid, end);
+        children[0] = std::make_shared<BVHAccel>(hitables, start, mid);
+        children[1] = std::make_shared<BVHAccel>(hitables, mid, end);
     }
 
     bound = bound_union(children[0]->bbox(), children[1]->bbox());

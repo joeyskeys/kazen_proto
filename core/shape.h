@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <optional>
+#include <memory>
 
 #include "transform.h"
 #include "hitable.h"
@@ -24,7 +25,7 @@ public:
 
 class Sphere : public Shape {
 public:
-    Sphere(const Transform& l2w, const uint& id, const float r, const MaterialPtr m, const Vec3f& c=Vec3f{0.f, 0.f, 0.f})
+    Sphere(const Transform& l2w, const uint& id, const float r, const MaterialPtr m=nullptr, const Vec3f& c=Vec3f{0.f, 0.f, 0.f})
         : Shape(l2w, m, id)
         , radius(r)
         , center(c)
@@ -40,7 +41,7 @@ public:
 
 class Triangle : public Shape {
 public:
-    Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c, const MaterialPtr m)
+    Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c, const MaterialPtr m=nullptr)
         : Shape(l2w, m, 0)
     {
         verts[0] = a;
