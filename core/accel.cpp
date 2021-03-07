@@ -52,13 +52,14 @@ bool z_compare(const std::shared_ptr<Hitable>& a, const std::shared_ptr<Hitable>
     return box_compare(a, b, 2);
 }
 
-BVHAccel::BVHAccel(const std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end) {
+BVHAccel::BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end) {
     int axis = randomi(2);
     auto comparator = axis == 0 ? x_compare :
                       axis == 1 ? y_compare :
                       z_compare;
 
     size_t object_span = end - start;
+    assert(object_span > 0);
 
     if (object_span == 1) {
         children[0] = children[1] = hitables[start];
@@ -88,7 +89,18 @@ bool BVHAccel::intersect(Ray& r, Intersection& isect) const {
         return false;
 
     bool hit_0 = children[0]->intersect(r, isect);
+    if (hit_0)
+        std::cout << "child 0 : " << children[0]->bbox();
     bool hit_1 = children[1]->intersect(r, isect);
+    if (hit_1)
+        std::cout << "child 1 : " << children[1]->bbox();
 
     return hit_0 || hit_1;
+}
+
+void BVHAccel::print_bound() const {
+    std::cout << "bvh node bound : " << bound;
+
+    children[0]->print_bound();
+    children[1]->print_bound();
 }

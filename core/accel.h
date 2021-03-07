@@ -19,8 +19,10 @@ public:
 class BVHAccel : public Hitable {
 public:
     BVHAccel() {}
-    BVHAccel(const std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end);
+    BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end);
+
     bool intersect(Ray& r, Intersection& isect) const override;
+    void print_bound() const override;
 
 private:
     std::shared_ptr<Hitable> children[2];

@@ -18,6 +18,8 @@ public:
         , obj_id(id)
     {}
 
+    void print_bound() const override;
+
 public:
     MaterialPtr mat;
     uint obj_id;
@@ -42,7 +44,7 @@ public:
 class Triangle : public Shape {
 public:
     Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c, const MaterialPtr m=nullptr)
-        : Shape(l2w, m, 0)
+        : Shape(l2w, m, 1)
     {
         verts[0] = a;
         verts[1] = b;
@@ -58,7 +60,7 @@ public:
 class TriangleMesh : public Shape {
 public:
     TriangleMesh(const Transform& l2w, std::vector<Vec3f>&& vs, std::vector<Vec3i>&& idx, const MaterialPtr m=nullptr)
-        : Shape(l2w, m, 0)
+        : Shape(l2w, m, 2)
         , verts(vs)
         , indice(idx)
     {}
@@ -70,4 +72,4 @@ public:
     std::vector<Vec3i> indice;
 };
 
-std::vector<std::shared_ptr<Hitable>> load_triangle_mesh(const std::string& file_path, const MaterialPtr m);
+std::vector<std::shared_ptr<Hitable>> load_triangle_mesh(const std::string& file_path, const MaterialPtr m=nullptr);

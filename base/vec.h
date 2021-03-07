@@ -156,7 +156,10 @@ public:
     }
 
     friend auto operator /(const T s, const Vec& rhs) {
-        return rhs * (static_cast<T>(1) / s);
+        Vec tmp;
+        for (int i = 0; i < N; i++)
+            tmp.arr[i] = s / rhs.arr[i];
+        return tmp;
     }
 
     bool operator ==(const Vec& rhs) {

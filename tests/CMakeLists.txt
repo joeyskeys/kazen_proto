@@ -10,4 +10,8 @@ add_executable(vec_test vec_test.cpp)
 
 add_executable(intersection_test intersection_test.cpp)
 target_link_libraries(intersection_test
-    kazen_proto_lib)   
+    kazen_proto_lib)
+
+add_executable(shape_test shape_test.cpp)
+target_link_libraries(shape_test
+    kazen_proto_lib)
