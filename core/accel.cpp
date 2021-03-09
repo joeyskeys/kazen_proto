@@ -91,11 +91,7 @@ bool BVHAccel::intersect(const Ray& r, Intersection& isect) const {
         return false;
 
     bool hit_0 = children[0]->intersect(r, isect);
-    if (hit_0)
-        std::cout << "child 0 : " << children[0]->bbox();
     bool hit_1 = children[1]->intersect(r, isect);
-    if (hit_1)
-        std::cout << "child 1 : " << children[1]->bbox();
 
     return hit_0 || hit_1;
 }

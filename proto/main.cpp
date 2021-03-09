@@ -29,7 +29,7 @@ int main() {
     Material mat;
     mat.bxdf = &lamb;
 
-    //list.add_hitable(std::make_shared<Sphere>(t1, 0, 5.f, &mat));
+    list.add_hitable(std::make_shared<Sphere>(t1, 0, 5.f, &mat));
 
     Transform t2;
     t2.translate(Vec3f{10.f, 3.f, -20.f});
@@ -53,7 +53,7 @@ int main() {
     Material matb;
     matb.bxdf = &lamb2;
 
-    //list.add_hitable(std::make_shared<Sphere>(tb, 1, 1000.f, &matb));
+    list.add_hitable(std::make_shared<Sphere>(tb, 1, 1000.f, &matb));
 
     auto triangle_meshes = load_triangle_mesh("../resource/obj/cube.obj", &mat);
 

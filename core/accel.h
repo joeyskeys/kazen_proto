@@ -10,7 +10,7 @@ public:
     void add_hitable(std::shared_ptr<Hitable>&& h);
     void add_hitables(const std::vector<std::shared_ptr<Hitable>>& hs);
     bool intersect(const Ray& r, Intersection& isect) const override;
-    inline size_t size() { hitables.size(); }
+    inline size_t size() { return hitables.size(); }
 
 public:
     std::vector<std::shared_ptr<Hitable>> hitables;
