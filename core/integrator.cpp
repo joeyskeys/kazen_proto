@@ -17,7 +17,7 @@ void Integrator::render() {
 
     auto render_start = get_time();
 
-    //tbb::task_scheduler_init init(1);
+    tbb::task_scheduler_init init(1);
 
     tbb::parallel_for (tbb::blocked_range<size_t>(0, film_ptr->tiles.size()), [&](const tbb::blocked_range<size_t>& r) {
         auto tile_start = get_time();

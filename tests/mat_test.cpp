@@ -3,6 +3,7 @@
 #include "base/mat.h"
 
 #include <iostream>
+#include <memory>
 
 int main()
 {
@@ -36,4 +37,8 @@ int main()
 
     std::cout << "translate mat : " << mat4t << std::endl;
     std::cout << "vec mul : \n" << mat4t * v4 << std::endl;
+
+    auto mat4i = Mat4f::identity();
+
+    return 0;
 }

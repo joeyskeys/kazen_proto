@@ -8,7 +8,12 @@
 #include "ray.h"
 #include "transform.h"
 
-namespace fs = boost::filesystem; 
+namespace fs = boost::filesystem;
+
+void Shape::print_bound() const {
+    std::cout << "id : " << obj_id << std::endl;
+    Hitable::print_bound();
+}
 
 bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     auto r_local = world_to_local.apply(r);

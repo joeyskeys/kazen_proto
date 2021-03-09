@@ -28,6 +28,10 @@ public:
         return bound;
     }
 
+    virtual void print_bound() const {
+        std::cout << bbox() << std::endl;
+    }
+
 protected:
     Transform local_to_world, world_to_local;
     AABBf bound;

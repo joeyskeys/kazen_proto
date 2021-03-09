@@ -30,12 +30,25 @@ public:
             */
             auto t0 = (min[i] - r.origin[i]) * inv_dir[i];
             auto t1 = (max[i] - r.origin[i]) * inv_dir[i];
+
+            // inf situation
+            if (inv_dir[i] != inv_dir[i]) {
+                if (r.origin[i] > min[i] && r.origin[i] < max[i]) {
+                    //std::cout << "inf and out of range index : " << i << std::endl;
+                    return false;
+                }
+                else
+                    continue;
+            }
+
             if (inv_dir[i] < 0.f)
                 std::swap(t0, t1);
             tmin = t0 > tmin ? t0 : tmin;
             tmax = t1 < tmax ? t1 : tmax;
-            if (tmax <= tmin)
+            if (r.tmax <= r.tmin) {
+                //std::cout << "index : " << i << ", min : " << r.tmin << ", max : " << r.tmax << std::endl;
                 return false;
+            }
         }
 
         return true;
@@ -51,6 +64,13 @@ public:
         auto new_min = vec_min(min, rhs);
         auto new_max = vec_max(max, rhs);
         return AABB{new_min, new_max};
+    }
+
+    friend std::ostream& operator <<(std::ostream& os, const AABB& b) {
+        os << "min : " << b.min;
+        os << "max : " << b.max << std::endl;
+
+        return os;
     }
 
     Vec3<T> min, max;

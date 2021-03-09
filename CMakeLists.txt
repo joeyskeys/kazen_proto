@@ -21,6 +21,8 @@ include_directories(${ASSIMP_INCLUDE_DIRS})
 find_package(Boost 1.72 REQUIRED COMPONENTS filesystem)
 include_directories(${Boost_INCLUDE_DIRS})
 
+message("Boost libs ${Boost_LIBRARY_DIRS}")
+
 set(BASE_HEADERS
     base/mat.h
     base/types.h
@@ -51,7 +53,7 @@ add_library(kazen_proto_lib
     ${CORE_SOURCES})
 target_link_libraries(kazen_proto_lib
     ${ASSIMP_LIBRARIES}
-    ${Boost_LIBRARY_DIRS})
+    ${Boost_LIBRARIES})
 
 add_executable(kazen proto/main.cpp)
 target_link_libraries(kazen
