@@ -30,7 +30,7 @@ public:
         , center(c)
     {}
 
-    bool intersect(Ray& r, Intersection& isect) const override;
+    bool intersect(const Ray& r, Intersection& isect) const override;
     AABBf bbox() const override;
 
     // Members
@@ -48,7 +48,7 @@ public:
         verts[2] = c;
     }
 
-    bool intersect(Ray& r, Intersection& isect) const override;
+    bool intersect(const Ray& r, Intersection& isect) const override;
     AABBf bbox() const override;
 
     Vec3f verts[3];
@@ -62,7 +62,7 @@ public:
         , indice(idx)
     {}
 
-    bool intersect(Ray& r, Intersection& isect) const override;
+    bool intersect(const Ray& r, Intersection& isect) const override;
     AABBf bbox() const override;
 
     std::vector<Vec3f> verts;

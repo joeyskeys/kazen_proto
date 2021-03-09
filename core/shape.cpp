@@ -10,7 +10,7 @@
 
 namespace fs = boost::filesystem; 
 
-bool Sphere::intersect(Ray& r, Intersection& isect) const {
+bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     auto r_local = world_to_local.apply(r);
 
     auto oc = r_local.origin - center;
@@ -93,7 +93,7 @@ static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, Intersec
     return true;
 }
 
-bool Triangle::intersect(Ray& r, Intersection& isect) const {
+bool Triangle::intersect(const Ray& r, Intersection& isect) const {
     auto local_r = world_to_local.apply(r);
 
     auto ret = moller_trumbore_intersect(local_r, verts, isect);
@@ -117,7 +117,7 @@ AABBf Triangle::bbox() const {
     return bbox_of_triangle(v0_in_world, v1_in_world, v2_in_world);
 }
 
-bool TriangleMesh::intersect(Ray& r, Intersection& isect) const {
+bool TriangleMesh::intersect(const Ray& r, Intersection& isect) const {
     auto local_r = world_to_local.apply(r);
     bool hit = false;
 

@@ -13,7 +13,9 @@ public:
         , max(max_vert)
     {}
 
-    bool intersect(Ray& r) const {
+    bool intersect(const Ray& r) const {
+        auto tmin = r.tmin;
+        auto tmax = r.tmax;
         auto inv_dir = 1.f / r.direction;
         for (int i = 0; i < 3; i++) {
             /*
@@ -30,9 +32,9 @@ public:
             auto t1 = (max[i] - r.origin[i]) * inv_dir[i];
             if (inv_dir[i] < 0.f)
                 std::swap(t0, t1);
-            r.tmin = t0 > r.tmin ? t0 : r.tmin;
-            r.tmax = t1 < r.tmax ? t1 : r.tmax;
-            if (r.tmax <= r.tmin)
+            tmin = t0 > tmin ? t0 : tmin;
+            tmax = t1 < tmax ? t1 : tmax;
+            if (tmax <= tmin)
                 return false;
         }
 

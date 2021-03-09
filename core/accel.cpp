@@ -16,16 +16,18 @@ void ListAccel::add_hitables(const std::vector<std::shared_ptr<Hitable>>& hs) {
     }
 }
 
-bool ListAccel::intersect(Ray& r, Intersection& isect) const {
+bool ListAccel::intersect(const Ray& r, Intersection& isect) const {
     bool hit = false;
     Intersection tmp_sect;
     tmp_sect.ray_t = std::numeric_limits<float>::max();
     float curr_t;
+    auto tmax = r.tmax;
+    auto tmin = r.tmin;
 
     for (auto& h : hitables) {
         if (h->intersect(r, tmp_sect) && tmp_sect.ray_t < isect.ray_t) {
             hit = true;
-            r.tmax = tmp_sect.ray_t;
+            tmax = tmp_sect.ray_t;
             isect = tmp_sect;
         }
     }
@@ -85,7 +87,7 @@ BVHAccel::BVHAccel(const std::vector<std::shared_ptr<Hitable>>& hitables, size_t
     bound = bound_union(children[0]->bbox(), children[1]->bbox());
 }
 
-bool BVHAccel::intersect(Ray& r, Intersection& isect) const {
+bool BVHAccel::intersect(const Ray& r, Intersection& isect) const {
     if (!bound.intersect(r))
         return false;
 
