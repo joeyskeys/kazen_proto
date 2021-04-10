@@ -51,6 +51,7 @@ public:
     {}
 
     RGBSpectrum f(const Vec3f& wo, const Vec3f& wi, const Intersection& isect) const override;
+    float       pdf(const Vec3f& wo, const Vec3f& wi) const override;
     RGBSpectrum sample_f(const Vec3f& wo, Vec3f& wi, const Intersection& isect, const Vec2f& u, float& p) const override;
 
 private:
