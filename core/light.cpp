@@ -13,6 +13,6 @@ RGBSpectrum PointLight::sample_l(const Intersection& isect, const Vec2f& u, Vec3
     if (scene.intersect(r, isect) && isect.ray_t < length)
         return RGBSpectrum(0.f, 0.f, 0.f);
 
-    // length squared fall off
+    // length squared falloff
     return light_radiance / (length * length);
 }

@@ -8,6 +8,10 @@
 #include "material.h"
 #include "state.h"
 
+static RGBSpectrum estamate_direct(const Intersection& isect, const Light* light) {
+
+}
+
 static RGBSpectrum estamate_one_light(const Intersection& isect, const Integrator& integrator) {
 
 }
