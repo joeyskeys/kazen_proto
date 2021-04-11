@@ -18,8 +18,6 @@ public:
     //Sphere*     sphere;
     //ListAccel*  accel_ptr;
     HitablePtr  accel_ptr;
-
-protected:
     Camera*     camera_ptr;
     Film*       film_ptr;
 };

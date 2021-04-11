@@ -8,6 +8,14 @@
 #include "material.h"
 #include "state.h"
 
+static RGBSpectrum estamate_one_light(const Intersection& isect, const Integrator& integrator) {
+
+}
+
+static RGBSpectrum estamate_all_light(const Intersection& isect, const Integrator& integrator) {
+
+}
+
 void Integrator::render() {
     auto film_width = film_ptr->width;
     auto film_height = film_ptr->height;
@@ -29,7 +37,7 @@ void Integrator::render() {
                 for (int i = 0; i < tile.width; i++) {
                     Intersection isect;
                     RGBSpectrum l{0.f, 0.f, 0.f};
-                    RGBSpectrum spec{0.f, 0.f, 0.f};
+                    RGBSpectrum radiance_total{0.f, 0.f, 0.f};
 
                     for (int s = 0; s < sample_count; s++) {
 
@@ -43,9 +51,16 @@ void Integrator::render() {
 
                         auto sample_start = get_time();
 
+                        RGBSpectrum radiance_per_sample{0.f, 0.f, 0.f};
+
                         for (int k = 0; k < depth; k++) {
                             isect.ray_t = std::numeric_limits<float>::max();
                             if (accel_ptr->intersect(ray, isect) && k < depth - 1) {
+                                // Add radiance contribution from this shading point
+                                //radiance_per_sample += beta * estamate_all_light();
+                                //radiance_per_sample += beta * estamate_one_light();
+
+                                // Sample material to construct next ray
                                 auto mat_ptr = isect.mat;
                                 auto wo = -ray.direction;
                                 float p;
@@ -61,16 +76,17 @@ void Integrator::render() {
                             else {                
                                 auto front_vec = Vec3f{0.f, 0.f, -1.f};
                                 auto t = 0.5f * (ray.direction.y() + 1.f);
-                                beta *= (1.f - t) * RGBSpectrum{1.f, 1.f, 1.f} + t * RGBSpectrum{0.5f, 0.7f, 1.f};
-                                spec += beta;
+                                radiance_per_sample += beta * (1.f - t) * RGBSpectrum{1.f, 1.f, 1.f} + t * RGBSpectrum{0.5f, 0.7f, 1.f};
                                 break;
                             }
                         }
+
+                        radiance_total += radiance_per_sample;
                     }
 
-                    spec /= sample_count;
+                    radiance_total /= sample_count;
 
-                    tile.set_pixel_color(i, j, spec);
+                    tile.set_pixel_color(i, j, radiance_total);
                 }
             }
         }
