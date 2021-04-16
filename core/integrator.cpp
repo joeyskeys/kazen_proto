@@ -43,10 +43,14 @@ static RGBSpectrum estamate_one_light(const Intersection& isect, const Integrato
 
 static RGBSpectrum estamate_all_light(const Intersection& isect, const Integrator& integrator) {
     auto light_cnt = integrator.lights.size();
-    RGBSpectrum ret;
+    RGBSpectrum ret{0.f, 0.f, 0.f};
+
+    if (light_cnt == 0)
+        return ret;
+
     for (auto& light_ptr : integrator.lights)
         ret += estamate_direct(isect, light_ptr, integrator);
-    return ret / integrator.lights.size();
+    return ret / light_cnt;
 }
 
 void Integrator::render() {
@@ -90,7 +94,7 @@ void Integrator::render() {
                             isect.ray_t = std::numeric_limits<float>::max();
                             if (accel_ptr->intersect(ray, isect) && k < depth - 1) {
                                 // Add radiance contribution from this shading point
-                                //radiance_per_sample += beta * estamate_all_light(isect, *this);
+                                radiance_per_sample += beta * estamate_all_light(isect, *this);
                                 //radiance_per_sample += beta * estamate_one_light();
 
                                 // Sample material to construct next ray
