@@ -5,6 +5,7 @@
 #include "camera.h"
 #include "film.h"
 #include "accel.h"
+#include "light.h"
 
 class Integrator {
 public:
@@ -15,9 +16,10 @@ public:
 
     void render();
 
-    //Sphere*     sphere;
-    //ListAccel*  accel_ptr;
-    HitablePtr  accel_ptr;
-    Camera*     camera_ptr;
-    Film*       film_ptr;
+    //Sphere*           sphere;
+    //ListAccel*        accel_ptr;
+    HitablePtr          accel_ptr;
+    Camera*             camera_ptr;
+    Film*               film_ptr;
+    std::vector<Light*> lights;
 };

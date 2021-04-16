@@ -33,3 +33,8 @@ inline int randomi(int range) {
     static std::mt19937 gen;
     return dist(gen);
 }
+
+inline float power_heuristic(int nf, float f_pdf, int ng, float g_pdf) {
+    float f = nf * f_pdf, g = ng * g_pdf;
+    return (f * f) / (f * f + g * g);
+}

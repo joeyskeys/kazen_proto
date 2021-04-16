@@ -7,17 +7,46 @@
 #include "integrator.h"
 #include "material.h"
 #include "state.h"
+#include "sampling.h"
 
-static RGBSpectrum estamate_direct(const Intersection& isect, const Light* light) {
+static RGBSpectrum estamate_direct(const Intersection& isect, const Light* light_ptr, const Integrator& integrator) {
+    Vec3f wi;
+    float light_pdf, scattering_pdf;
+    Intersection isect_tmp;
+    RGBSpectrum light_radiance = light_ptr->sample_l(isect, wi, light_pdf, integrator.accel_ptr);
+    RGBSpectrum result_radiance;
 
+    if (light_pdf > 0.f && !light_radiance.is_zero()) {
+        RGBSpectrum f = isect.mat->bxdf->f(isect.wo, wi, isect_tmp);
+        scattering_pdf = isect.mat->bxdf->pdf(isect.wo, wi);
+
+        if (!f.is_zero()) {
+            // Do visibility test first
+
+            if (light_ptr->is_delta)
+                result_radiance += f * light_radiance / light_pdf;
+            else {
+                auto weight = power_heuristic(1, light_pdf, 1, scattering_pdf);
+                result_radiance += f * light_radiance * weight / light_pdf;
+            }
+        }
+    }
+
+    // TODO: apply MIS after area light is added
 }
 
 static RGBSpectrum estamate_one_light(const Intersection& isect, const Integrator& integrator) {
-
+    auto light_cnt = integrator.lights.size();
+    auto light_ptr = integrator.lights[randomi(light_cnt - 1)];
+    return estamate_direct(isect, light_ptr, integrator);
 }
 
 static RGBSpectrum estamate_all_light(const Intersection& isect, const Integrator& integrator) {
-
+    auto light_cnt = integrator.lights.size();
+    RGBSpectrum ret;
+    for (auto& light_ptr : integrator.lights)
+        ret += estamate_direct(isect, light_ptr, integrator);
+    return ret / integrator.lights.size();
 }
 
 void Integrator::render() {

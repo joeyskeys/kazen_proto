@@ -124,6 +124,13 @@ public:
         return tmp;
     }
 
+    auto operator *(const Vec& rhs) const {
+        Vec tmp;
+        for (int i = 0; i < N; i++)
+            tmp.arr[i] = arr[i] * rhs.arr[i];
+        return tmp;
+    }
+
     auto operator *=(const T s) {
         for (int i = 0; i < N; i++)
             arr[i] *= s;
@@ -198,6 +205,13 @@ public:
             tmp[2] = arr[0] * rhs.arr[1] - arr[1] * rhs.arr[0];
             return tmp;
         }
+    }
+
+    bool is_zero() const {
+        bool is_0 = false;
+        for (int i = 0; i < N; i++)
+            is_0 &= abs(arr[i]) < epsilon<T>;
+        return is_0;
     }
 
     void normalize() {

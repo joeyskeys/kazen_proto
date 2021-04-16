@@ -2,6 +2,7 @@
 
 #include "spectrum.h"
 #include "material.h"
+#include "hitable.h"
 
 class VisibilityTester {
 public:
@@ -15,7 +16,7 @@ public:
         , is_delta(d)
     {}
 
-    virtual RGBSpectrum sample_l(const Intersection& isect, const Vec2f& u, Vec3f& wi, float& pdf, const HitablePtr scene) const = 0;
+    virtual RGBSpectrum sample_l(const Intersection& isect, Vec3f& wi, float& pdf, const HitablePtr scene) const = 0;
     virtual float       pdf(const Intersection& isect, const Vec3f& wi) const {
         return 1.f;
     }
@@ -32,7 +33,7 @@ public:
         , position(pos)
     {}
 
-    RGBSpectrum sample_l(const Intersection& isect, const Vec2f& u, Vec3f& wi, float& pdf, const HitablePtr scene) const;
+    RGBSpectrum sample_l(const Intersection& isect, Vec3f& wi, float& pdf, const HitablePtr scene) const;
 
     Vec3f position;
 }
