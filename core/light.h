@@ -36,4 +36,4 @@ public:
     RGBSpectrum sample_l(const Intersection& isect, Vec3f& wi, float& pdf, const HitablePtr scene) const;
 
     Vec3f position;
-}
+};
