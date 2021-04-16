@@ -29,25 +29,26 @@ set(BASE_HEADERS
     base/vec.h)
 
 set(CORE_HEADERS
+    core/accel.h
+    core/camera.h
     core/color.h
     core/film.h
-    core/ray.h
-    core/spectrum.h
-    core/transform.h
-    core/camera.h
     core/integrator.h
+    core/material.h
+    core/ray.h
     core/scene.h
     core/shape.h
-    core/accel.h)
+    core/spectrum.h
+    core/transform.h)
 
 set(CORE_SOURCES
+    core/accel.cpp
     core/camera.cpp
     core/film.cpp
-    core/ray.cpp
-    core/shape.cpp
     core/integrator.cpp
     core/material.cpp
-    core/accel.cpp)
+    core/ray.cpp
+    core/shape.cpp)
 
 add_library(kazen_proto_lib
     ${CORE_SOURCES})

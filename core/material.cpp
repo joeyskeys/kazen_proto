@@ -47,7 +47,11 @@ RGBSpectrum Material::calculate_response(Intersection& isect, Ray& ray) const {
     Vec2f u = random2f();
     float pdf;
 
-    auto f = bxdf->sample_f(wo, wi, isect, u, pdf) * wi.y();
+    auto f = bxdf->sample_f(wo, wi, isect, u, pdf);
+
+    // LLVM and GCC behave differently if wi.y() multiplied directly..
+    f *= wi.y();
+
     auto spec = f / pdf;
 
     isect.wo = -ray.direction;
