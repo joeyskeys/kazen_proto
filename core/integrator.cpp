@@ -13,6 +13,8 @@ static RGBSpectrum estamate_direct(const Intersection& isect, const Light* light
     Vec3f wi;
     float light_pdf, scattering_pdf;
     Intersection isect_tmp;
+    
+    // Do visibility test in light sampling
     RGBSpectrum light_radiance = light_ptr->sample_l(isect, wi, light_pdf, integrator.accel_ptr);
     RGBSpectrum result_radiance;
 
@@ -21,8 +23,6 @@ static RGBSpectrum estamate_direct(const Intersection& isect, const Light* light
         scattering_pdf = isect.mat->bxdf->pdf(isect.wo, wi);
 
         if (!f.is_zero()) {
-            // Do visibility test first
-
             if (light_ptr->is_delta)
                 result_radiance += f * light_radiance / light_pdf;
             else {

@@ -10,6 +10,17 @@ class HitableInterface {
 public:
     // Intersection method
     virtual bool intersect(const Ray& r, Intersection& isect) const = 0;
+    virtual bool intersect(const Ray& r, float& t) const = 0;
+
+    inline bool occluded(const Vec3f& p1, const Vec3f& p2) const {
+        auto vec_p1p2 = p2 - p1;
+        Ray r(p1, vec_p1p2);
+        float ray_t;
+
+        if (intersect(r, ray_t) && ray_t < vec_p1p2.length())
+            return true;
+        return false;
+    }
 
     // Return the bounding box in world space
     virtual AABBf bbox() const = 0;
