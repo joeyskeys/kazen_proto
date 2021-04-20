@@ -33,6 +33,7 @@ static RGBSpectrum estamate_direct(const Intersection& isect, const Light* light
     }
 
     // TODO: apply MIS after area light is added
+    return result_radiance;
 }
 
 static RGBSpectrum estamate_one_light(const Intersection& isect, const Integrator& integrator) {
@@ -94,7 +95,7 @@ void Integrator::render() {
                             isect.ray_t = std::numeric_limits<float>::max();
                             if (accel_ptr->intersect(ray, isect) && k < depth - 1) {
                                 // Add radiance contribution from this shading point
-                                radiance_per_sample += beta * estamate_all_light(isect, *this);
+                                //radiance_per_sample += beta * estamate_all_light(isect, *this);
                                 //radiance_per_sample += beta * estamate_one_light();
 
                                 // Sample material to construct next ray

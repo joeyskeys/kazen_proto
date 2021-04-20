@@ -34,6 +34,7 @@ set(CORE_HEADERS
     core/color.h
     core/film.h
     core/integrator.h
+    core/light.h
     core/material.h
     core/ray.h
     core/scene.h
@@ -46,6 +47,7 @@ set(CORE_SOURCES
     core/camera.cpp
     core/film.cpp
     core/integrator.cpp
+    core/light.cpp
     core/material.cpp
     core/ray.cpp
     core/shape.cpp)

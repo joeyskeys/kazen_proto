@@ -62,6 +62,34 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     return true;
 }
 
+bool Sphere::intersect(const Ray& r, float& t) const {
+    auto r_local = world_to_local.apply(r);
+
+    auto oc = r_local.origin - center;
+    auto a = r_local.direction.length_squared();
+    auto half_b = dot(oc, r_local.direction);
+    auto c = oc.length_squared() - radius * radius;
+    auto discriminant = half_b * half_b - a * c;
+
+    if (discriminant < 0.f)
+        return false;
+
+    auto t0 = (-half_b - sqrtf(discriminant)) / a;
+    auto t1 = (-half_b + sqrtf(discriminant)) / a;
+
+    if (t0 > r.tmax || t1 < r.tmin) return false;
+    float tmp_t = t0;
+    if (tmp_t <= r.tmin) {
+        tmp_t = t1;
+        if (tmp_t > r.tmax) return false;
+    }
+
+    // Calculate in local space
+    t = tmp_t;
+    
+    return true;
+}
+
 AABBf Sphere::bbox() const {
     auto center_in_world = local_to_world.apply(center);
     auto radius_vec = Vec3f{radius, radius, radius};
@@ -111,6 +139,39 @@ bool Triangle::intersect(const Ray& r, Intersection& isect) const {
     return false;
 }
 
+static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, float& t) {
+    Vec3f v1v0 = verts[1] - verts[0];
+    Vec3f v2v0 = verts[2] - verts[0];
+    Vec3f pvec = cross(r.direction, v2v0);
+    float det = dot(v1v0, pvec);
+
+    if (det < 0.000001) return false;
+
+    float det_inv = 1.f / det;
+    Vec3f tvec = r.origin - verts[0];
+    float u = dot(tvec, pvec) * det_inv;
+    if (u < 0.f || u > 1.f) return false;
+
+    Vec3f qvec = cross(tvec, v1v0);
+    float v = dot(r.direction, qvec) * det_inv; 
+    if (v < 0.f || u + v > 1.f) return false;
+
+    t = dot(v2v0, qvec) * det_inv;
+
+    return true;
+}
+
+bool Triangle::intersect(const Ray& r, float& t) const {
+    auto local_r = world_to_local.apply(r);
+
+    if (moller_trumbore_intersect(local_r, verts, t)) {
+        // Not considering backfacing here
+        return true;
+    }
+
+    return false;
+}
+
 static inline AABBf bbox_of_triangle(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) {
     return bound_union(AABBf{vec_min(v0, v1), vec_max(v0, v1)}, v2);
 }
@@ -139,6 +200,26 @@ bool TriangleMesh::intersect(const Ray& r, Intersection& isect) const {
             isect.mat = mat;
             isect.obj_id = 2;
             isect = local_to_world.apply(isect);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool TriangleMesh::intersect(const Ray& r, float& t) const {
+    auto local_r = world_to_local.apply(r);
+    bool hit = false;
+
+    for (auto& idx : indice) {
+        // TODO : compare the performance difference between
+        // constructing triangle on the fly and converting it
+        // to triangle list.
+        Vec3f tri[3];
+        tri[0] = verts[idx[0]];
+        tri[1] = verts[idx[1]];
+        tri[2] = verts[idx[2]];
+        if (moller_trumbore_intersect(local_r, tri, t)) {
             return true;
         }
     }

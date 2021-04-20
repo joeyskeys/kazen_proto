@@ -1,11 +1,13 @@
+#include "core/accel.h"
 #include "core/camera.h"
 #include "core/film.h"
 #include "core/integrator.h"
+#include "core/light.h"
 #include "core/material.h"
 #include "core/shape.h"
-#include "core/accel.h"
 
 int main() {
+    // Camera
     Film film{400, 300, "test.jpg"};
     film.generate_tiles();
 
@@ -19,9 +21,11 @@ int main() {
         &film
     };
 
+    // Integrator
     Integrator integrator{&cam, &film};
     ListAccel list;
 
+    // Construct scene
     Transform t1;
     t1.translate(Vec3f{0.f, 5.f, -20.f});
 
@@ -64,11 +68,16 @@ int main() {
     BVHAccel bvh(list.hitables, 0, list.size());
     bvh.print_bound();
 
-    //integrator.accel_ptr = &list;
     integrator.accel_ptr = &bvh;
 
+    // Lights
+    PointLight pt1{RGBSpectrum{0.3f, 0.9f, 0.3f}, Vec3f{0.f, 10.f, -20.f}};
+    integrator.lights.push_back(&pt1);
+
+    // Start render
     integrator.render();
 
+    // Write out rendered image
     film.write_tiles();
 
     return 0;

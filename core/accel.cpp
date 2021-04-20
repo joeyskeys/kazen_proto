@@ -35,6 +35,20 @@ bool ListAccel::intersect(const Ray& r, Intersection& isect) const {
     return hit;
 }
 
+bool ListAccel::intersect(const Ray& r, float& t) const {
+    bool hit = false;
+    float tmp_t = std::numeric_limits<float>::max();
+
+    for (auto& h : hitables) {
+        if (h->intersect(r, tmp_t) && tmp_t < t) {
+            hit = true;
+            t = tmp_t;
+        }
+    }
+
+    return hit;
+}
+
 inline bool box_compare(const std::shared_ptr<Hitable>& a, const std::shared_ptr<Hitable>& b, int axis) {
     AABBf box_a;
     AABBf box_b;
@@ -92,6 +106,16 @@ bool BVHAccel::intersect(const Ray& r, Intersection& isect) const {
 
     bool hit_0 = children[0]->intersect(r, isect);
     bool hit_1 = children[1]->intersect(r, isect);
+
+    return hit_0 || hit_1;
+}
+
+bool BVHAccel::intersect(const Ray& r, float& t) const {
+    if (!bound.intersect(r))
+        return false;
+    
+    bool hit_0 = children[0]->intersect(r, t);
+    bool hit_1 = children[1]->intersect(r, t);
 
     return hit_0 || hit_1;
 }

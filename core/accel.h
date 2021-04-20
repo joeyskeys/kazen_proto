@@ -10,6 +10,7 @@ public:
     void add_hitable(std::shared_ptr<Hitable>&& h);
     void add_hitables(const std::vector<std::shared_ptr<Hitable>>& hs);
     bool intersect(const Ray& r, Intersection& isect) const override;
+    bool intersect(const Ray& r, float& t) const override;
     inline size_t size() { return hitables.size(); }
 
 public:
@@ -22,6 +23,7 @@ public:
     BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end);
 
     bool intersect(const Ray& r, Intersection& isect) const override;
+    bool intersect(const Ray& r, float& t) const override;
     void print_bound() const override;
 
 private:

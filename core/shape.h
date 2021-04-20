@@ -34,6 +34,7 @@ public:
     {}
 
     bool intersect(const Ray& r, Intersection& isect) const override;
+    bool intersect(const Ray& r, float& t) const override;
     AABBf bbox() const override;
 
     // Members
@@ -52,6 +53,7 @@ public:
     }
 
     bool intersect(const Ray& r, Intersection& isect) const override;
+    bool intersect(const Ray& r, float& t) const override;
     AABBf bbox() const override;
 
     Vec3f verts[3];
@@ -66,6 +68,7 @@ public:
     {}
 
     bool intersect(const Ray& r, Intersection& isect) const override;
+    bool intersect(const Ray& r, float& t) const override;
     AABBf bbox() const override;
 
     std::vector<Vec3f> verts;
