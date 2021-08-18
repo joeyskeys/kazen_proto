@@ -21,36 +21,39 @@ include_directories(${ASSIMP_INCLUDE_DIRS})
 find_package(Boost 1.72 REQUIRED COMPONENTS filesystem)
 include_directories(${Boost_INCLUDE_DIRS})
 
-message("Boost libs ${Boost_LIBRARY_DIRS}")
+find_package(OSL REQUIRED)
+include_directories(${OSL_INCLUDE_DIRS})
+
+include_directories("./src")
 
 set(BASE_HEADERS
-    base/mat.h
-    base/types.h
-    base/vec.h)
+    src/base/mat.h
+    src/base/types.h
+    src/base/vec.h)
 
 set(CORE_HEADERS
-    core/accel.h
-    core/camera.h
-    core/color.h
-    core/film.h
-    core/integrator.h
-    core/light.h
-    core/material.h
-    core/ray.h
-    core/scene.h
-    core/shape.h
-    core/spectrum.h
-    core/transform.h)
+    src/core/accel.h
+    src/core/camera.h
+    src/core/color.h
+    src/core/film.h
+    src/core/integrator.h
+    src/core/light.h
+    src/core/material.h
+    src/core/ray.h
+    src/core/scene.h
+    src/core/shape.h
+    src/core/spectrum.h
+    src/core/transform.h)
 
 set(CORE_SOURCES
-    core/accel.cpp
-    core/camera.cpp
-    core/film.cpp
-    core/integrator.cpp
-    core/light.cpp
-    core/material.cpp
-    core/ray.cpp
-    core/shape.cpp)
+    src/core/accel.cpp
+    src/core/camera.cpp
+    src/core/film.cpp
+    src/core/integrator.cpp
+    src/core/light.cpp
+    src/core/material.cpp
+    src/core/ray.cpp
+    src/core/shape.cpp)
 
 add_library(kazen_proto_lib
     ${CORE_SOURCES})
@@ -58,7 +61,7 @@ target_link_libraries(kazen_proto_lib
     ${ASSIMP_LIBRARIES}
     ${Boost_LIBRARIES})
 
-add_executable(kazen proto/main.cpp)
+add_executable(kazen src/proto/main.cpp)
 target_link_libraries(kazen
     ${OIIO_LIBRARIES}
     ${TBB_LIBRARIES}

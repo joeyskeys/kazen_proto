@@ -118,7 +118,7 @@ public:
         return os;
     }
 
-private:
+public:
     Mat4f mat = Mat4f::identity();
     Mat4f mat_inv = Mat4f::identity();
 };

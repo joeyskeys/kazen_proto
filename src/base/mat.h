@@ -4,6 +4,8 @@
 #include <iostream>
 #include <type_traits>
 
+#include <OSL/Imathx/ImathMatrix.h>
+
 #include "vec.h"
 
 template <typename T, unsigned int N>
@@ -102,6 +104,19 @@ public:
         Mat tmp = *this * mat;
         *this = tmp;
         return *this;
+    }
+
+    auto operator OSL::Matrix44<T>() const {
+        // We only need this for Mat4
+        static_assert(N == 4);
+
+        OSL::Matrix44<T> ret;
+        // Unfortunately imath matrix is row majored
+        for (int i = 0; i < N; i++)
+            for (int j = 0; j < N; j++)
+                ret[i][j] = arr[j * N + i];
+
+        return ret;
     }
 
     auto inverse() const {
