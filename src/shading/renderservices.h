@@ -3,6 +3,8 @@
 #include <OSL/oslexec.h>
 #include <OpenImageIO/texture.h>
 
+#include "core/hitable.h"
+
 void register_closures(OSL::ShadingSystem *shadingsys);
 
 class KazenRenderServices : public OSL::RendererServices
@@ -10,7 +12,7 @@ class KazenRenderServices : public OSL::RendererServices
 public:
     using Transformation = OSL::Matrix44;
 
-    KazenRenderServices(OIIO::TextureSystem *texture_sys);
+    KazenRenderServices(OIIO::TextureSystem *texture_sys, AccelPtr p);
     ~KazenRenderServices() {}
 
 private:
@@ -38,6 +40,8 @@ private:
         OSL::Matrix44 &result,
         OSL::TransformationPtr xform) override;
 
+    /*
+    // Figure out how to use named transform later
     bool get_matrix(
         OSL::ShaderGlobals *sg,
         OSL::Matrix44 &result,
@@ -71,6 +75,7 @@ private:
         OSL::Vec3 *Pout,
         int npoints,
         OSL::TypeDesc::VECSEMANTICS vectype) override;
+    */
 
     bool trace(
         TraceOpt &options,
@@ -116,4 +121,5 @@ private:
 
 private:
     OIIO::TextureSystem *texture_sys;
+    HitablePtr accel_ptr;
 };
