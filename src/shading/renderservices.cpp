@@ -1,6 +1,7 @@
 #include "renderservices.h"
 
 #include "core/intersection.h"
+#include "core/ray.h"
 #include "core/transform.h"
 
 KazenRenderServices::KazenRenderServices(OIIO::TextureSystem *tex_sys, AccelPtr p)
@@ -154,9 +155,23 @@ bool KazenRenderServices::trace(
     const OSL::Vec3 &dRdy)
 {
     // Get intersection info from raw pointer
-    auto isect = reinterpret_cast<Intersection*>(sg->tracedata);
+    auto isect_ptr = reinterpret_cast<Intersection*>(sg->tracedata);
 
-    
+    const Vec3f o(P);
+    const Vec3f d(R);
+    const Ray r(p, d);
+
+    // TODO : find out if trace data has to be OSL relavent, aka using
+    // OpenEXR types
+    auto traced_isect_ptr =
+        reinterpret_cast<Intersection*>(sg->tracedata);
+    Intersection isect;
+    if (accel_ptr->intersect(r, &isect)) {
+        *traced_isect_ptr = isect;
+        return true;
+    }
+
+    return false;
 }
 
 bool KazenRenderServices::getmessage(

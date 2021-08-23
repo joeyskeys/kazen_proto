@@ -7,6 +7,8 @@
 #include <iostream>
 #include <type_traits>
 
+#include <OSL/Imathx/ImathVec.h>
+
 #include "types.h"
 
 template <typename T, uint N>
@@ -37,6 +39,27 @@ public:
         constexpr int subcnt = N - M;
         for (int i = 0; i < subcnt; i++)
             arr[M + i] = sub[i];
+    }
+
+    template <typename O, typename = std::enable_if_t<std::is_arithmetic_v<O>>
+    Vec(const OSL::Imath::Vec2<O>& v) {
+        static_assert(N == 2);
+        for (int i = 0; i < N; i++)
+            arr[i] = v[i];
+    }
+
+    template <typename O, typename = std::enable_if_t<std::is_arithmetic_v<O>>
+    Vec(const OSL::Imath::Vec3<O>& v) {
+        static_assert(N == 3);
+        for (int i = 0; i < N; i++)
+            arr[i] = v[i];
+    }
+
+    template <typename O, typename = std::enable_if_t<std::is_arithmetic_v<O>>
+    Vec(const OSL::Imath::Vec4<O>& v) {
+        static_assert(N == 4);
+        for (int i = 0; i < N; i++)
+            arr[i] = v[i];
     }
 
     inline T& x() {
