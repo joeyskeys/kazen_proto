@@ -1,6 +1,6 @@
 #pragma once
 
-enum class ClosureID {
+enum ClosureID {
     // Referenced from appleseed
 
     // BSDF closures
@@ -10,13 +10,20 @@ enum class ClosureID {
     DisneyID,
     OrenNayarID,
     PhongID,
+    ReflectionID,
+    SheenID,
+    HairID,
+    TranslucentID,
 
     // Microfacet closures
     GlossyID,
     MetalID,
+    GlassID,
+    PlasticID,
 
     // Emission closures
     EmissionID,
 
     NumClosureIDs
 };
+

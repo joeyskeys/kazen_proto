@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cassert>
 #include <iostream>
+#include <numeric>
 #include <type_traits>
 
 #include <OSL/Imathx/ImathVec.h>
@@ -263,6 +264,10 @@ public:
 
     inline auto length() const {
         return sqrt(length_squared());
+    }
+
+    auto sum() const {
+        return std::accumulate(arr.begin(), arr.end(), 0);
     }
 
     friend std::ostream& operator <<(std::ostream& os, const Vec& v) {

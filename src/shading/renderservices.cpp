@@ -1,5 +1,4 @@
 #include "renderservices.h"
-
 #include "core/intersection.h"
 #include "core/ray.h"
 #include "core/transform.h"
