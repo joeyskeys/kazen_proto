@@ -18,11 +18,15 @@ public:
     virtual float sample(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const = 0;
 };
 
-static const uint max_closure = 8;
+static constexpr uint max_closure = 8;
+static constexpr uint max_size = 256 * sizeof(float);
 
 class CompositeBSDF {
 public:
-    CompositeBSDF() : bsdf_count(0) {}
+    CompositeBSDF()
+        : bsdf_count(0)
+        , byte_count(0)
+    {}
 
     void compute_pdfs(const OSL::ShaderGlobals& sg, const RGBSpectrum& beta) {
         float w = 1 / beta.sum();
@@ -38,21 +42,56 @@ public:
     }
 
     RGBSpectrum eval(const ShaderGlobals& sg, const Vec3f& wi, float& pdf) const {
+        RGBSpectrum ret;
+        pdf = 0;
+        for (int i = 0; i < bsdf_count; i++) {
+            float bsdf_pdf = 0;
+            RGBSpectrum bsdf_weight = weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
+            // mis update
+        }
 
+        return ret;
     }
 
     RGBSpectrum sample(const ShaderGlobals& sg, Vec3f& wi, float& pdf) const {
+        // TODO : pass in a sampler
+        float acc = 0;
+        RGBSpectrum ret;
+        // TODO : sample one bsdf to sample direction
+        uint idx = 0; // fake
+        ret = bsdfs[idx]->sample(sg, wi, pdf) / pdfs[idx] * weights[idx];
 
+        // Add up contributions from other bsdfs
+        for (int i = 0; i < bsdf_count; i++) {
+            if (i == idx) continue;
+            float other_pdf = 0;
+            RGBSpectrum bsdf_weight = weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
+            // mis update
+        }
+
+        return ret;
     }
 
     template <typename Type, typename Params>
     bool add_bsdf(const RGBSpectrum& w, const Param& params) {
+        if (bsdf_count >= max_closure)
+            return false;
+        if (byte_count + sizeof(Type) > max_size) return false;
+
+        weights[bsdf_count] = w;
+        bsdfs[bsdf_count] = new (pool + byte_count) Type(params);
+        bsdf_count++;
+        byte_count += sizeof(Type);
         return true;
     }
 
 private:
-    uint bsdf_count;
+    uint bsdf_count, byte_count;
     std::array<BSDF*, max_closure> bsdfs;
     std::array<float, max_closure> pdfs;
     std::array<RGBSpectrum, max_closure> weights;
+    std::array<char, max_size> pool;
 }
+
+void register_closures(OSL::ShadingSystem *shadingsys);
+void process_closure(const OSL::ClosureColor *Ci, bool light_only);
