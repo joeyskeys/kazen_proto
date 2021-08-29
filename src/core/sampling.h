@@ -5,6 +5,16 @@
 
 #include "base/vec.h"
 
+inline float randomf() {
+    static std::uniform_real_distribution<double> dist(0.f, 1.f);
+    static std::mt19937 gen;
+    return dist(gen);
+}
+
+inline auto random2f() {
+    return Vec2f{randomf(), randomf()};
+}
+
 inline Vec3f sample_hemisphere(const Vec2f& u) {
     float theta = u.x() * M_PI_2;
     float phi = u.y() * M_PI * 2.f;
@@ -14,14 +24,8 @@ inline Vec3f sample_hemisphere(const Vec2f& u) {
     return normalize(Vec3f{v_sin_theta * std::cos(phi), v_cos_theta, v_sin_theta * std::sin(phi)});
 }
 
-inline float randomf() {
-    static std::uniform_real_distribution<double> dist(0.f, 1.f);
-    static std::mt19937 gen;
-    return dist(gen);
-}
-
-inline auto random2f() {
-    return Vec2f{randomf(), randomf()};
+inline Vec3f sample_hemisphere() {
+    return sample_hemisphere(random2f());
 }
 
 inline auto random3f() {

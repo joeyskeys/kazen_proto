@@ -15,7 +15,7 @@ public:
     }
 
     virtual float eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const = 0;
-    virtual float sample(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const = 0;
+    virtual float sample(const OSL::ShaderGlobals& sg, Vec3f& wi, float& pdf) const = 0;
 };
 
 static constexpr uint max_closure = 8;
