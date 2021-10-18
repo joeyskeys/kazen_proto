@@ -210,7 +210,8 @@ public:
         return arr[idx];
     }
 
-    T dot(const Vec& rhs) const {
+    template <typename C, typename = std::enable_if_t<std::is_base_of_v<Vec, O>>>
+    T dot(const O& rhs) const {
         T tmp{0};
         for (int i = 0; i < N; i++)
             tmp += arr[i] * rhs.arr[i];
@@ -282,8 +283,10 @@ protected:
     std::array<T, N> arr;
 };
 
-template <typename T, uint N>
-inline T dot(const Vec<T, N>& a, const Vec<T, N>& b) {
+//template <typename T, uint N>
+//inline T dot(const Vec<T, N>& a, const Vec<T, N>& b) {
+template <typename C, typename T, uint N, typename = std::enable_if_t<std::is_base_of_v<Vec, C>>>
+inline T dot(const C<T, N>& a, const C<T, N>& b) {
     return a.dot(b);
 }
 
