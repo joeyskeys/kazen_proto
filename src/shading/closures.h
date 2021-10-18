@@ -20,22 +20,22 @@ enum ClosureID {
     // Referenced from appleseed
 
     // BSDF closures
-    AshikhminShirleyID,
-    BlinnID,
+    //AshikhminShirleyID,
+    //BlinnID,
     DiffuseID,
-    DisneyID,
+    //DisneyID,
     OrenNayarID,
-    PhongID,
-    ReflectionID,
-    SheenID,
-    HairID,
-    TranslucentID,
+    //PhongID,
+    //ReflectionID,
+    //SheenID,
+    //HairID,
+    //TranslucentID,
 
     // Microfacet closures
-    GlossyID,
-    MetalID,
-    GlassID,
-    PlasticID,
+    //GlossyID,
+    //MetalID,
+    //GlassID,
+    //PlasticID,
 
     // Emission closures
     EmissionID,
