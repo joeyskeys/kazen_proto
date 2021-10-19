@@ -28,7 +28,20 @@ public:
         , byte_count(0)
     {}
 
-    void compute_pdfs(const OSL::ShaderGlobals& sg, const RGBSpectrum& beta) {
+    template <typename Type, typename Params>
+    bool add_bsdf(const RGBSpectrum& w, const Param& params) {
+        if (bsdf_count >= max_closure)
+            return false;
+        if (byte_count + sizeof(Type) > max_size) return false;
+
+        weights[bsdf_count] = w;
+        bsdfs[bsdf_count] = new (pool + byte_count) Type(params);
+        bsdf_count++;
+        byte_count += sizeof(Type);
+        return true;
+    }
+
+    void compute_pdfs(const OSL::ShaderGlobals& sg, const RGBSpectrum& beta, bool cut_off) {
         float w = 1 / beta.sum();
         float weight_sum = 0;
         for (int i = 0; i < bsdf_count; i++) {
@@ -36,9 +49,16 @@ public:
             weight_sum += pdfs[i];
         }
 
-        std::for_each(pdfs.begin(), pdfs.end(), [](float& p) {
-            p /= weight_sum
-        });
+        if ((!cuf_off && weight_sum > 0) || weight_sum) {
+            /*
+            std::for_each(pdfs.begin(), pdfs.end(), [](float& p) {
+                p /= weight_sum
+            });
+            */
+            std::transform(std::excution::par, pdfs.begin(), pdfs.end(), [&weight_sum](auto& pdf){
+                pdf /= weight_sum;
+            });
+        }
     }
 
     RGBSpectrum eval(const ShaderGlobals& sg, const Vec3f& wi, float& pdf) const {
@@ -72,18 +92,6 @@ public:
         return ret;
     }
 
-    template <typename Type, typename Params>
-    bool add_bsdf(const RGBSpectrum& w, const Param& params) {
-        if (bsdf_count >= max_closure)
-            return false;
-        if (byte_count + sizeof(Type) > max_size) return false;
-
-        weights[bsdf_count] = w;
-        bsdfs[bsdf_count] = new (pool + byte_count) Type(params);
-        bsdf_count++;
-        byte_count += sizeof(Type);
-        return true;
-    }
 
 private:
     uint bsdf_count, byte_count;
