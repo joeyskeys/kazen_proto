@@ -15,7 +15,7 @@ public:
     }
 
     virtual float eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const = 0;
-    virtual float sample(const OSL::ShaderGlobals& sg, Vec3f& wi, float& pdf) const = 0;
+    virtual float sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const = 0;
 };
 
 static constexpr uint max_closure = 8;
@@ -66,30 +66,38 @@ public:
         pdf = 0;
         for (int i = 0; i < bsdf_count; i++) {
             float bsdf_pdf = 0;
-            RGBSpectrum bsdf_weight = weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
-            // mis update
+            ret += weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
+            pdf += bsdf_pdf * pdfs[i];
         }
 
-        return ret;
+        return ret / pdf;
     }
 
-    RGBSpectrum sample(const ShaderGlobals& sg, Vec3f& wi, float& pdf) const {
-        // TODO : pass in a sampler
+    RGBSpectrum sample(const ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const {
         float acc = 0;
         RGBSpectrum ret;
-        // TODO : sample one bsdf to sample direction
-        uint idx = 0; // fake
-        ret = bsdfs[idx]->sample(sg, wi, pdf) / pdfs[idx] * weights[idx];
+
+        /*
+         * The mixture bsdf implementation differs between renderers.
+         * In Mitsuba, the sampled component need to multiply an extra bsdf pdf.
+         * In testrender of OSL, each compoenent divides an extra tech pdf.
+         * Code here removes the extra pdf multiply/divide..
+         * TODO : More tests and analytical expected value deduce.
+         */
+        
+        uint idx = sample[0] * bsdf_count;
+        ret = bsdfs[idx]->sample(sg, wi, pdf) * weights[idx];
+        pdf *= pdfs[idx];
 
         // Add up contributions from other bsdfs
         for (int i = 0; i < bsdf_count; i++) {
             if (i == idx) continue;
             float other_pdf = 0;
-            RGBSpectrum bsdf_weight = weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
-            // mis update
+            ret += weights[i] * bsdfs[i]->eval(sg, wi, other_pdf);
+            pdf += other_pdf * pdfs[i];
         }
 
-        return ret;
+        return ret / pdf;
     }
 
 
