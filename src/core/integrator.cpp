@@ -8,6 +8,7 @@
 #include "material.h"
 #include "state.h"
 #include "sampling.h"
+#include "shading/bsdf.h"
 
 static RGBSpectrum estamate_direct(const Intersection& isect, const Light* light_ptr, const Integrator& integrator) {
     Vec3f wi;
@@ -54,6 +55,14 @@ static RGBSpectrum estamate_all_light(const Intersection& isect, const Integrato
     return ret / light_cnt;
 }
 
+Integrator::Integrator(Camera* cam_ptr, Film* flm_ptr)
+    : camera_ptr(cam_ptr)
+    , film_ptr(flm_ptr)
+{
+    shadingsys = std::make_unique<OSL::ShadingSystem>(&rend, NULL, &errhandler);
+    register_closures(shadingsys.get());
+}
+
 void Integrator::render() {
     auto film_width = film_ptr->width;
     auto film_height = film_ptr->height;
@@ -67,6 +76,9 @@ void Integrator::render() {
 
     tbb::parallel_for (tbb::blocked_range<size_t>(0, film_ptr->tiles.size()), [&](const tbb::blocked_range<size_t>& r) {
         auto tile_start = get_time();
+
+        OSL::PerThreadInfo *thread_info = shadingsys->create_thread_info();
+        OSL::ShadingContext *ctx = shadingsys->get_context(thread_info);
 
         for (int t = r.begin(); t != r.end(); ++t) {
             Tile& tile = film_ptr->tiles[t];
@@ -104,6 +116,8 @@ void Integrator::render() {
                                 float p;
                                 beta *= mat_ptr->calculate_response(isect, ray);
 
+                                // TODO : switch to OSL here
+
                                 ray.origin = isect.position;
                                 ray.direction = isect.wi;
                                 ray.tmin = 0;
@@ -128,6 +142,9 @@ void Integrator::render() {
                 }
             }
         }
+
+        shadingsys->release_context(ctx);
+        shadingsys->destroy_thread_info(thread_info);
 
         auto tile_end = get_time();
         auto tile_duration = std::chrono::duration_cast<std::chrono::milliseconds>(tile_end - tile_start);
