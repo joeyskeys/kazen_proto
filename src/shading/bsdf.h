@@ -109,5 +109,10 @@ private:
     std::array<char, max_size> pool;
 }
 
+struct ShadingResult {
+    RGBSpectrum Le;
+    CompositeBSDF bsdf;
+};
+
 void register_closures(OSL::ShadingSystem *shadingsys);
-void process_closure(const OSL::ClosureColor *Ci, bool light_only);
+void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only);
