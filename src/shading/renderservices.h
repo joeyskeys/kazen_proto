@@ -119,6 +119,15 @@ private:
         OSL::ShaderGlobals *sg,
         void *val) override;
 
+    static void globals_from_hit(
+        OSL::ShaderGlobals& sg,
+        const Ray& r,
+        const float& t,
+        bool flip=false);
+
+public:
+    std::vector<OSL::ShaderGroupRef> shaders;
+
 private:
     OIIO::TextureSystem *texture_sys;
     HitablePtr accel_ptr;

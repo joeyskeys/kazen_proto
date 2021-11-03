@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include "renderservices.h"
 #include "core/intersection.h"
 #include "core/ray.h"
@@ -215,4 +217,25 @@ bool KazenRenderServices::get_userdata(
     void *val)
 {
     return false;
+}
+
+void KazenRenderServices::globals_from_hit(
+    OSL::ShaderGlobals& sg,
+    const Ray& r,
+    const Intersection& isect,
+    bool flip)
+{
+    memset((char*)&sg, 0, sizeof(OSL::ShaderGlobals));
+    auto P = r.at(isect.ray_t);
+    sg.P = P;
+    auto N = isect.normal;
+    sg.Ng = sg.N = N;
+    sg.I = r.direction;
+    sg.backfacing = sg.N.dot(sg.I) > 0;
+    if (sg.backfacing) {
+        sg.N = -sg.N;
+        sg.Ng = -sg.Ng;
+    }
+    sg.flipHandedness = flip;
+    sg.renderstate = &sg;
 }

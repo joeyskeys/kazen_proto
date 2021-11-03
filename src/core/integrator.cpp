@@ -110,6 +110,17 @@ void Integrator::render() {
                                 //radiance_per_sample += beta * estamate_all_light(isect, *this);
                                 //radiance_per_sample += beta * estamate_one_light();
 
+                                /*
+                                // Now we need a scene description to setup the scene
+                                // Self defined xml/json or USD?
+                                OSL::ShaderGlobals sg;
+                                KazenRenderServices::globals_from_hit(sg, ray, isect);
+                                shadingsys->execute(*ctx, shadingsys->shaders[isect.shader_id], sg);
+                                ShadingResult ret;
+                                bool last_bounce = k == depth;
+                                process_closure(ret, sg.Ci, last_bounce);
+                                */
+
                                 // Sample material to construct next ray
                                 auto mat_ptr = isect.mat;
                                 auto wo = -ray.direction;
