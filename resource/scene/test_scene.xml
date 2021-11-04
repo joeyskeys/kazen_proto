@@ -1,0 +1,25 @@
+<Scene>
+
+    <Camera position="7, 8, 15" lookat="0, 3, -20" up="0, 1, 0" fov="60" />
+
+    <Materials>
+        <ShaderGroup name="checker_matte">
+            <Shader name="checkerboard" layer="tex" scale_s="float 20" scale_t="float 20" Ca="float3 0.1 0.1 0.1" Cb="float3 0.5 0.5 0.5"/>
+            <Shader name="matte" layer="layer1" />
+            <ConnectShaders srclayer="tex" srcparam="Cout" dstlayer="layer1" dstparam="Cs" />
+        </ShaderGroup>
+    </Materials>
+
+    <Objects>
+        <Sphere radius="float 3" translate="float3 0, 5, -20" material="checker_matte" />
+        <Triangle verta="float3 0, 0, 0" vertb="float3 2, 0, 0" vertc="float3 0, 2, 0" translate="float3 0, 0, -10" material="checker_matte" />
+    </Objects>
+
+    <Lights>
+        <PointLight spec="float3 0.3 0.9 0.3" position="float3 0, 10, -20" />
+    </Lights>
+
+    <Accel type="bvh" />
+    <Integrator type="pt" />
+
+</Scene>
