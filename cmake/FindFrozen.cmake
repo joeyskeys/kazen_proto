@@ -7,4 +7,4 @@ find_path(Frozen_INCLUDE_DIRS frozen/map.h
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Frozen DEFAULT_MSG
-    FROZEN_INCLUDE_DIRS)
+    Frozen_INCLUDE_DIRS)
