@@ -1,6 +1,6 @@
 <Scene>
 
-    <Camera position="7, 8, 15" lookat="0, 3, -20" up="0, 1, 0" fov="60" />
+    <Camera resolution="float2 800 600" position="float3 7 8 15" lookat="float3 0, 3 -20" up="float3 0 1 0" fov="float 60" />
 
     <Materials>
         <ShaderGroup name="checker_matte">
@@ -11,12 +11,12 @@
     </Materials>
 
     <Objects>
-        <Sphere radius="float 3" translate="float3 0, 5, -20" material="checker_matte" />
-        <Triangle verta="float3 0, 0, 0" vertb="float3 2, 0, 0" vertc="float3 0, 2, 0" translate="float3 0, 0, -10" material="checker_matte" />
+        <Sphere radius="float 3" translate="float3 0 5 -20" material="checker_matte" />
+        <Triangle verta="float3 0 0 0" vertb="float3 2 0 0" vertc="float3 0 2 0" translate="float3 0 0 -10" material="checker_matte" />
     </Objects>
 
     <Lights>
-        <PointLight spec="float3 0.3 0.9 0.3" position="float3 0, 10, -20" />
+        <PointLight spec="float3 0.3 0.9 0.3" position="float3 0 10 -20" />
     </Lights>
 
     <Accel type="bvh" />

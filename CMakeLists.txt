@@ -24,6 +24,12 @@ include_directories(${Boost_INCLUDE_DIRS})
 find_package(OSL REQUIRED)
 include_directories(${OSL_INCLUDE_DIRS})
 
+find_package(Frozen REQUIRED)
+include_directories(${Frozen_INCLUDE_DIRS})
+
+find_package(Pugixml REQUIRED)
+include_directories(${Pugi_INCLUDE_DIRS})
+
 include_directories("./src")
 
 set(BASE_HEADERS
@@ -59,7 +65,8 @@ add_library(kazen_proto_lib
     ${CORE_SOURCES})
 target_link_libraries(kazen_proto_lib
     ${ASSIMP_LIBRARIES}
-    ${Boost_LIBRARIES})
+    ${Boost_LIBRARIES}
+    ${Pugixml_LIBRARIES})
 
 add_executable(kazen src/proto/main.cpp)
 target_link_libraries(kazen

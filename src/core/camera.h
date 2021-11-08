@@ -1,12 +1,15 @@
 #pragma once
 
+#include <frozen/unordered_map.h>
+
+#include "base/dictlike.h"
 #include "base/vec.h"
 #include "base/utils.h"
 
 #include "film.h"
 #include "ray.h"
 
-class Camera {
+class Camera : public DictLike {
 public:
     Camera(const Vec3f& p,
         const Vec3f& l,
@@ -39,6 +42,9 @@ public:
     }
 
     Ray generate_ray(uint x, uint y);
+
+    void* address_of(const std::string& name) override;
+    void* runtime_address_of(const std::string& name);
 
 private:
     Vec3f position;
