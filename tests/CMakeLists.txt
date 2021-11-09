@@ -15,3 +15,5 @@ target_link_libraries(intersection_test
 add_executable(shape_test shape_test.cpp)
 target_link_libraries(shape_test
     kazen_proto_lib)
+
+add_subdirectory(unittests)
