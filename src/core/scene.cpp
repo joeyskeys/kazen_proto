@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include <frozen/set.h>
+#include <frozen/unordered_map.h>
 #include <pugixml.hpp>
 
 #include "scene.h"
@@ -89,13 +90,50 @@ void Scene::parse_from_file(fs::path file_path) {
         return tag;
     }
 
-    constexpr frozen::set<frozen::string, 5> camera_attributes = {
+    template <int N>
+    using AttrSet = forzen::set<frozen::string, N>;
+
+    constexpr AttrSet<5> camera_attributes = {
         "resolution",
         "position",
         "lookat",
         "up",
         "fov"
     };
+
+    template <typename T>
+    bool parse_components(const std::string& attrstr, const std::string& typestr std::stringstream& ss, void *dst) {
+        auto found = attrstr.find(typestr);
+        if (found != std::string::npos) {
+            int type_string_size = typestr.size();
+            int cnt = 1;
+            if (attrstr.size() > type_string_size)
+                cnt = attrstr[type_string_size] - '0';
+            std::array<T, cnt> buf;
+            for (int i = 0; i < cnt; i++)
+                ss >> buf[i];
+            memcpy(dst, &buf, cnt * sizeof(T));
+            return true;
+        }
+        return false;
+    }
+
+    void parse_attribute(pugixml::xml_attribute& attr, auto& attr_set) {
+        auto it = attr_set.find(attr.name());
+        std::string typestr;
+        if (it != attr_set.end()) {
+            ss.str(attr.value());
+            ss >> typestr;
+            int cnt = 1;
+
+            // float  type
+            if (parse_components<float>(typestr, "float", ss, camera->address_of(attr.name())))
+                return;
+            // int type
+            if (parse_components<int>(typestr, "int", ss, camera->address_of(attr.name())))
+                return;
+        }
+    }
 
     auto root_tag = gettag(node);
     if (root_tag == EScene) {
@@ -107,31 +145,8 @@ void Scene::parse_from_file(fs::path file_path) {
             std::string type_str;
             switch (child_tag) {
                 case ECamera:
-                    for (auto& attr : node.attributes()) {
-                        auto it = camera_attributes.find(attr.name());
-                        if (it != camera_attributes.end()) {
-                            ss.str(attr.value());
-                            ss >> type_str;
-                            int comp_cnt = 1;
-
-                            // make a template for this part code
-                            // float type
-                            auto found = type_str.find("float");
-                            if (found != std::string::npos) {
-                                constexpr int float_string_size = sizeof("float") - 1;
-                                if (type_str.size() > float_string_size)
-                                    comp_cnt = type_str[float_string_size] - '0';
-                                std::array<float, comp_cnt> buf;
-                                for (int i = 0; i < comp_cnt; i++)
-                                    ss >> buf[i];
-                                memcpy(camera->address_of(attr.name()), &buf, comp_cnt * sizeof(float));
-                                continue;
-                            }
-                            // int type
-                            found = type_str.find("int");
-                            // blabla
-                        }
-                    }
+                    for (auto& attr : node.attributes())
+                        parse_attribute(attr, camera_attributes);
                     break;
 
                 case EAccelerator:
