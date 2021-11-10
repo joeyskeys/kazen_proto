@@ -127,8 +127,6 @@ void Integrator::render() {
                                 float p;
                                 beta *= mat_ptr->calculate_response(isect, ray);
 
-                                // TODO : switch to OSL here
-
                                 ray.origin = isect.position;
                                 ray.direction = isect.wi;
                                 ray.tmin = 0;

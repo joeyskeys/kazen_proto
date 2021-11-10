@@ -102,13 +102,13 @@ void Scene::parse_from_file(fs::path file_path) {
     };
 
     template <typename T>
-    bool parse_components(const std::string& attrstr, const std::string& typestr std::stringstream& ss, void *dst) {
-        auto found = attrstr.find(typestr);
+    bool parse_components(const std::string& attrstr, std::stringstream& ss, void *dst) {
+        auto found = attrstr.find(TypeInfo<float>::typename);
         if (found != std::string::npos) {
-            int type_string_size = typestr.size();
+            int namelength = TypeInfo<float>::namelength;
             int cnt = 1;
-            if (attrstr.size() > type_string_size)
-                cnt = attrstr[type_string_size] - '0';
+            if (attrstr.size() > namelength)
+                cnt = attrstr[namelength] - '0';
             std::array<T, cnt> buf;
             for (int i = 0; i < cnt; i++)
                 ss >> buf[i];
@@ -127,10 +127,10 @@ void Scene::parse_from_file(fs::path file_path) {
             int cnt = 1;
 
             // float  type
-            if (parse_components<float>(typestr, "float", ss, camera->address_of(attr.name())))
+            if (parse_components<float>(typestr, ss, camera->address_of(attr.name())))
                 return;
             // int type
-            if (parse_components<int>(typestr, "int", ss, camera->address_of(attr.name())))
+            if (parse_components<int>(typestr, ss, camera->address_of(attr.name())))
                 return;
         }
     }
