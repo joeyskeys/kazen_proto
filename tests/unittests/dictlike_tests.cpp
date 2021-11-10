@@ -3,6 +3,9 @@
 
 #include "core/camera.h"
 
+/*
+// This's not going to work
+// Use runtime version..
 TEST_CASE("Member location equality", "[single-file]") {
     Camera cam {
         Vec3f{7.f, 8.f, 15.f},
@@ -18,3 +21,4 @@ TEST_CASE("Member location equality", "[single-file]") {
     REQUIRE(cam.address_of("lookat") == cam.runtime_address_of("lookat"));
     REQUIRE(cam.address_of("near") == cam.runtime_address_of("near"));
 }
+*/

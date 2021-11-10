@@ -1,6 +1,8 @@
+#include <cstring>
+#include <sstream>
 #include <stdexcept>
 
-#include <frozen/unordered_map.h>
+#include <frozen/set.h>
 #include <pugixml.hpp>
 
 #include "scene.h"
@@ -87,12 +89,12 @@ void Scene::parse_from_file(fs::path file_path) {
         return tag;
     }
 
-    constexpr frozen::unordered_map<frozen::string, frozen::string, 2> camera_attributes = {
-        {"resolution", "float2 %f %f"},
-        {"position", "float3 %f %f %f"},
-        {"lookat", "float3 %f %f %f"},
-        {"up", "float3 %f %f %f"},
-        {"fov", "float %f"}
+    constexpr frozen::set<frozen::string, 5> camera_attributes = {
+        "resolution",
+        "position",
+        "lookat",
+        "up",
+        "fov"
     };
 
     auto root_tag = gettag(node);
@@ -100,10 +102,35 @@ void Scene::parse_from_file(fs::path file_path) {
         // Found th root scene node, parse elements
         for (auto& ch : node.children()) {
             auto child_tag = gettag(ch);
+            std::stringstream ss;
+            // Now we assume all attribute component is float type..
+            std::string type_str;
             switch (child_tag) {
                 case ECamera:
                     for (auto& attr : node.attributes()) {
-                        
+                        auto it = camera_attributes.find(attr.name());
+                        if (it != camera_attributes.end()) {
+                            ss.str(attr.value());
+                            ss >> type_str;
+                            int comp_cnt = 1;
+
+                            // make a template for this part code
+                            // float type
+                            auto found = type_str.find("float");
+                            if (found != std::string::npos) {
+                                constexpr int float_string_size = sizeof("float") - 1;
+                                if (type_str.size() > float_string_size)
+                                    comp_cnt = type_str[float_string_size] - '0';
+                                std::array<float, comp_cnt> buf;
+                                for (int i = 0; i < comp_cnt; i++)
+                                    ss >> buf[i];
+                                memcpy(camera->address_of(attr.name()), &buf, comp_cnt * sizeof(float));
+                                continue;
+                            }
+                            // int type
+                            found = type_str.find("int");
+                            // blabla
+                        }
                     }
                     break;
 

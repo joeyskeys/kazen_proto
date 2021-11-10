@@ -44,7 +44,7 @@ public:
     Ray generate_ray(uint x, uint y);
 
     void* address_of(const std::string& name) override;
-    void* runtime_address_of(const std::string& name);
+    //void* runtime_address_of(const std::string& name);
 
 private:
     Vec3f position;
