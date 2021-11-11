@@ -93,12 +93,33 @@ void Scene::parse_from_file(fs::path file_path) {
     template <int N>
     using AttrSet = forzen::set<frozen::string, N>;
 
+    // Make this part together with default value into a template
+    // Parse the template before loading a scene file
+    // Or we could just let user input invalid attributes and simply ignore them
     constexpr AttrSet<5> camera_attributes = {
         "resolution",
         "position",
         "lookat",
         "up",
-        "fov"
+        "fov",
+        "near",
+        "far"
+    };
+
+    constexpr AttrSet<2> sphere_attributes = {
+        "radius",
+        "center"
+    };
+
+    constexpr AttrSet<3> triangle_attributes = {
+        "verta",
+        "vertb",
+        "vertc"
+    };
+
+    constexpr AttrSet<2> pointlight_attributes = {
+        "spec",
+        "position"
     };
 
     template <typename T>
@@ -135,6 +156,7 @@ void Scene::parse_from_file(fs::path file_path) {
         }
     }
 
+    // TODO : The recursive node parsing in nori is more elegant..
     auto root_tag = gettag(node);
     if (root_tag == EScene) {
         // Found th root scene node, parse elements
@@ -153,12 +175,33 @@ void Scene::parse_from_file(fs::path file_path) {
                     break;
 
                 case EObjects:
+                    for (auto& object_node : node.children()) {
+                        auto obj_tag = gettag(object_node);
+                        if (obj_tag == ESphere) {
+                            for (auto& attr : object_node.attributes())
+                                parse_attribute(attr, sphere_attributes);
+                        }
+                        else if (obj_tag == ETriangle) {
+                            for (auto& attr : object_node.attributes())
+                                parse_attribute(attr, triangle_attributes);
+                        }
+                    }
                     break;
 
                 case EMaterials:
+                    for (auto& mat_node : node.children()) {
+
+                    }
                     break;
 
                 case ELights:
+                    for (auto& light_node : node.children()) {
+                        auto light_tag = gettag(light_node);
+                        if (light_tag == EPointLight) {
+                            for (auto& attr : light_node.attributes())
+                                parse_attribute(attr, pointlight_attributes);
+                        }
+                    }
                     break;
 
                 default:
