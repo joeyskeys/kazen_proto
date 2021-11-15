@@ -2,6 +2,8 @@ find_path(Frozen_INCLUDE_DIRS frozen/map.h
     HINTS
         /usr
         /usr/local
+        ${FROZEN_ROOT}
+        $ENV{FROZEN_ROOT}
     PATH_SUFFIXES
         include)
 
