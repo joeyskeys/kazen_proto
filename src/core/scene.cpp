@@ -40,6 +40,7 @@ void Scene::parse_from_file(fs::path file_path) {
 
     enum ETag {
         EScene,
+        EFilm,
         ECamera,
         EAccelerator,
         // objects
@@ -59,6 +60,7 @@ void Scene::parse_from_file(fs::path file_path) {
 
     constexpr frozen::unordered_map<frozen::string, ETag, 2> tags = {
         {"Scene", EScene},
+        {"Film", EFilm},
         {"Camera", ECamera},
         {"Accelerator", EAccelerator},
         {"Objects", EObjects},
@@ -96,6 +98,12 @@ void Scene::parse_from_file(fs::path file_path) {
     // Make this part together with default value into a template
     // Parse the template before loading a scene file
     // Or we could just let user input invalid attributes and simply ignore them
+    constexpr AttrSet<> film_attributes = {
+        "width",
+        "height",
+        "filename"
+    };
+
     constexpr AttrSet<5> camera_attributes = {
         "resolution",
         "position",
@@ -139,7 +147,7 @@ void Scene::parse_from_file(fs::path file_path) {
         return false;
     }
 
-    void parse_attribute(pugixml::xml_attribute& attr, auto& attr_set) {
+    void parse_attribute(pugixml::xml_attribute& attr, DictLike *obj, auto& attr_set) {
         auto it = attr_set.find(attr.name());
         std::string typestr;
         if (it != attr_set.end()) {
@@ -148,10 +156,10 @@ void Scene::parse_from_file(fs::path file_path) {
             int cnt = 1;
 
             // float  type
-            if (parse_components<float>(typestr, ss, camera->address_of(attr.name())))
+            if (parse_components<float>(typestr, ss, obj->address_of(attr.name())))
                 return;
             // int type
-            if (parse_components<int>(typestr, ss, camera->address_of(attr.name())))
+            if (parse_components<int>(typestr, ss, obj->address_of(attr.name())))
                 return;
         }
     }
@@ -166,9 +174,14 @@ void Scene::parse_from_file(fs::path file_path) {
             // Now we assume all attribute component is float type..
             std::string type_str;
             switch (child_tag) {
+                case EFilm:
+                    for (auto& attr : node.attributes())
+                        parse_attribute(attr, film.get(), film_attributes);
+                    break;
+
                 case ECamera:
                     for (auto& attr : node.attributes())
-                        parse_attribute(attr, camera_attributes);
+                        parse_attribute(attr, camera.get(), camera_attributes);
                     break;
 
                 case EAccelerator:
@@ -178,12 +191,14 @@ void Scene::parse_from_file(fs::path file_path) {
                     for (auto& object_node : node.children()) {
                         auto obj_tag = gettag(object_node);
                         if (obj_tag == ESphere) {
-                            for (auto& attr : object_node.attributes())
+                            for (auto& attr : object_node.attributes()) {
                                 parse_attribute(attr, sphere_attributes);
+                            }
                         }
                         else if (obj_tag == ETriangle) {
-                            for (auto& attr : object_node.attributes())
+                            for (auto& attr : object_node.attributes()) {
                                 parse_attribute(attr, triangle_attributes);
+                            }
                         }
                     }
                     break;
@@ -198,8 +213,9 @@ void Scene::parse_from_file(fs::path file_path) {
                     for (auto& light_node : node.children()) {
                         auto light_tag = gettag(light_node);
                         if (light_tag == EPointLight) {
-                            for (auto& attr : light_node.attributes())
+                            for (auto& attr : light_node.attributes()) {
                                 parse_attribute(attr, pointlight_attributes);
+                            }
                         }
                     }
                     break;

@@ -46,7 +46,7 @@ public:
     void* address_of(const std::string& name) override;
     //void* runtime_address_of(const std::string& name);
 
-private:
+public:
     Vec3f position;
     Vec3f lookat;
     Vec3f up;

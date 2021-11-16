@@ -5,4 +5,6 @@
 TEST_CASE("Parse test", "[single-file]") {
     Scene scene;
     scene.parse_from_file("../resource/scene/test_scene.xml");
+
+    REQUIRE(scene.camera->fov == Approx(60));
 }
