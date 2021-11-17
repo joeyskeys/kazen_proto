@@ -1,10 +1,11 @@
 #pragma once
 
 #include <algorithm>
+#include <execution>
 
 #include "base/vec.h"
 #include "base/types.h"
-#include "base/spectrum.h"
+#include "core/spectrum.h"
 
 class BSDF {
 public:
@@ -29,7 +30,7 @@ public:
     {}
 
     template <typename Type, typename Params>
-    bool add_bsdf(const RGBSpectrum& w, const Param& params) {
+    bool add_bsdf(const RGBSpectrum& w, const Params& params) {
         if (bsdf_count >= max_closure)
             return false;
         if (byte_count + sizeof(Type) > max_size) return false;
@@ -49,19 +50,19 @@ public:
             weight_sum += pdfs[i];
         }
 
-        if ((!cuf_off && weight_sum > 0) || weight_sum) {
+        if ((!cut_off && weight_sum > 0) || weight_sum) {
             /*
             std::for_each(pdfs.begin(), pdfs.end(), [](float& p) {
                 p /= weight_sum
             });
             */
-            std::transform(std::excution::par, pdfs.begin(), pdfs.end(), [&weight_sum](auto& pdf){
+            std::transform(std::execution::par, pdfs.begin(), pdfs.end(), [&weight_sum](auto& pdf) {
                 pdf /= weight_sum;
-            });
+                });
         }
     }
 
-    RGBSpectrum eval(const ShaderGlobals& sg, const Vec3f& wi, float& pdf) const {
+    RGBSpectrum eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const {
         RGBSpectrum ret;
         pdf = 0;
         for (int i = 0; i < bsdf_count; i++) {
@@ -73,7 +74,7 @@ public:
         return ret / pdf;
     }
 
-    RGBSpectrum sample(const ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const {
+    RGBSpectrum sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const {
         float acc = 0;
         RGBSpectrum ret;
 
@@ -84,9 +85,9 @@ public:
          * Code here removes the extra pdf multiply/divide..
          * TODO : More tests and analytical expected value deduce.
          */
-        
+
         uint idx = sample[0] * bsdf_count;
-        ret = bsdfs[idx]->sample(sg, wi, pdf) * weights[idx];
+        ret = bsdfs[idx]->sample(sg, sample, wi, pdf) * weights[idx];
         pdf *= pdfs[idx];
 
         // Add up contributions from other bsdfs
@@ -107,7 +108,7 @@ private:
     std::array<float, max_closure> pdfs;
     std::array<RGBSpectrum, max_closure> weights;
     std::array<char, max_size> pool;
-}
+};
 
 struct ShadingResult {
     RGBSpectrum Le;

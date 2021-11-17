@@ -1,6 +1,7 @@
 #pragma once
 
 #include <OSL/oslexec.h>
+#include <OSL/rendererservices.h>
 #include <OpenImageIO/texture.h>
 
 #include "core/hitable.h"
@@ -12,7 +13,7 @@ class KazenRenderServices : public OSL::RendererServices
 public:
     using Transformation = OSL::Matrix44;
 
-    KazenRenderServices(OIIO::TextureSystem *texture_sys, AccelPtr p);
+    KazenRenderServices(OIIO::TextureSystem *texture_sys, HitablePtr p);
     ~KazenRenderServices() {}
 
 private:

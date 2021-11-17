@@ -21,7 +21,8 @@ public:
 public:
     std::unique_ptr<Integrator> integrator;
 
-private:
+public:
+    // Make these fields public for now..
     std::unique_ptr<Film> film;
     std::unique_ptr<Camera> camera;
     std::unique_ptr<Hitable> accelerator;

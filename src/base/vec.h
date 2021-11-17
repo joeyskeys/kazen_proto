@@ -8,7 +8,7 @@
 #include <numeric>
 #include <type_traits>
 
-#include <OSL/Imathx/ImathVec.h>
+#include <OSL/oslconfig.h>
 
 #include "types.h"
 
@@ -42,25 +42,19 @@ public:
             arr[M + i] = sub[i];
     }
 
-    template <typename O, typename = std::enable_if_t<std::is_arithmetic_v<O>>
-    Vec(const OSL::Imath::Vec2<O>& v) {
+    Vec(const OSL::Vec2& v) {
         static_assert(N == 2);
         for (int i = 0; i < N; i++)
             arr[i] = v[i];
     }
 
-    template <typename O, typename = std::enable_if_t<std::is_arithmetic_v<O>>
-    Vec(const OSL::Imath::Vec3<O>& v) {
-        static_assert(N == 3);
+    Vec(const OSL::Vec3& v) {
+        static_assert(N >= 3);
         for (int i = 0; i < N; i++)
             arr[i] = v[i];
-    }
 
-    template <typename O, typename = std::enable_if_t<std::is_arithmetic_v<O>>
-    Vec(const OSL::Imath::Vec4<O>& v) {
-        static_assert(N == 4);
-        for (int i = 0; i < N; i++)
-            arr[i] = v[i];
+        if constexpr (N == 4)
+            arr[3] = static_cast<T>(0);
     }
 
     inline T& x() {
@@ -210,8 +204,8 @@ public:
         return arr[idx];
     }
 
-    template <typename C, typename = std::enable_if_t<std::is_base_of_v<Vec, O>>>
-    T dot(const O& rhs) const {
+    template <typename C, typename = std::enable_if_t<std::is_base_of_v<Vec, C>>>
+    T dot(const C& rhs) const {
         T tmp{0};
         for (int i = 0; i < N; i++)
             tmp += arr[i] * rhs.arr[i];
@@ -235,7 +229,7 @@ public:
     bool is_zero() const {
         bool is_0 = false;
         for (int i = 0; i < N; i++)
-            is_0 &= abs(arr[i]) < epsilon<T>;
+            is_0 &= (abs(arr[i]) < epsilon<T>);
         return is_0;
     }
 
@@ -285,9 +279,9 @@ protected:
 
 //template <typename T, uint N>
 //inline T dot(const Vec<T, N>& a, const Vec<T, N>& b) {
-template <typename C, typename T, uint N, typename = std::enable_if_t<std::is_base_of_v<Vec, C>>>
+template <template<typename, uint> class C, typename T, uint N, typename = std::enable_if_t<std::is_base_of_v<Vec<T, N>, C<T, N>>>>
 inline T dot(const C<T, N>& a, const C<T, N>& b) {
-    return a.dot(b);
+    return a.dot<C<T, N>>(b);
 }
 
 template <typename T, uint N>

@@ -14,7 +14,7 @@ Ray Camera::generate_ray(uint x, uint y) {
     return Ray(position, direction.normalized());
 }
 
-void* Camera::address_of(const std::string& name) override {
+void* Camera::address_of(const std::string& name) {
     if (name == "position")
         return &position;
     else if (name == "lookat")
@@ -22,9 +22,9 @@ void* Camera::address_of(const std::string& name) override {
     else if (name == "up")
         return &up;
     else if (name == "near")
-        return &near;
+        return &near_plane;
     else if (name == "far")
-        return &far;
+        return &far_plane;
     else if (name == "fov")
         return &fov;
 }

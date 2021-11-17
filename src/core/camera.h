@@ -14,15 +14,15 @@ public:
     Camera(const Vec3f& p,
         const Vec3f& l,
         const Vec3f& u,
-        const float near,
-        const float far,
+        const float near_plane,
+        const float far_plane,
         const float fov,
         Film* const film)
         : position(p)
         , lookat(l)
         , up(u.normalized())
-        , near(near)
-        , far(far)
+        , near_plane(near_plane)
+        , far_plane(near_plane)
         , fov(fov)
         , film(film)
     {
@@ -33,10 +33,10 @@ public:
         vertical = normalize(dir.cross(horizontal));
 
         auto fov_in_radian = to_radian(fov);
-        film_plane_height = near * std::tan(fov_in_radian);
+        film_plane_height = near_plane * std::tan(fov_in_radian);
         film_plane_width = film_plane_height * ratio;
         upper_left_corner = position
-            + dir * near
+            + dir * near_plane
             - film_plane_width * 0.5f * horizontal
             - film_plane_height * 0.5f * vertical;
     }
@@ -53,8 +53,8 @@ public:
     Vec3f horizontal;
     Vec3f vertical;
     Vec3f upper_left_corner;
-    float near;
-    float far;
+    float near_plane;
+    float far_plane;
     float fov;
     float ratio;
     float film_plane_width;

@@ -106,11 +106,11 @@ public:
         return *this;
     }
 
-    auto operator OSL::Matrix44<T>() const {
+    operator OSL::Matrix44() const {
         // We only need this for Mat4
         static_assert(N == 4);
 
-        OSL::Matrix44<T> ret;
+        OSL::Matrix44 ret;
         // Unfortunately imath matrix is row majored
         for (int i = 0; i < N; i++)
             for (int j = 0; j < N; j++)

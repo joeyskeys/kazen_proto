@@ -2,6 +2,8 @@ find_path(ASSIMP_INCLUDE_DIRS assimp/Importer.hpp
     HINTS
         /usr
         /usr/local
+        ${ASSIMP_ROOT}
+        $ENV{ASSIMP_ROOT}
     PATH_SUFFIXES
         include)
 
@@ -9,6 +11,8 @@ find_library(ASSIMP_LIB assimp
     HINTS
         /usr
         /usr/local
+        ${ASSIMP_ROOT}
+        $ENV{ASSIMP_ROOT}
     PATH_SUFFIXES
         lib)
 
