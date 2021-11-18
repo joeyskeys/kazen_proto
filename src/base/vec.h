@@ -204,6 +204,21 @@ public:
         return arr[idx];
     }
 
+    operator OSL::Vec2() const {
+        OSL::Vec2 ret;
+        ret.x = arr[0];
+        ret.y = arr[1];
+        return ret;
+    }
+
+    operator OSL::Vec3() const {
+        static_assert(N > 2);
+        OSL::Vec3 ret;
+        ret.x = arr[0];
+        ret.y = arr[1];
+        ret.z = arr[2];
+    }
+
     template <typename C, typename = std::enable_if_t<std::is_base_of_v<Vec, C>>>
     T dot(const C& rhs) const {
         T tmp{0};

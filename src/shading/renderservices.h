@@ -124,7 +124,7 @@ private:
     static void globals_from_hit(
         OSL::ShaderGlobals& sg,
         const Ray& r,
-        const float& t,
+        const Intersection& t,
         bool flip=false);
 
 public:

@@ -41,7 +41,7 @@ public:
         return 1.f;
     }
 
-    float sample(const OSL::ShaderGlobals& sg, Vec3f& wi, float& pdf) const override {
+    float sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override {
         wi = sample_hemisphere();
         //pdf = std::max(dot(wi, params.N), 0.f) * std::numbers::inv_pi_v;
         pdf = std::max(dot(wi, params.N), 0.f) * boost::math::constants::one_div_pi<float>();
