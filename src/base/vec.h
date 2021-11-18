@@ -217,6 +217,7 @@ public:
         ret.x = arr[0];
         ret.y = arr[1];
         ret.z = arr[2];
+        return ret;
     }
 
     template <typename C, typename = std::enable_if_t<std::is_base_of_v<Vec, C>>>
