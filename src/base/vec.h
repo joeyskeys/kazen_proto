@@ -297,7 +297,7 @@ protected:
 //inline T dot(const Vec<T, N>& a, const Vec<T, N>& b) {
 template <template<typename, uint> class C, typename T, uint N, typename = std::enable_if_t<std::is_base_of_v<Vec<T, N>, C<T, N>>>>
 inline T dot(const C<T, N>& a, const C<T, N>& b) {
-    return a.dot<C<T, N>>(b);
+    return a.dot(b);
 }
 
 template <typename T, uint N>
