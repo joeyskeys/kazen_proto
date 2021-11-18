@@ -1,7 +1,11 @@
-#include <numbers>
+// There's a removed feature of cpp20 used in tbb, which caused the problem
+// Use boost instead
+//#include <numbers>
+
+#include <boost/math/constants/constants.hpp>
 
 #include "bsdf.h"
-#include "base/sampling.h"
+#include "core/sampling.h"
 
 enum ClosureID {
     // Just add a few basic closures for test first
@@ -32,13 +36,15 @@ public:
     }
 
     float eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const override {
-        pdf = std::max(dot(wi, params.N), 0.f) * std::numbers::inv_pi_v;
+        //pdf = std::max(dot(wi, params.N), 0.f) * std::numbers::inv_pi_v;
+        pdf = std::max(dot(wi, params.N), 0.f) * boost::math::constants::one_div_pi<float>();
         return 1.f;
     }
 
     float sample(const OSL::ShaderGlobals& sg, Vec3f& wi, float& pdf) const override {
         wi = sample_hemisphere();
-        pdf = std::max(dot(wi, params.N), 0.f) * std::numbers::inv_pi_v;
+        //pdf = std::max(dot(wi, params.N), 0.f) * std::numbers::inv_pi_v;
+        pdf = std::max(dot(wi, params.N), 0.f) * boost::math::constants::one_div_pi<float>();
         return 1.f;
     }
 

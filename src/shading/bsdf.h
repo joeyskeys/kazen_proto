@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <execution>
 
+#include <OSL/oslexec.h>
+
 #include "base/vec.h"
 #include "base/types.h"
 #include "core/spectrum.h"
@@ -36,7 +38,7 @@ public:
         if (byte_count + sizeof(Type) > max_size) return false;
 
         weights[bsdf_count] = w;
-        bsdfs[bsdf_count] = new (pool + byte_count) Type(params);
+        bsdfs[bsdf_count] = new (pool.data() + byte_count) Type(params);
         bsdf_count++;
         byte_count += sizeof(Type);
         return true;
@@ -51,14 +53,14 @@ public:
         }
 
         if ((!cut_off && weight_sum > 0) || weight_sum) {
-            /*
-            std::for_each(pdfs.begin(), pdfs.end(), [](float& p) {
-                p /= weight_sum
+            std::for_each(std::execution::par, pdfs.begin(), pdfs.end(), [&weight_sum](float& pdf) {
+                pdf /= weight_sum;
             });
-            */
+            /*
             std::transform(std::execution::par, pdfs.begin(), pdfs.end(), [&weight_sum](auto& pdf) {
                 pdf /= weight_sum;
                 });
+            */
         }
     }
 

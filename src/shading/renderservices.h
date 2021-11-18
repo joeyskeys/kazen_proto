@@ -13,6 +13,7 @@ class KazenRenderServices : public OSL::RendererServices
 public:
     using Transformation = OSL::Matrix44;
 
+    KazenRenderServices();
     KazenRenderServices(OIIO::TextureSystem *texture_sys, HitablePtr p);
     ~KazenRenderServices() {}
 

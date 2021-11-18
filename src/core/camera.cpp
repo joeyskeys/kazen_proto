@@ -27,4 +27,5 @@ void* Camera::address_of(const std::string& name) {
         return &far_plane;
     else if (name == "fov")
         return &fov;
+    return nullptr;
 }

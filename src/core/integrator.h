@@ -12,6 +12,7 @@
 
 class Integrator {
 public:
+    Integrator();
     Integrator(Camera* cam_ptr, Film* flm_ptr);
 
     void render();

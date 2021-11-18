@@ -5,7 +5,14 @@
 #include "core/ray.h"
 #include "core/transform.h"
 
-KazenRenderServices::KazenRenderServices(OIIO::TextureSystem *tex_sys, AccelPtr p)
+KazenRenderServices::KazenRenderServices()
+    : texture_sys(nullptr)
+    , accel_ptr(nullptr)
+{
+
+}
+
+KazenRenderServices::KazenRenderServices(OIIO::TextureSystem *tex_sys, HitablePtr p)
     : texture_sys(tex_sys)
     , accel_ptr(p)
 {

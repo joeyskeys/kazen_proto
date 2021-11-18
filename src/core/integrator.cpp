@@ -55,11 +55,19 @@ static RGBSpectrum estamate_all_light(const Intersection& isect, const Integrato
     return ret / light_cnt;
 }
 
+Integrator::Integrator()
+    : accel_ptr(nullptr)
+    , camera_ptr(nullptr)
+    , film_ptr(nullptr)
+{
+
+}
+
 Integrator::Integrator(Camera* cam_ptr, Film* flm_ptr)
     : camera_ptr(cam_ptr)
     , film_ptr(flm_ptr)
 {
-    shadingsys = std::make_unique<OSL::ShadingSystem>(&rend, NULL, &errhandler);
+    shadingsys = std::make_unique<OSL::ShadingSystem>(&rend, nullptr, &errhandler);
     register_closures(shadingsys.get());
 }
 

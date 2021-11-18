@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.12)
 project(kazen-prototype LANGUAGES CXX C)
 
 cmake_policy(SET CMP0074 NEW)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
@@ -50,7 +50,9 @@ set(CORE_HEADERS
     src/core/scene.h
     src/core/shape.h
     src/core/spectrum.h
-    src/core/transform.h)
+    src/core/transform.h
+    src/shading/bsdf.h
+    src/shading/renderservices.h)
 
 set(CORE_SOURCES
     src/core/accel.cpp
@@ -60,14 +62,17 @@ set(CORE_SOURCES
     src/core/light.cpp
     src/core/material.cpp
     src/core/ray.cpp
-    src/core/shape.cpp)
+    src/core/shape.cpp
+    src/shading/bsdf.cpp
+    src/shading/renderservices.cpp)
 
 add_library(kazen_proto_lib
     ${CORE_SOURCES})
 target_link_libraries(kazen_proto_lib
     ${ASSIMP_LIBRARIES}
     ${Boost_LIBRARIES}
-    ${Pugixml_LIBRARIES})
+    ${Pugixml_LIBRARIES}
+    ${OSL_LIBRARIES})
 
 add_executable(kazen src/proto/main.cpp)
 target_link_libraries(kazen
