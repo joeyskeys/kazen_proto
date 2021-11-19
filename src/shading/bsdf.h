@@ -4,6 +4,7 @@
 #include <execution>
 
 #include <OSL/oslexec.h>
+#include <OSL/oslclosure.h>
 
 #include "base/vec.h"
 #include "base/types.h"

@@ -300,6 +300,12 @@ inline T dot(const C<T, N>& a, const C<T, N>& b) {
     return a.dot(b);
 }
 
+template <template<typename, uint> class C, typename D, typename T, uint N,
+    typename = std::enable_if_t<std::is_base_of_v<Vec<T, N>, C<T, N>>>, typename = std::enable_if_t<std::is_convertible_v<D, C<T, N>>>>
+inline T dot(const C<T, N>& a, const D& b) {
+    return a.dot(static_cast<C<T, N>>(b));
+}
+
 template <typename T, uint N>
 inline auto cross(const Vec<T, N>& a, const Vec<T, N>& b) {
     return a.cross(b);

@@ -3,9 +3,12 @@
 //#include <numbers>
 
 #include <boost/math/constants/constants.hpp>
+#include <OSL/genclosure.h>
 
 #include "bsdf.h"
 #include "core/sampling.h"
+
+using OSL::TypeDesc;
 
 enum ClosureID {
     // Just add a few basic closures for test first
@@ -28,22 +31,28 @@ class Diffuse : public BSDF {
 public:
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
-            CLOSURE_VECTOR_PARAM(Params, N),
-            CLOSURE_FINISH_PARAM(Params)
+            CLOSURE_VECTOR_PARAM(DiffuseParams, N),
+            CLOSURE_FINISH_PARAM(DiffuseParams)
         };
 
         shadingsys.register_closure("diffuse", DiffuseID, params, nullptr, nullptr);
     }
 
+    Diffuse(const DiffuseParams& p)
+        : BSDF()
+        , params(p)
+    {}
+
     float eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const override {
         //pdf = std::max(dot(wi, params.N), 0.f) * std::numbers::inv_pi_v;
-        pdf = std::max(dot(wi, params.N), 0.f) * boost::math::constants::one_div_pi<float>();
+        pdf = std::max(dot(wi, static_cast<Vec3f>(params.N)), 0.f) * boost::math::constants::one_div_pi<float>();
         return 1.f;
     }
 
     float sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override {
         wi = sample_hemisphere();
         //pdf = std::max(dot(wi, params.N), 0.f) * std::numbers::inv_pi_v;
+        // dot(wi, params.N) becomes available after a dot overload is added
         pdf = std::max(dot(wi, params.N), 0.f) * boost::math::constants::one_div_pi<float>();
         return 1.f;
     }
@@ -99,22 +108,23 @@ class Emission : public BSDF {
 namespace
 {
     template <typename ClosureType>
-    void register_closure(OSLShadingSystem& shadingsys) {
+    void register_closure(OSL::ShadingSystem& shadingsys) {
         ClosureType::register_closure(shadingsys);
     }
 }
 
 void register_closures(OSL::ShadingSystem *shadingsys) {
-    register_closure<Diffuse>(shadingsys);
+    register_closure<Diffuse>(*shadingsys);
 }
 
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only) {
     if (!closure)
         return;
 
+    RGBSpectrum cw;
     switch (closure->id) {
         case OSL::ClosureColor::MUL:
-            auto cw = w * closure->as_mul()->weight;
+            cw = w * closure->as_mul()->weight;
             process_closure(ret, closure->as_mul()->closure, cw, light_only);
             break;
 
@@ -124,13 +134,13 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
             break;
 
         default:
-            const ClosureComponent *comp = closure->as_comp();
-            RGBSpectrum cw = w * comp->w;
+            const OSL::ClosureComponent *comp = closure->as_comp();
+            cw = w * comp->w;
             
             if (!light_only) {
                 bool status = false;
-                switch (comp-id) {
-                    case DIFFUSE_ID:        status = ret.bsdf.add_bsdf<Diffuse, DiffuseParams>(cw, *comp->as<Diffuse>().params);
+                switch (comp->id) {
+                    case DiffuseID:        status = ret.bsdf.add_bsdf<Diffuse, DiffuseParams>(cw, comp->as<Diffuse>()->params);
                         break;
                 }
                 OSL_ASSERT(status && "Invalid closure invoked");
