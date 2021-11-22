@@ -31,7 +31,8 @@ bool parse_components(const std::string& attrstr, std::stringstream& ss, void* d
     return false;
 }
 
-static void parse_attribute(pugixml::xml_attribute, DictLike* obj, auto& attr_set) {
+template <typename T>
+void parse_attribute(pugi::xml_attribute, DictLike* obj, T& attr_set) {
     auto it = attr_set.find(attr.name());
     std::string typestr;
     if (it != attr_set.end()) {

@@ -5,6 +5,7 @@
 
 #include <OpenImageIO/imageio.h>
 
+#include "base/dictlike.h"
 #include "base/types.h"
 #include "core/pixel.h"
 #include "core/spectrum.h"
@@ -30,7 +31,7 @@ private:
     std::unique_ptr<Pixel[]> buf;
 };
 
-class Film {
+class Film : public DictLike {
 public:
     Film(uint w, uint h, const std::string& f);
     Film(uint w, uint h, std::string&& f);
@@ -52,6 +53,8 @@ public:
     inline auto get_tile_count() {
         return tiles.size();
     }
+
+    void* address_of(const std::string& name) override;
 
 public:
     const uint width;

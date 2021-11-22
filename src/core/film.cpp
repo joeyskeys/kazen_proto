@@ -83,3 +83,13 @@ bool Film::write_tiles()
     }
     return true;
 }
+
+void* Film::address_of(const std::string& name) {
+    if (name == "width")
+        return &width;
+    else if (name == "height")
+        return &height;
+    else if (name == "filename")
+        return &filename;
+    return nullptr;
+}
