@@ -1,23 +1,63 @@
 #include <cstring>
-#include <sstream>
+#include <iostream>
+#include <fstream>
 #include <stdexcept>
 
+#include <fmt/core.h>
 #include <frozen/set.h>
+#include <frozen/string.h>
 #include <frozen/unordered_map.h>
 #include <pugixml.hpp>
 
 #include "scene.h"
 
-void Scene::parse_from_file(fs::path file_path) {
+template <int N>
+using AttrSet = frozen::set<frozen::string, N>;
+
+template <typename T>
+bool parse_components(const std::string& attrstr, std::stringstream& ss, void* dst) {
+    auto found = attrstr.find(TypeInfo<float>::typename);
+    if (found != std::string::npos) {
+        int namelength = TypeInfo<float>::namelength;
+        int cnt = 1;
+        if (attrstr.size() > namelength)
+            cnt = attrstr[namelength] - '0';
+        std::array<T, cnt> buf;
+        for (int i = 0; i < cnt; i++)
+            ss >> buf[i];
+        memcpy(dst, &buf, cnt * sizeof(T));
+        return true;
+    }
+    return false;
+}
+
+static void parse_attribute(pugixml::xml_attribute, DictLike* obj, auto& attr_set) {
+    auto it = attr_set.find(attr.name());
+    std::string typestr;
+    if (it != attr_set.end()) {
+        ss.str(attr.value());
+        ss >> typestr;
+        int cnt = 1;
+
+        // float  type
+        if (parse_components<float>(typestr, ss, obj->address_of(attr.name())))
+            return;
+        // int type
+        if (parse_components<int>(typestr, ss, obj->address_of(attr.name())))
+            return;
+    }
+}
+
+void Scene::parse_from_file(fs::path filepath) {
     // Some code copied from nori:
     // https://github.com/wjakob/nori.git
 
     pugi::xml_document doc;
-    pugi::xml_parse_result ret = doc.load_file(file_path.c_str());
+    pugi::xml_parse_result ret = doc.load_file(filepath.c_str());
 
-        /* Helper function: map a position offset in bytes to a more readable line/column value */
-    auto offset = [&](ptrdiff_t pos) -> std::string {
-        std::fstream is(filename);
+    /* Helper function: map a position offset in bytes to a more readable line/column value */
+    auto offset = [&filepath](ptrdiff_t pos) -> std::string {
+        std::fstream is(filepath.c_str());
         char buffer[1024];
         int line = 0, linestart = 0, offset = 0;
         while (is.good()) {
@@ -25,7 +65,7 @@ void Scene::parse_from_file(fs::path file_path) {
             for (int i = 0; i < is.gcount(); ++i) {
                 if (buffer[i] == '\n') {
                     if (offset + i >= pos)
-                        return tfm::format("line %i, col %i", line + 1, pos - linestart);
+                        return fmt::format("line %i, col %i", line + 1, pos - linestart);
                     ++line;
                     linestart = offset + i;
                 }
@@ -35,8 +75,8 @@ void Scene::parse_from_file(fs::path file_path) {
         return "byte offset " + std::to_string(pos);
     };
 
-    if (!result) /* There was a parser / file IO error */
-        throw std::runtime_error("Error while parsing \"%s\": %s (at %s)", filename, result.description(), offset(result.offset));
+    if (!ret) /* There was a parser / file IO error */
+        throw std::runtime_error(fmt::format("Error while parsing \"%s\": %s (at %s)", filepath, ret.description(), offset(ret.offset)));
 
     enum ETag {
         EScene,
@@ -77,28 +117,25 @@ void Scene::parse_from_file(fs::path file_path) {
     auto& node = *doc.begin();
     // Skip over comments
     while (node.type() == pugi::node_comment || node.type() == pugi::node_declaration)
-        ++node;
+        node = node.next_sibling();
 
     if (node.type() != pugi::node_element)
         throw std::runtime_error(
-            "Error while parsing \"%s\": unexpected content at %s", file_path, offset(node.offset_debug()));
+            fmt::format("Error while parsing \"%s\": unexpected content at %s", filepath, offset(node.offset_debug())));
 
-    auto gettag = [&file_path](pugi::xml_node &node) {
-        auto it = tags.find(node.name());
+    auto gettag = [&filepath, &offset](pugi::xml_node& node) {
+        auto it = tags.find(frozen::string(node.name()));
         if (it == tags.end())
-            throw std::runtime_error("Error while parsing \"%s\": unexpected tag \"%s\" at %s",
-                file_path, node.name(), offset(node.offset_debug()));
+            throw std::runtime_error(fmt::format("Error while parsing \"%s\": unexpected tag \"%s\" at %s",
+                filepath, node.name(), offset(node.offset_debug())));
         int tag = it->second;
         return tag;
-    }
-
-    template <int N>
-    using AttrSet = forzen::set<frozen::string, N>;
+    };
 
     // Make this part together with default value into a template
     // Parse the template before loading a scene file
     // Or we could just let user input invalid attributes and simply ignore them
-    constexpr AttrSet<> film_attributes = {
+    constexpr AttrSet<3> film_attributes = {
         "width",
         "height",
         "filename"
@@ -129,40 +166,6 @@ void Scene::parse_from_file(fs::path file_path) {
         "spec",
         "position"
     };
-
-    template <typename T>
-    bool parse_components(const std::string& attrstr, std::stringstream& ss, void *dst) {
-        auto found = attrstr.find(TypeInfo<float>::typename);
-        if (found != std::string::npos) {
-            int namelength = TypeInfo<float>::namelength;
-            int cnt = 1;
-            if (attrstr.size() > namelength)
-                cnt = attrstr[namelength] - '0';
-            std::array<T, cnt> buf;
-            for (int i = 0; i < cnt; i++)
-                ss >> buf[i];
-            memcpy(dst, &buf, cnt * sizeof(T));
-            return true;
-        }
-        return false;
-    }
-
-    void parse_attribute(pugixml::xml_attribute& attr, DictLike *obj, auto& attr_set) {
-        auto it = attr_set.find(attr.name());
-        std::string typestr;
-        if (it != attr_set.end()) {
-            ss.str(attr.value());
-            ss >> typestr;
-            int cnt = 1;
-
-            // float  type
-            if (parse_components<float>(typestr, ss, obj->address_of(attr.name())))
-                return;
-            // int type
-            if (parse_components<int>(typestr, ss, obj->address_of(attr.name())))
-                return;
-        }
-    }
 
     // TODO : The recursive node parsing in nori is more elegant..
     auto root_tag = gettag(node);
@@ -204,7 +207,7 @@ void Scene::parse_from_file(fs::path file_path) {
                     break;
 
                 case EMaterials:
-                    for (auto& mat_node : node.children()) {
+                    for (auto& mat_node : node.children()) {    
 
                     }
                     break;

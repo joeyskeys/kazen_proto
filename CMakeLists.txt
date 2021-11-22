@@ -31,6 +31,9 @@ include_directories(${Frozen_INCLUDE_DIRS})
 find_package(Pugixml REQUIRED)
 include_directories(${Pugi_INCLUDE_DIRS})
 
+find_package(FMT REQUIRED)
+include_directories(${FMT_INCLUDE_DIRS})
+
 include_directories("./src")
 
 set(BASE_HEADERS
@@ -62,6 +65,7 @@ set(CORE_SOURCES
     src/core/light.cpp
     src/core/material.cpp
     src/core/ray.cpp
+    src/core/scene.cpp
     src/core/shape.cpp
     src/shading/bsdf.cpp
     src/shading/renderservices.cpp)

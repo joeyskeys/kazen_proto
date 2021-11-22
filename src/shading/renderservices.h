@@ -18,7 +18,7 @@ public:
     ~KazenRenderServices() {}
 
 private:
-    int supports(OIIO::string_view feature) const override;
+    //int supports(OIIO::string_view feature) const override;
 
     bool get_matrix(
         OSL::ShaderGlobals *sg,
