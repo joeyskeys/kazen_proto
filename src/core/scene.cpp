@@ -196,12 +196,16 @@ void Scene::parse_from_file(fs::path filepath) {
                         auto obj_tag = gettag(object_node);
                         if (obj_tag == ESphere) {
                             for (auto& attr : object_node.attributes()) {
-                                parse_attribute(attr, sphere_attributes);
+                                auto obj_ptr = std::make_unique<Sphere>();
+                                parse_attribute(attr, obj_ptr.get(), sphere_attributes);
+                                objects.push_back(std::move(obj_ptr));
                             }
                         }
                         else if (obj_tag == ETriangle) {
                             for (auto& attr : object_node.attributes()) {
-                                parse_attribute(attr, triangle_attributes);
+                                auto obj_ptr = std::make_unique<Triangle>();
+                                parse_attribute(attr, obj_ptr.get(), triangle_attributes);
+                                objects.push_back(std::move(obj_ptr));
                             }
                         }
                     }
@@ -218,7 +222,9 @@ void Scene::parse_from_file(fs::path filepath) {
                         auto light_tag = gettag(light_node);
                         if (light_tag == EPointLight) {
                             for (auto& attr : light_node.attributes()) {
-                                parse_attribute(attr, pointlight_attributes);
+                                auto lgt_ptr = std::make_unique<PointLight>();
+                                parse_attribute(attr, lgt_ptr.get(), pointlight_attributes);
+                                lights.push_back(std::move(lgt_ptr));
                             }
                         }
                     }

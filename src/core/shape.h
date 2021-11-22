@@ -10,8 +10,14 @@
 
 class Ray;
 
-class Shape : public Hitable {
+class Shape : public Hitable, public DictLike {
 public:
+    Shape()
+        : Hitable(Transform())
+        , mat(nullptr)
+        , obj_id(0)
+    {}
+
     Shape(const Transform& l2w, const MaterialPtr m, const uint& id)
         : Hitable(l2w)
         , mat(m)
@@ -27,6 +33,12 @@ public:
 
 class Sphere : public Shape {
 public:
+    Sphere()
+        : Shape()
+        , radius(1)
+        , center(Vec3f(0, 0, 0))
+    {}
+
     Sphere(const Transform& l2w, const uint& id, const float r, const MaterialPtr m=nullptr, const Vec3f& c=Vec3f{0.f, 0.f, 0.f})
         : Shape(l2w, m, id)
         , radius(r)
@@ -44,6 +56,14 @@ public:
 
 class Triangle : public Shape {
 public:
+    Triangle()
+        : Shape()
+    {
+        verts[0] = Vec3f(0, 0, 0);
+        verts[1] = Vec3f(1, 0, 0);
+        verts[2] = Vec3f(0, 0, -1);
+    }
+
     Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c, const MaterialPtr m=nullptr)
         : Shape(l2w, m, 1)
     {

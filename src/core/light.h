@@ -1,15 +1,16 @@
 #pragma once
 
-#include "spectrum.h"
-#include "material.h"
-#include "hitable.h"
+#include "base/dictlike.h"
+#include "core/spectrum.h"
+#include "core/material.h"
+#include "core/hitable.h"
 
 class VisibilityTester {
 public:
 
 };
 
-class Light {
+class Light : public DictLike {
 public:
     Light(RGBSpectrum l=RGBSpectrum(1.f, 1.f, 1.f), bool d=true)
         : light_radiance(l)
@@ -35,5 +36,8 @@ public:
 
     RGBSpectrum sample_l(const Intersection& isect, Vec3f& wi, float& pdf, const HitablePtr scene) const;
 
+    void* address_of(const std::string& name) override;
+    
+public:
     Vec3f position;
 };
