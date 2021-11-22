@@ -29,6 +29,11 @@ public:
 
 class PointLight : public Light {
 public:
+    PointLight()
+        : Light(RGBSpectrum(1, 1, 1), true)
+        , position(Vec3f(0, 5, 0))
+    {}
+    
     PointLight(const RGBSpectrum& l, const Vec3f& pos)
         : Light(l, true)
         , position(pos)

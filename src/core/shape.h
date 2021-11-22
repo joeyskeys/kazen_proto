@@ -4,9 +4,10 @@
 #include <optional>
 #include <memory>
 
-#include "transform.h"
-#include "hitable.h"
-#include "material.h"
+#include "base/dictlike.h"
+#include "core/transform.h"
+#include "core/hitable.h"
+#include "core/material.h"
 
 class Ray;
 
@@ -49,6 +50,8 @@ public:
     bool intersect(const Ray& r, float& t) const override;
     AABBf bbox() const override;
 
+    void* address_of(const std::string& name) override;
+
     // Members
     float radius;
     Vec3f center;
@@ -76,6 +79,8 @@ public:
     bool intersect(const Ray& r, float& t) const override;
     AABBf bbox() const override;
 
+    void* address_of(const std::string& name) override;
+
     Vec3f verts[3];
 };
 
@@ -90,6 +95,8 @@ public:
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
     AABBf bbox() const override;
+
+    //void* address_of(const std::string& name) override
 
     std::vector<Vec3f> verts;
     std::vector<Vec3i> indice;

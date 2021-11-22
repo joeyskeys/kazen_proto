@@ -126,6 +126,14 @@ static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, Intersec
     return true;
 }
 
+void* Sphere::address_of(const std::string& name) {
+    if (name == "radius")
+        return &radius;
+    else if (name == "center")
+        return &center;
+    return nullptr;
+}
+
 bool Triangle::intersect(const Ray& r, Intersection& isect) const {
     auto local_r = world_to_local.apply(r);
 
@@ -181,6 +189,16 @@ AABBf Triangle::bbox() const {
     auto v1_in_world = local_to_world.apply(verts[1]);
     auto v2_in_world = local_to_world.apply(verts[2]);
     return bbox_of_triangle(v0_in_world, v1_in_world, v2_in_world);
+}
+
+void* Triangle::address_of(const std::string& name) {
+    if (name == "verta")
+        return &verts[0];
+    else if (name == "vertb")
+        return &verts[1];
+    else if (name == "vertc")
+        return &verts[2];
+    return nullptr;
 }
 
 bool TriangleMesh::intersect(const Ray& r, Intersection& isect) const {

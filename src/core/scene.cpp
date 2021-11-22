@@ -16,13 +16,15 @@ using AttrSet = frozen::set<frozen::string, N>;
 
 template <typename T>
 bool parse_components(const std::string& attrstr, std::stringstream& ss, void* dst) {
-    auto found = attrstr.find(TypeInfo<float>::typename);
+    auto found = attrstr.find(TypeInfo<float>::name);
     if (found != std::string::npos) {
         int namelength = TypeInfo<float>::namelength;
         int cnt = 1;
         if (attrstr.size() > namelength)
             cnt = attrstr[namelength] - '0';
-        std::array<T, cnt> buf;
+
+        // Assume we have 4 components at most
+        std::array<T, 4> buf;
         for (int i = 0; i < cnt; i++)
             ss >> buf[i];
         memcpy(dst, &buf, cnt * sizeof(T));
@@ -32,8 +34,8 @@ bool parse_components(const std::string& attrstr, std::stringstream& ss, void* d
 }
 
 template <typename T>
-void parse_attribute(pugi::xml_attribute, DictLike* obj, T& attr_set) {
-    auto it = attr_set.find(attr.name());
+void parse_attribute(std::stringstream& ss, pugi::xml_attribute attr, DictLike* obj, T& attr_set) {
+    auto it = attr_set.find(frozen::string(attr.name()));
     std::string typestr;
     if (it != attr_set.end()) {
         ss.str(attr.value());
@@ -99,7 +101,7 @@ void Scene::parse_from_file(fs::path filepath) {
         EInvalid
     };
 
-    constexpr frozen::unordered_map<frozen::string, ETag, 2> tags = {
+    constexpr frozen::unordered_map<frozen::string, ETag, 13> tags = {
         {"Scene", EScene},
         {"Film", EFilm},
         {"Camera", ECamera},
@@ -124,7 +126,7 @@ void Scene::parse_from_file(fs::path filepath) {
         throw std::runtime_error(
             fmt::format("Error while parsing \"%s\": unexpected content at %s", filepath, offset(node.offset_debug())));
 
-    auto gettag = [&filepath, &offset](pugi::xml_node& node) {
+    auto gettag = [&filepath, &offset, &tags](pugi::xml_node& node) {
         auto it = tags.find(frozen::string(node.name()));
         if (it == tags.end())
             throw std::runtime_error(fmt::format("Error while parsing \"%s\": unexpected tag \"%s\" at %s",
@@ -142,7 +144,7 @@ void Scene::parse_from_file(fs::path filepath) {
         "filename"
     };
 
-    constexpr AttrSet<5> camera_attributes = {
+    constexpr AttrSet<7> camera_attributes = {
         "resolution",
         "position",
         "lookat",
@@ -180,12 +182,12 @@ void Scene::parse_from_file(fs::path filepath) {
             switch (child_tag) {
                 case EFilm:
                     for (auto& attr : node.attributes())
-                        parse_attribute(attr, film.get(), film_attributes);
+                        parse_attribute(ss, attr, film.get(), film_attributes);
                     break;
 
                 case ECamera:
                     for (auto& attr : node.attributes())
-                        parse_attribute(attr, camera.get(), camera_attributes);
+                        parse_attribute(ss, attr, camera.get(), camera_attributes);
                     break;
 
                 case EAccelerator:
@@ -197,14 +199,14 @@ void Scene::parse_from_file(fs::path filepath) {
                         if (obj_tag == ESphere) {
                             for (auto& attr : object_node.attributes()) {
                                 auto obj_ptr = std::make_unique<Sphere>();
-                                parse_attribute(attr, obj_ptr.get(), sphere_attributes);
+                                parse_attribute(ss, attr, obj_ptr.get(), sphere_attributes);
                                 objects.push_back(std::move(obj_ptr));
                             }
                         }
                         else if (obj_tag == ETriangle) {
                             for (auto& attr : object_node.attributes()) {
                                 auto obj_ptr = std::make_unique<Triangle>();
-                                parse_attribute(attr, obj_ptr.get(), triangle_attributes);
+                                parse_attribute(ss, attr, obj_ptr.get(), triangle_attributes);
                                 objects.push_back(std::move(obj_ptr));
                             }
                         }
@@ -223,7 +225,7 @@ void Scene::parse_from_file(fs::path filepath) {
                         if (light_tag == EPointLight) {
                             for (auto& attr : light_node.attributes()) {
                                 auto lgt_ptr = std::make_unique<PointLight>();
-                                parse_attribute(attr, lgt_ptr.get(), pointlight_attributes);
+                                parse_attribute(ss, attr, lgt_ptr.get(), pointlight_attributes);
                                 lights.push_back(std::move(lgt_ptr));
                             }
                         }

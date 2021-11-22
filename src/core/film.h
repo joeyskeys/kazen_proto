@@ -57,8 +57,10 @@ public:
     void* address_of(const std::string& name) override;
 
 public:
-    const uint width;
-    const uint height;
+    //const uint width;
+    //const uint height;
+    uint width;
+    uint height;
     std::string  filename;
 
     uint tile_res_x, tile_res_y;
