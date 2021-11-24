@@ -68,7 +68,7 @@ void Scene::parse_from_file(fs::path filepath) {
             for (int i = 0; i < is.gcount(); ++i) {
                 if (buffer[i] == '\n') {
                     if (offset + i >= pos)
-                        return fmt::format("line %i, col %i", line + 1, pos - linestart);
+                        return fmt::format("line {}, col {}", line + 1, pos - linestart);
                     ++line;
                     linestart = offset + i;
                 }
@@ -79,13 +79,14 @@ void Scene::parse_from_file(fs::path filepath) {
     };
 
     if (!ret) /* There was a parser / file IO error */
-        throw std::runtime_error(fmt::format("Error while parsing \"%s\": %s (at %s)", filepath, ret.description(), offset(ret.offset)));
+        throw std::runtime_error(fmt::format("Error while parsing \"{}\": {} (at {})", filepath, ret.description(), offset(ret.offset)));
 
     enum ETag {
         EScene,
         EFilm,
         ECamera,
         EAccelerator,
+        EIntegrator,
         // objects
         EObjects,
         ESphere,
@@ -101,11 +102,12 @@ void Scene::parse_from_file(fs::path filepath) {
         EInvalid
     };
 
-    constexpr frozen::unordered_map<frozen::string, ETag, 13> tags = {
+    constexpr frozen::unordered_map<frozen::string, ETag, 14> tags = {
         {"Scene", EScene},
         {"Film", EFilm},
         {"Camera", ECamera},
         {"Accelerator", EAccelerator},
+        {"Integrator", EIntegrator},
         {"Objects", EObjects},
         {"Sphere", ESphere},
         {"Triangle", ETriangle},
@@ -124,12 +126,12 @@ void Scene::parse_from_file(fs::path filepath) {
 
     if (node.type() != pugi::node_element)
         throw std::runtime_error(
-            fmt::format("Error while parsing \"%s\": unexpected content at %s", filepath, offset(node.offset_debug())));
+            fmt::format("Error while parsing \"{}\": unexpected content at {}", filepath, offset(node.offset_debug())));
 
     auto gettag = [&filepath, &offset, &tags](pugi::xml_node& node) {
         auto it = tags.find(frozen::string(node.name()));
         if (it == tags.end())
-            throw std::runtime_error(fmt::format("Error while parsing \"%s\": unexpected tag \"%s\" at %s",
+            throw std::runtime_error(fmt::format("Error while parsing {}: unexpected tag \"{}\" at {}",
                 filepath, node.name(), offset(node.offset_debug())));
         int tag = it->second;
         return tag;

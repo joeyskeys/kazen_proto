@@ -1,5 +1,5 @@
 
-#include <catch2/catch_test_macro.hpp>
+#include <catch2/catch.hpp>
 
 #include "core/camera.h"
 

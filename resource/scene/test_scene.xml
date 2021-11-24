@@ -19,7 +19,7 @@
         <PointLight spec="float3 0.3 0.9 0.3" position="float3 0 10 -20" />
     </Lights>
 
-    <Accel type="bvh" />
+    <Accelerator type="bvh" />
     <Integrator type="pt" />
 
 </Scene>
