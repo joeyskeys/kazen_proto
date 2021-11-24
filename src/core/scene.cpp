@@ -183,6 +183,8 @@ void Scene::parse_from_file(fs::path filepath) {
             std::string type_str;
             switch (child_tag) {
                 case EFilm:
+                    if (!film)
+                        film = std::make_unique<Film>();
                     for (auto& attr : node.attributes())
                         parse_attribute(ss, attr, film.get(), film_attributes);
                     break;

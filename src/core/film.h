@@ -33,6 +33,7 @@ private:
 
 class Film : public DictLike {
 public:
+    Film();
     Film(uint w, uint h, const std::string& f);
     Film(uint w, uint h, std::string&& f);
 

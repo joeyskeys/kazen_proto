@@ -25,6 +25,12 @@ void Tile::set_tile_color(const RGBSpectrum& s)
         buf[i] = s;
 }
 
+Film::Film()
+    : width(800)
+    , height(600)
+    , filename("test.jpg")
+{}
+
 Film::Film(unsigned int w, unsigned int h, const std::string& f)
     : width(w)
     , height(h)
