@@ -10,6 +10,11 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty)
 
+if(WIN32)
+    # Avoid compile error caused by min/max on WINDOWS
+    add_definitions(-DNOMINMAX)
+endif(WIN32)
+
 find_package(OIIO REQUIRED)
 include_directories(${OIIO_INCLUDE_DIRS})
 
