@@ -51,6 +51,13 @@ void parse_attribute(std::stringstream& ss, pugi::xml_attribute attr, DictLike* 
     }
 }
 
+Scene::Scene()
+    : film(std::make_unique<Film>())
+    , camera(std::make_unique<Camera>())
+{
+    camera->film = film.get();
+}
+
 void Scene::parse_from_file(fs::path filepath) {
     // Some code copied from nori:
     // https://github.com/wjakob/nori.git
@@ -183,8 +190,6 @@ void Scene::parse_from_file(fs::path filepath) {
             std::string type_str;
             switch (child_tag) {
                 case EFilm:
-                    if (!film)
-                        film = std::make_unique<Film>();
                     for (auto& attr : node.attributes())
                         parse_attribute(ss, attr, film.get(), film_attributes);
                     break;

@@ -16,6 +16,8 @@ namespace fs = std::filesystem;
 
 class Scene {
 public:
+    Scene();
+    
     void parse_from_file(fs::path file_path);
 
 public:

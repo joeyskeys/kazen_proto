@@ -11,6 +11,16 @@
 
 class Camera : public DictLike {
 public:
+    Camera()
+        : position(Vec3f(0, 0, 5))
+        , lookat(Vec3f(0, 0, 0))
+        , up(Vec3f(0, 1, 0))
+        , near_plane(0)
+        , far_plane(1000)
+        , fov(60)
+        , film(nullptr)
+    {}
+
     Camera(const Vec3f& p,
         const Vec3f& l,
         const Vec3f& u,

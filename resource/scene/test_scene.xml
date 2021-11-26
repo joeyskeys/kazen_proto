@@ -1,4 +1,5 @@
 <Scene>
+    <Film width="float 800" height="float 600" />
 
     <Camera resolution="float2 800 600" position="float3 7 8 15" lookat="float3 0, 3 -20" up="float3 0 1 0" fov="float 60" />
 
