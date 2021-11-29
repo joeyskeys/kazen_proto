@@ -54,6 +54,7 @@ void parse_attribute(std::stringstream& ss, pugi::xml_attribute attr, DictLike* 
 Scene::Scene()
     : film(std::make_unique<Film>())
     , camera(std::make_unique<Camera>())
+    , accelerator(nullptr)
 {
     camera->film = film.get();
 }
@@ -200,6 +201,13 @@ void Scene::parse_from_file(fs::path filepath) {
                     break;
 
                 case EAccelerator:
+                    // BVH only for now
+                    accelerator = std::make_shared<BVHAccel>(objects, 0, objects.size());
+                    break;
+
+                case EIntegrator:
+                    // pt only for now
+                    integrator = std::make_unique<Integrator>(camera.get(), film.get());
                     break;
 
                 case EObjects:
@@ -207,14 +215,14 @@ void Scene::parse_from_file(fs::path filepath) {
                         auto obj_tag = gettag(object_node);
                         if (obj_tag == ESphere) {
                             for (auto& attr : object_node.attributes()) {
-                                auto obj_ptr = std::make_unique<Sphere>();
+                                auto obj_ptr = std::make_shared<Sphere>();
                                 parse_attribute(ss, attr, obj_ptr.get(), sphere_attributes);
                                 objects.push_back(std::move(obj_ptr));
                             }
                         }
                         else if (obj_tag == ETriangle) {
                             for (auto& attr : object_node.attributes()) {
-                                auto obj_ptr = std::make_unique<Triangle>();
+                                auto obj_ptr = std::make_shared<Triangle>();
                                 parse_attribute(ss, attr, obj_ptr.get(), triangle_attributes);
                                 objects.push_back(std::move(obj_ptr));
                             }
@@ -224,7 +232,13 @@ void Scene::parse_from_file(fs::path filepath) {
 
                 case EMaterials:
                     for (auto& mat_node : node.children()) {    
-
+                        auto mat_tag = gettag(mat_node)
+                        if (mat_tag == EShaderGroup) {
+                            for (auto& sub_node : mat_node.children()) {
+                                auto sub_tag = gettag(sub_node)
+                                //parse_attribute(ss, attr, )
+                            }
+                        }
                     }
                     break;
 

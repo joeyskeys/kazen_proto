@@ -22,6 +22,7 @@ public:
     BVHAccel() {}
     BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end);
 
+    //bool reset(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end);
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
     void print_bound() const override;

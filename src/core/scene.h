@@ -28,6 +28,6 @@ public:
     std::unique_ptr<Film> film;
     std::unique_ptr<Camera> camera;
     std::unique_ptr<Hitable> accelerator;
-    std::vector<std::unique_ptr<Hitable>> objects;
+    std::vector<std::shared_ptr<Hitable>> objects;
     std::vector<std::unique_ptr<Light>> lights;
 };
