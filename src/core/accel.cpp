@@ -56,6 +56,7 @@ inline bool box_compare(const std::shared_ptr<Hitable>& a, const std::shared_ptr
     return a->bbox().min[axis] < b->bbox().min[axis];
 }
 
+/*
 bool x_compare(const std::shared_ptr<Hitable>& a, const std::shared_ptr<Hitable>& b) {
     return box_compare(a, b, 0);
 }
@@ -67,12 +68,20 @@ bool y_compare(const std::shared_ptr<Hitable>& a, const std::shared_ptr<Hitable>
 bool z_compare(const std::shared_ptr<Hitable>& a, const std::shared_ptr<Hitable>& b) {
     return box_compare(a, b, 2);
 }
+*/
 
 BVHAccel::BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end) {
     int axis = randomi(2);
+
+    /*
     auto comparator = axis == 0 ? x_compare :
                       axis == 1 ? y_compare :
                       z_compare;
+    */
+
+    auto comparator = [&axis](auto a, auto b) {
+        box_compare(a, b, axis);
+    };
 
     size_t object_span = end - start;
     assert(object_span > 0);
