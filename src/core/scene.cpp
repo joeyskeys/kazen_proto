@@ -234,9 +234,28 @@ void Scene::parse_from_file(fs::path filepath) {
                     for (auto& mat_node : node.children()) {    
                         auto mat_tag = gettag(mat_node)
                         if (mat_tag == EShaderGroup) {
+                            auto name_attr = mat_node.find_attribute([](const pugi::xml_attribute& attr) {
+                                return std::string("name") == attr.as_string();
+                            });
+
+                            if (name_attr.empty())
+                                throw std::runtime_error(fmt::format("material doesn't have a name at {}", offset(node.offset_debug())));
+
+                            OSL::ShaderGroupRef shader_group;
+                            // Currently we ignore shadertype and commands
+                            integrator->shadingsys->ShaderGroupBegin(name_attr.value());
+
                             for (auto& sub_node : mat_node.children()) {
                                 auto sub_tag = gettag(sub_node)
-                                //parse_attribute(ss, attr, )
+                                if (sub_tag == EShader) {
+                                    // We need a general purpose attribute parser here
+                                    // Considering using visit pattern with variant
+                                    // integrator->shadingsys->Parameter()..
+                                    // integrator->shadingsys->Shader()..
+                                }
+                                else if (sub_tag == EConnectShaders) {
+                                    // integrator->shadingsys->ConnectShaders()
+                                }
                             }
                         }
                     }

@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <unordered_map
 #include <vector>
 
 #include "core/accel.h"
@@ -30,4 +31,5 @@ public:
     std::unique_ptr<Hitable> accelerator;
     std::vector<std::shared_ptr<Hitable>> objects;
     std::vector<std::unique_ptr<Light>> lights;
+    std::unordered_map<std::string, OSL::ShaderGroupRef> shaders;
 };
