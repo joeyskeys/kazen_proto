@@ -90,6 +90,24 @@ public:
         return *(ptr + size - 1);
     }
 
+    constexpr reference operator [](size_type idx) const {
+        assert(idx >= 0 && idx < size);
+        return *(ptr  + idx);
+    }
+
+    constexpr pointer data() const  noexcept {
+        return ptr;
+    }
+
+    // observers
+    constexpr size_type size() const noexcept {
+        return size;
+    }
+
+    constexpr bool empty() const noexcept {
+        return size == 0;
+    }
+
 private:
     static constexpr std::size_t extend = Extent;
     pointer ptr;
