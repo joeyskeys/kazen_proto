@@ -2,6 +2,8 @@
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
+#include <unordered_map>
+#include <utility>
 
 #include <fmt/core.h>
 #include <frozen/set.h>
@@ -10,6 +12,60 @@
 #include <pugixml.hpp>
 
 #include "scene.h"
+
+enum ETag {
+    EScene,
+    EFilm,
+    ECamera,
+    EAccelerator,
+    EIntegrator,
+    // objects
+    EObjects,
+    ESphere,
+    ETriangle,
+    // materials
+    EMaterials,
+    EShaderGroup,
+    EShader,
+    EParameter,
+    EConnectShaders,
+    // lights
+    ELights,
+    EPointLight,
+    EInvalid
+};
+
+constexpr static frozen::unordered_map<frozen::string, ETag, 15> tags = {
+    {"Scene", EScene},
+    {"Film", EFilm},
+    {"Camera", ECamera},
+    {"Accelerator", EAccelerator},
+    {"Integrator", EIntegrator},
+    {"Objects", EObjects},
+    {"Sphere", ESphere},
+    {"Triangle", ETriangle},
+    {"Materials", EMaterials},
+    {"ShaderGroup", EShaderGroup},
+    {"Shader", EShader},
+    {"Parameter", EParameter},
+    {"ConnectShaders", EConnectShaders},
+    {"Lights", ELights},
+    {"PointLight", EPointLight}
+};
+
+enum EType {
+    EFloat,
+    EInt,
+    EVec3f,
+    EStr
+};
+
+constexpr static frozen::unordered_map<frozen::string, EType, 4> types = {
+    {"float", EFloat},
+    {"int", EInt},
+    {"float3", EVec3f},
+    {"string", EStr};
+};
 
 template <int N>
 using AttrSet = frozen::set<frozen::string, N>;
@@ -24,10 +80,11 @@ bool parse_components(const std::string& attrstr, std::stringstream& ss, void* d
             cnt = attrstr[namelength] - '0';
 
         // Assume we have 4 components at most
-        std::array<T, 4> buf;
+        //std::array<T, 4> buf;
+        auto buf = reinterpret_cast<T*>(dst);
         for (int i = 0; i < cnt; i++)
             ss >> buf[i];
-        memcpy(dst, &buf, cnt * sizeof(T));
+        //memcpy(dst, &buf, cnt * sizeof(T));
         return true;
     }
     return false;
@@ -38,6 +95,7 @@ void parse_attribute(std::stringstream& ss, pugi::xml_attribute attr, DictLike* 
     auto it = attr_set.find(frozen::string(attr.name()));
     std::string typestr;
     if (it != attr_set.end()) {
+        // attribute string format : type value1 value2..
         ss.str(attr.value());
         ss >> typestr;
         int cnt = 1;
@@ -49,6 +107,58 @@ void parse_attribute(std::stringstream& ss, pugi::xml_attribute attr, DictLike* 
         if (parse_components<int>(typestr, ss, obj->address_of(attr.name())))
             return;
     }
+}
+
+using Param = std::variant<std::string, float, double, Vec3f>;
+using Params = std::unordered_map<std::string, std::pair<OSL::TypeDesc, Param>>;
+
+template <typename T>
+inline Param parse_attribute(std::stringstream& ss) {
+    T tmp;
+    ss >> tmp;
+    return Param(tmp);
+}
+
+Params parse_attributes(pugi::xml_node node) {
+    Params params;
+    for (auto& child : node.children()) {
+        for (auto& attr : child.attributes()) {
+            std::stringstream ss;
+            ss.str(attr.value())
+            std::string typestr;
+            ss >> typestr;
+
+            auto type_tag = types.find(frozen::string(typestr));
+            if (type_tag == types.end())
+                continue;
+
+            switch (type_tag) {
+                case EFloat:
+                    //float tmp;
+                    //parse_components(typestr, ss, &tmp);
+                    //params.emplace(attr.name(), tmp);
+                    params.emplace(attr.name(), std::make_pair(OSL::TypeDesc::TypeFloat, parse_attribute<float>(ss)));
+                    break;
+
+                case EInt:
+                    params.emplace(attr.name(), std::make_pair(OSL::TypeDesc::TypeInt, parse_attribute<int>(ss)));
+                    break;
+
+                case EVec3f:
+                    params.emplace(attr.name(), std::make_pair(OSL::TypeDesc::TypeVector, parse_attribute<Vec3f>(ss)));
+                    break;
+
+                case EStr:
+                    params.emplace(attr.name(), std::make_pair(OSL::TypeDesc::TypeString, parse_attribute<std::string>(ss)));
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
+
+    return params;
 }
 
 Scene::Scene()
@@ -89,43 +199,6 @@ void Scene::parse_from_file(fs::path filepath) {
     if (!ret) /* There was a parser / file IO error */
         throw std::runtime_error(fmt::format("Error while parsing \"{}\": {} (at {})", filepath, ret.description(), offset(ret.offset)));
 
-    enum ETag {
-        EScene,
-        EFilm,
-        ECamera,
-        EAccelerator,
-        EIntegrator,
-        // objects
-        EObjects,
-        ESphere,
-        ETriangle,
-        // materials
-        EMaterials,
-        EShaderGroup,
-        EShader,
-        EConnectShaders,
-        // lights
-        ELights,
-        EPointLight,
-        EInvalid
-    };
-
-    constexpr frozen::unordered_map<frozen::string, ETag, 14> tags = {
-        {"Scene", EScene},
-        {"Film", EFilm},
-        {"Camera", ECamera},
-        {"Accelerator", EAccelerator},
-        {"Integrator", EIntegrator},
-        {"Objects", EObjects},
-        {"Sphere", ESphere},
-        {"Triangle", ETriangle},
-        {"Materials", EMaterials},
-        {"ShaderGroup", EShaderGroup},
-        {"Shader", EShader},
-        {"ConnectShaders", EConnectShaders},
-        {"Lights", ELights},
-        {"PointLight", EPointLight}
-    };
 
     auto& node = *doc.begin();
     // Skip over comments
@@ -239,19 +312,31 @@ void Scene::parse_from_file(fs::path filepath) {
                             });
 
                             if (name_attr.empty())
-                                throw std::runtime_error(fmt::format("material doesn't have a name at {}", offset(node.offset_debug())));
+                                throw std::runtime_error(fmt::format("material doesn't have a name at {}", offset(mat_node.offset_debug())));
 
-                            OSL::ShaderGroupRef shader_group;
                             // Currently we ignore shadertype and commands
-                            integrator->shadingsys->ShaderGroupBegin(name_attr.value());
+                            OSL::ShaderGroupRef shader_group = integrator->shadingsys->ShaderGroupBegin(name_attr.value());
 
                             for (auto& sub_node : mat_node.children()) {
                                 auto sub_tag = gettag(sub_node)
                                 if (sub_tag == EShader) {
                                     // We need a general purpose attribute parser here
                                     // Considering using visit pattern with variant
-                                    // integrator->shadingsys->Parameter()..
-                                    // integrator->shadingsys->Shader()..
+
+                                    auto params = parse_attributes(sub_node);
+                                    for (const auto& [name, param_pair] : params) {
+                                        Integrator->shadingsys->Parameter(*shader_group, name.c_str(),
+                                            param_pair.first, param_pair.second);
+                                    }
+
+                                    auto type_attr = sub_node.attribute("type");
+                                    auto name_attr = sub_node.attribute("name");
+                                    auto layer_attr = sub_node.attribute("layer");
+                                    const char* type = type_attr ? type_attr.value() : "surface";
+                                    if (!name_attr || !layer_attr)
+                                        throw std::runtime_error(fmt::format("Name or layer attribute not specified at {}", offset(sub_node.offset_debug())));
+                                    integrator->shadingsys->Shader(*group, type, name_attr.value(),
+                                        layer_attr.value());
                                 }
                                 else if (sub_tag == EConnectShaders) {
                                     // integrator->shadingsys->ConnectShaders()

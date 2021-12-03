@@ -289,6 +289,13 @@ public:
         return os;
     }
 
+    friend std::stringstream& operator >>(std::stringstream& ss, Vec& v) {
+        for (auto& e : v.arr)
+            ss >> e;
+        
+        return ss;
+    }
+
 protected:
     std::array<T, N> arr;
 };

@@ -5,14 +5,19 @@
 
     <Materials>
         <ShaderGroup name="checker_matte">
-            <Shader name="checkerboard" layer="tex" scale_s="float 20" scale_t="float 20" Ca="float3 0.1 0.1 0.1" Cb="float3 0.5 0.5 0.5"/>
+            <Shader name="checkerboard" layer="tex">
+                <Parameter scale_s="float 20" />
+                <Parameter scale_t="float 20" />
+                <Parameter Ca="float3 0.1 0.1 0.1" />
+                <Parameter Cb="float3 0.5 0.5 0.5" />
+            </Shader>
             <Shader name="matte" layer="layer1" />
             <ConnectShaders srclayer="tex" srcparam="Cout" dstlayer="layer1" dstparam="Cs" />
         </ShaderGroup>
     </Materials>
 
     <Objects>
-        <Sphere radius="float 3" translate="float3 0 5 -20" material="checker_matte" />
+        <Sphere radius="float 3" translate="float3 0 5 -20" material="string checker_matte" />
         <Triangle verta="float3 0 0 0" vertb="float3 2 0 0" vertc="float3 0 2 0" translate="float3 0 0 -10" material="checker_matte" />
     </Objects>
 
