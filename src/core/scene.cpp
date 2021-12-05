@@ -340,6 +340,13 @@ void Scene::parse_from_file(fs::path filepath) {
                                 }
                                 else if (sub_tag == EConnectShaders) {
                                     // integrator->shadingsys->ConnectShaders()
+                                    auto sl = sub_node.attribute("srclayer");
+                                    auto sp = sub_node.attribute("srcparam");
+                                    auto dl = sub_node.attribute("dstlayer");
+                                    auto dp = sub_node.attribute("dstparam");
+                                    if (sl && sp && dl && dp)
+                                        integrator->shadingsys->ConnectShaders(sl.value(), sp.value(),
+                                            dl.value(), dp.value());
                                 }
                             }
                         }
