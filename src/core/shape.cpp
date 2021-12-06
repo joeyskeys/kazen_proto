@@ -55,6 +55,7 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     isect.bitangent = normalize(isect.tangent.cross(isect.normal));
     isect.mat = mat;
     isect.obj_id = obj_id;
+    isect.shader_name = shader_name;
 
     // Transform back to world space
     isect = local_to_world.apply(isect);
@@ -131,6 +132,8 @@ void* Sphere::address_of(const std::string& name) {
         return &radius;
     else if (name == "center")
         return &center;
+    else if (name == "shader_name")
+        return &shader_name;
     return nullptr;
 }
 
@@ -140,6 +143,8 @@ bool Triangle::intersect(const Ray& r, Intersection& isect) const {
     auto ret = moller_trumbore_intersect(local_r, verts, isect);
     if (ret && !isect.backface) {
         isect.mat = mat;
+        isect.obj_id = obj_id;
+        isect.shader_name = shader_name;
         isect = local_to_world.apply(isect);
         return true;
     }
@@ -198,6 +203,8 @@ void* Triangle::address_of(const std::string& name) {
         return &verts[1];
     else if (name == "vertc")
         return &verts[2];
+    else if (name == "shader_name")
+        return &shader_name;
     return nullptr;
 }
 
@@ -217,6 +224,7 @@ bool TriangleMesh::intersect(const Ray& r, Intersection& isect) const {
         if (hit && !isect.backface) {
             isect.mat = mat;
             isect.obj_id = 2;
+            isect.shader_name = shader_name;
             isect = local_to_world.apply(isect);
             return true;
         }

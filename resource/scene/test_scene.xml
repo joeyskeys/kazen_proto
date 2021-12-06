@@ -1,7 +1,7 @@
 <Scene>
     <Film width="float 800" height="float 600" />
 
-    <Camera resolution="float2 800 600" position="float3 7 8 15" lookat="float3 0, 3 -20" up="float3 0 1 0" fov="float 60" />
+    <Camera position="float3 7 8 15" lookat="float3 0, 3 -20" up="float3 0 1 0" fov="float 60" />
 
     <Materials>
         <ShaderGroup name="checker_matte">
@@ -17,8 +17,8 @@
     </Materials>
 
     <Objects>
-        <Sphere radius="float 3" translate="float3 0 5 -20" material="string checker_matte" />
-        <Triangle verta="float3 0 0 0" vertb="float3 2 0 0" vertc="float3 0 2 0" translate="float3 0 0 -10" material="checker_matte" />
+        <Sphere radius="float 3" translate="float3 0 5 -20" shader_name="string checker_matte" />
+        <Triangle verta="float3 0 0 0" vertb="float3 2 0 0" vertc="float3 0 2 0" translate="float3 0 0 -10" shader_name="string checker_matte" />
     </Objects>
 
     <Lights>

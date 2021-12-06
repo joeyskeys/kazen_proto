@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 
@@ -72,21 +73,28 @@ using AttrSet = frozen::set<frozen::string, N>;
 
 template <typename T>
 bool parse_components(const std::string& attrstr, std::stringstream& ss, void* dst) {
-    auto found = attrstr.find(TypeInfo<float>::name);
-    if (found != std::string::npos) {
-        int namelength = TypeInfo<float>::namelength;
-        int cnt = 1;
-        if (attrstr.size() > namelength)
-            cnt = attrstr[namelength] - '0';
+    if constexpr (std::is_arithmetic_v<T>) {
+        auto found = attrstr.find(TypeInfo<T>::name);
+        if (found != std::string::npos) {
+            int namelength = TypeInfo<T>::namelength;
+            int cnt = 1;
+            if (attrstr.size() > namelength)
+                cnt = attrstr[namelength] - '0';
 
-        // Assume we have 4 components at most
-        //std::array<T, 4> buf;
-        auto buf = reinterpret_cast<T*>(dst);
-        for (int i = 0; i < cnt; i++)
-            ss >> buf[i];
-        //memcpy(dst, &buf, cnt * sizeof(T));
+            // Assume we have 4 components at most
+            //std::array<T, 4> buf;
+            auto buf = reinterpret_cast<T*>(dst);
+            for (int i = 0; i < cnt; i++)
+                ss >> buf[i];
+            //memcpy(dst, &buf, cnt * sizeof(T));
+            return true;
+        }
+    else if constexpr (std::is_same_v<std::string, std::decay_t<T>>) {
+        auto strdst = reinterpret_cast<std::string*>(dst);
+        ss >> *strdst;
         return true;
     }
+    
     return false;
 }
 
@@ -239,13 +247,15 @@ void Scene::parse_from_file(fs::path filepath) {
 
     constexpr AttrSet<2> sphere_attributes = {
         "radius",
-        "center"
+        "center",
+        "shader_name"
     };
 
     constexpr AttrSet<3> triangle_attributes = {
         "verta",
         "vertb",
-        "vertc"
+        "vertc",
+        "shader_name"
     };
 
     constexpr AttrSet<2> pointlight_attributes = {
@@ -256,7 +266,7 @@ void Scene::parse_from_file(fs::path filepath) {
     // TODO : The recursive node parsing in nori is more elegant..
     auto root_tag = gettag(node);
     if (root_tag == EScene) {
-        // Found th root scene node, parse elements
+        // Found the root scene node, parse elements
         for (auto& ch : node.children()) {
             auto child_tag = gettag(ch);
             std::stringstream ss;

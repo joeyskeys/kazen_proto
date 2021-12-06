@@ -19,6 +19,6 @@ struct Intersection {
     float ray_t;
     bool  backface;
     MaterialPtr mat;
-    uint  shader_id;
     uint  obj_id;
+    std::string shader_name;
 };

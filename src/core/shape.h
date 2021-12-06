@@ -30,6 +30,7 @@ public:
 public:
     MaterialPtr mat;
     uint obj_id;
+    std::string shader_name;
 };
 
 class Sphere : public Shape {
