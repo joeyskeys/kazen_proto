@@ -17,7 +17,7 @@ public:
     KazenRenderServices(OIIO::TextureSystem *texture_sys, HitablePtr p);
     ~KazenRenderServices() {}
 
-private:
+public:
     //int supports(OIIO::string_view feature) const override;
 
     bool get_matrix(

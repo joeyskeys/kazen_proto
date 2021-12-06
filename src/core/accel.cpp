@@ -80,7 +80,7 @@ BVHAccel::BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start
     */
 
     auto comparator = [&axis](auto a, auto b) {
-        box_compare(a, b, axis);
+        return box_compare(a, b, axis);
     };
 
     size_t object_span = end - start;

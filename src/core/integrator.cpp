@@ -128,7 +128,7 @@ void Integrator::render() {
                                 shadingsys->execute(*ctx, shadingsys->shaders[isect.shader_name], sg);
                                 ShadingResult ret;
                                 bool last_bounce = k == depth;
-                                process_closure(ret, sg.Ci, last_bounce);
+                                process_closure(ret, sg.Ci, RGBSpectrum(1, 1, 1), last_bounce);
 
                                 /*
                                 // Sample material to construct next ray

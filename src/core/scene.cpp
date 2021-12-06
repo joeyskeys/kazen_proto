@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 
 #include <fmt/core.h>
 #include <frozen/set.h>
@@ -65,7 +66,7 @@ constexpr static frozen::unordered_map<frozen::string, EType, 4> types = {
     {"float", EFloat},
     {"int", EInt},
     {"float3", EVec3f},
-    {"string", EStr};
+    {"string", EStr}
 };
 
 template <int N>
@@ -89,6 +90,7 @@ bool parse_components(const std::string& attrstr, std::stringstream& ss, void* d
             //memcpy(dst, &buf, cnt * sizeof(T));
             return true;
         }
+    }
     else if constexpr (std::is_same_v<std::string, std::decay_t<T>>) {
         auto strdst = reinterpret_cast<std::string*>(dst);
         ss >> *strdst;
@@ -117,7 +119,7 @@ void parse_attribute(std::stringstream& ss, pugi::xml_attribute attr, DictLike* 
     }
 }
 
-using Param = std::variant<std::string, float, double, Vec3f>;
+using Param = std::variant<std::string, int, float, double, Vec3f>;
 using Params = std::unordered_map<std::string, std::pair<OSL::TypeDesc, Param>>;
 
 template <typename T>
@@ -132,14 +134,15 @@ Params parse_attributes(pugi::xml_node node) {
     for (auto& child : node.children()) {
         for (auto& attr : child.attributes()) {
             std::stringstream ss;
-            ss.str(attr.value())
+            ss.str(attr.value());
             std::string typestr;
             ss >> typestr;
 
-            auto type_tag = types.find(frozen::string(typestr));
-            if (type_tag == types.end())
+            auto type_pair = types.find(frozen::string(typestr));
+            if (type_pair == types.end())
                 continue;
 
+            auto type_tag = type_pair->second;
             switch (type_tag) {
                 case EFloat:
                     //float tmp;
@@ -217,12 +220,12 @@ void Scene::parse_from_file(fs::path filepath) {
         throw std::runtime_error(
             fmt::format("Error while parsing \"{}\": unexpected content at {}", filepath, offset(node.offset_debug())));
 
-    auto gettag = [&filepath, &offset, &tags](pugi::xml_node& node) {
+    auto gettag = [&filepath, &offset](pugi::xml_node& node) {
         auto it = tags.find(frozen::string(node.name()));
         if (it == tags.end())
             throw std::runtime_error(fmt::format("Error while parsing {}: unexpected tag \"{}\" at {}",
                 filepath, node.name(), offset(node.offset_debug())));
-        int tag = it->second;
+        auto tag = it->second;
         return tag;
     };
 
@@ -245,13 +248,13 @@ void Scene::parse_from_file(fs::path filepath) {
         "far"
     };
 
-    constexpr AttrSet<2> sphere_attributes = {
+    constexpr AttrSet<3> sphere_attributes = {
         "radius",
         "center",
         "shader_name"
     };
 
-    constexpr AttrSet<3> triangle_attributes = {
+    constexpr AttrSet<4> triangle_attributes = {
         "verta",
         "vertb",
         "vertc",
@@ -315,7 +318,7 @@ void Scene::parse_from_file(fs::path filepath) {
 
                 case EMaterials:
                     for (auto& mat_node : node.children()) {    
-                        auto mat_tag = gettag(mat_node)
+                        auto mat_tag = gettag(mat_node);
                         if (mat_tag == EShaderGroup) {
                             auto name_attr = mat_node.find_attribute([](const pugi::xml_attribute& attr) {
                                 return std::string("name") == attr.as_string();
@@ -328,15 +331,15 @@ void Scene::parse_from_file(fs::path filepath) {
                             OSL::ShaderGroupRef shader_group = integrator->shadingsys->ShaderGroupBegin(name_attr.value());
 
                             for (auto& sub_node : mat_node.children()) {
-                                auto sub_tag = gettag(sub_node)
+                                auto sub_tag = gettag(sub_node);
                                 if (sub_tag == EShader) {
                                     // We need a general purpose attribute parser here
                                     // Considering using visit pattern with variant
 
                                     auto params = parse_attributes(sub_node);
                                     for (const auto& [name, param_pair] : params) {
-                                        Integrator->shadingsys->Parameter(*shader_group, name.c_str(),
-                                            param_pair.first, param_pair.second);
+                                        integrator->shadingsys->Parameter(*shader_group, name.c_str(),
+                                            param_pair.first, &param_pair.second);
                                     }
 
                                     auto type_attr = sub_node.attribute("type");
@@ -345,7 +348,7 @@ void Scene::parse_from_file(fs::path filepath) {
                                     const char* type = type_attr ? type_attr.value() : "surface";
                                     if (!name_attr || !layer_attr)
                                         throw std::runtime_error(fmt::format("Name or layer attribute not specified at {}", offset(sub_node.offset_debug())));
-                                    integrator->shadingsys->Shader(*group, type, name_attr.value(),
+                                    integrator->shadingsys->Shader(*shader_group, type, name_attr.value(),
                                         layer_attr.value());
                                 }
                                 else if (sub_tag == EConnectShaders) {
