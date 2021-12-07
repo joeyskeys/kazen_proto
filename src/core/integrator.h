@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 
 #include <OpenImageIO/imageio.h>
 
@@ -26,5 +27,6 @@ public:
 
     std::unique_ptr<OSL::ShadingSystem>  shadingsys;
     KazenRenderServices rend;
+    std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
     OSL::ErrorHandler   errhandler;
 };

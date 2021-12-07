@@ -125,7 +125,7 @@ void Integrator::render() {
                                 // Debuging OSL now.
                                 OSL::ShaderGlobals sg;
                                 KazenRenderServices::globals_from_hit(sg, ray, isect);
-                                shadingsys->execute(*ctx, shadingsys->shaders[isect.shader_name], sg);
+                                shadingsys->execute(*ctx, *(*shaders)[isect.shader_name], sg);
                                 ShadingResult ret;
                                 bool last_bounce = k == depth;
                                 process_closure(ret, sg.Ci, RGBSpectrum(1, 1, 1), last_bounce);

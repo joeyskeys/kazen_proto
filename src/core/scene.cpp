@@ -288,12 +288,13 @@ void Scene::parse_from_file(fs::path filepath) {
 
                 case EAccelerator:
                     // BVH only for now
-                    accelerator = std::make_shared<BVHAccel>(objects, 0, objects.size());
+                    accelerator = std::make_unique<BVHAccel>(objects, 0, objects.size());
                     break;
 
                 case EIntegrator:
                     // pt only for now
                     integrator = std::make_unique<Integrator>(camera.get(), film.get());
+                    Integrator.shaders = &shaders;
                     break;
 
                 case EObjects:
