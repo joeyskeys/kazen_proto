@@ -7,7 +7,7 @@ find_path(FMT_INCLUDE_DIRS fmt/core.h
     PATH_SUFFIXES
         include)
 
-find_path(FMT_LIBRARY fmt
+find_library(FMT_LIBRARY fmt
     HINTS
         /usr
         /usr/local

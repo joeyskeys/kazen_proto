@@ -8,6 +8,6 @@ TEST_CASE("Parse test", "[single-file]") {
 
     REQUIRE(scene.film->width == 800);
     REQUIRE(scene.camera->fov == Approx(60.0));
-    REQUIRE(scene.objects[0]->radius == Approx(3));
-    REQUIRE(scene.objects[0]->shader_name == "checker_matte");
+    //REQUIRE(scene.objects[0]->radius == Approx(3));
+    //REQUIRE(scene.objects[0]->shader_name == "checker_matte");
 }

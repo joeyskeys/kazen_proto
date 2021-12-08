@@ -1,12 +1,7 @@
-#include "core/accel.h"
-#include "core/camera.h"
-#include "core/film.h"
-#include "core/integrator.h"
-#include "core/light.h"
-#include "core/material.h"
-#include "core/shape.h"
+#include "core/scene.h"
 
 int main() {
+    /*
     // Camera
     Film film{400, 300, "test.jpg"};
     film.generate_tiles();
@@ -79,6 +74,12 @@ int main() {
 
     // Write out rendered image
     film.write_tiles();
+    */
+
+    Scene scene;
+    scene.parse_from_file("../resource/scene/test_scene.xml");
+    scene.integrator->render();
+    scene.film->write_tiles();
 
     return 0;
 }
