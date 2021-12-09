@@ -288,7 +288,8 @@ void Scene::parse_from_file(fs::path filepath) {
 
                 case EAccelerator:
                     // BVH only for now
-                    accelerator = std::make_unique<BVHAccel>(objects, 0, objects.size());
+                    //accelerator = std::make_unique<BVHAccel>(objects, 0, objects.size());
+                    accelerator = std::make_unique<BVHAccel>();
                     break;
 
                 case EIntegrator:
@@ -385,4 +386,7 @@ void Scene::parse_from_file(fs::path filepath) {
             }
         }
     }
+
+    // Construct acceleration structure after all data is parsed
+    accelerator->reset(objects, 0, objects.size());
 }

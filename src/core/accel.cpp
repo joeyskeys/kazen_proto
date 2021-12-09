@@ -70,7 +70,20 @@ bool z_compare(const std::shared_ptr<Hitable>& a, const std::shared_ptr<Hitable>
 }
 */
 
-BVHAccel::BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end) {
+class BVHNode : public Hitable {
+public:
+    BVHNode(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end);
+
+    bool intersect(const Ray& r, Intersection& isect) const override;
+    bool intersect(const Ray& r, float& t) const override;
+    void print_bound() const override;
+
+private:
+    std::shared_ptr<Hitable> children[2];
+};
+
+//BVHAccel::BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end) {
+BVHNode::BVHNode(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end) {
     int axis = randomi(2);
 
     /*
@@ -102,14 +115,14 @@ BVHAccel::BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start
     else {
         std::sort(hitables.begin() + start, hitables.begin() + end, comparator);
         auto mid = start + object_span / 2;
-        children[0] = std::make_shared<BVHAccel>(hitables, start, mid);
-        children[1] = std::make_shared<BVHAccel>(hitables, mid, end);
+        children[0] = std::make_shared<BVHNode>(hitables, start, mid);
+        children[1] = std::make_shared<BVHNode>(hitables, mid, end);
     }
 
     bound = bound_union(children[0]->bbox(), children[1]->bbox());
 }
 
-bool BVHAccel::intersect(const Ray& r, Intersection& isect) const {
+bool BVHNode::intersect(const Ray& r, Intersection& isect) const {
     if (!bound.intersect(r))
         return false;
 
@@ -119,7 +132,7 @@ bool BVHAccel::intersect(const Ray& r, Intersection& isect) const {
     return hit_0 || hit_1;
 }
 
-bool BVHAccel::intersect(const Ray& r, float& t) const {
+bool BVHNode::intersect(const Ray& r, float& t) const {
     if (!bound.intersect(r))
         return false;
     
@@ -129,9 +142,25 @@ bool BVHAccel::intersect(const Ray& r, float& t) const {
     return hit_0 || hit_1;
 }
 
-void BVHAccel::print_bound() const {
+void BVHNode::print_bound() const {
     std::cout << "bvh node bound : " << bound;
 
     children[0]->print_bound();
     children[1]->print_bound();
+}
+
+BVHAccel::BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end)
+    : root(std::make_shared<BVHNode(hitables, start, end))
+{}
+
+void BVHAccel::reset(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end) {
+    root = std::make_shared<BVHNode>(hitables, start, end);
+}
+
+bool BVHAccel::intersect(const Ray& r, Intersection& isect) const {
+    return root->intersect(r, isect);
+}
+
+bool BVHAccel::intersect(const Ray& r, float& t) const {
+    return root->intersect(r, t);
 }
