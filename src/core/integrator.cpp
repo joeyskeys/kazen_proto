@@ -67,8 +67,8 @@ Integrator::Integrator(Camera* cam_ptr, Film* flm_ptr)
     : camera_ptr(cam_ptr)
     , film_ptr(flm_ptr)
 {
-    shadingsys = std::make_unique<OSL::ShadingSystem>(&rend, nullptr, &errhandler);
-    register_closures(shadingsys.get());
+    //shadingsys = std::make_unique<OSL::ShadingSystem>(&rend, nullptr, &errhandler);
+    //register_closures(shadingsys.get());
 }
 
 void Integrator::render() {

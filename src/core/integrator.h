@@ -25,8 +25,7 @@ public:
     Film*               film_ptr;
     std::vector<Light*> lights;
 
-    std::unique_ptr<OSL::ShadingSystem>  shadingsys;
-    KazenRenderServices rend;
+    OSL::ShadingSystem*  shadingsys;
+    //KazenRenderServices rend;
     std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
-    OSL::ErrorHandler   errhandler;
 };

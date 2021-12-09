@@ -82,6 +82,7 @@ bool parse_components(const std::string& attrstr, std::stringstream& ss, void* d
             if (attrstr.size() > namelength)
                 cnt = attrstr[namelength] - '0';
 
+            // Stringstream is causing problem, use boost split
             // Assume we have 4 components at most
             //std::array<T, 4> buf;
             auto buf = reinterpret_cast<T*>(dst);
@@ -176,8 +177,10 @@ Scene::Scene()
     : film(std::make_unique<Film>())
     , camera(std::make_unique<Camera>())
     , accelerator(nullptr)
+    , shadingsys(std::make_unique<OSL::ShadingSystem>(&rend, nullptr, &errhandler))
 {
     camera->film = film.get();
+    register_closures(shadingsys.get());
 }
 
 void Scene::parse_from_file(fs::path filepath) {
@@ -270,8 +273,8 @@ void Scene::parse_from_file(fs::path filepath) {
     auto root_tag = gettag(node);
     if (root_tag == EScene) {
         // Found the root scene node, parse elements
-        for (auto& ch : node.children()) {
-            auto child_tag = gettag(ch);
+        for (auto& sub_1 : node.children()) {
+            auto child_tag = gettag(sub_1);
             std::stringstream ss;
             // Now we assume all attribute component is float type..
             std::string type_str;
@@ -295,13 +298,16 @@ void Scene::parse_from_file(fs::path filepath) {
                 case EIntegrator:
                     // pt only for now
                     integrator = std::make_unique<Integrator>(camera.get(), film.get());
-                    Integrator.shaders = &shaders;
+                    integrator->shadingsys = shadingsys.get();
+                    integrator->shaders = &shaders;
                     break;
 
                 case EObjects:
-                    for (auto& object_node : node.children()) {
+                    std::cout << "Parsing objects :" << std::endl;
+                    for (auto& object_node : sub_1.children()) {
                         auto obj_tag = gettag(object_node);
                         if (obj_tag == ESphere) {
+                            std::cout << "Parsing sphere object.." << std::endl;
                             for (auto& attr : object_node.attributes()) {
                                 auto obj_ptr = std::make_shared<Sphere>();
                                 parse_attribute(ss, attr, obj_ptr.get(), sphere_attributes);
@@ -309,6 +315,7 @@ void Scene::parse_from_file(fs::path filepath) {
                             }
                         }
                         else if (obj_tag == ETriangle) {
+                            std::cout << "Parsing triangle object.." << std::endl;
                             for (auto& attr : object_node.attributes()) {
                                 auto obj_ptr = std::make_shared<Triangle>();
                                 parse_attribute(ss, attr, obj_ptr.get(), triangle_attributes);
@@ -319,18 +326,15 @@ void Scene::parse_from_file(fs::path filepath) {
                     break;
 
                 case EMaterials:
-                    for (auto& mat_node : node.children()) {    
+                    for (auto& mat_node : sub_1.children()) {    
                         auto mat_tag = gettag(mat_node);
                         if (mat_tag == EShaderGroup) {
-                            auto name_attr = mat_node.find_attribute([](const pugi::xml_attribute& attr) {
-                                return std::string("name") == attr.as_string();
-                            });
-
-                            if (name_attr.empty())
+                            auto name_attr = mat_node.attribute("name");
+                            if (!name_attr)
                                 throw std::runtime_error(fmt::format("material doesn't have a name at {}", offset(mat_node.offset_debug())));
 
                             // Currently we ignore shadertype and commands
-                            OSL::ShaderGroupRef shader_group = integrator->shadingsys->ShaderGroupBegin(name_attr.value());
+                            OSL::ShaderGroupRef shader_group = shadingsys->ShaderGroupBegin(name_attr.value());
 
                             for (auto& sub_node : mat_node.children()) {
                                 auto sub_tag = gettag(sub_node);
@@ -340,7 +344,10 @@ void Scene::parse_from_file(fs::path filepath) {
 
                                     auto params = parse_attributes(sub_node);
                                     for (const auto& [name, param_pair] : params) {
-                                        integrator->shadingsys->Parameter(*shader_group, name.c_str(),
+                                        // Integrator is not initialized..
+                                        // Consider put shadingsys into Scene directly and
+                                        // keep a pointer to it in the integrator
+                                        shadingsys->Parameter(*shader_group, name.c_str(),
                                             param_pair.first, &param_pair.second);
                                     }
 
@@ -350,7 +357,7 @@ void Scene::parse_from_file(fs::path filepath) {
                                     const char* type = type_attr ? type_attr.value() : "surface";
                                     if (!name_attr || !layer_attr)
                                         throw std::runtime_error(fmt::format("Name or layer attribute not specified at {}", offset(sub_node.offset_debug())));
-                                    integrator->shadingsys->Shader(*shader_group, type, name_attr.value(),
+                                    shadingsys->Shader(*shader_group, type, name_attr.value(),
                                         layer_attr.value());
                                 }
                                 else if (sub_tag == EConnectShaders) {
@@ -360,7 +367,7 @@ void Scene::parse_from_file(fs::path filepath) {
                                     auto dl = sub_node.attribute("dstlayer");
                                     auto dp = sub_node.attribute("dstparam");
                                     if (sl && sp && dl && dp)
-                                        integrator->shadingsys->ConnectShaders(sl.value(), sp.value(),
+                                        shadingsys->ConnectShaders(sl.value(), sp.value(),
                                             dl.value(), dp.value());
                                 }
                             }
@@ -369,7 +376,7 @@ void Scene::parse_from_file(fs::path filepath) {
                     break;
 
                 case ELights:
-                    for (auto& light_node : node.children()) {
+                    for (auto& light_node : sub_1.children()) {
                         auto light_tag = gettag(light_node);
                         if (light_tag == EPointLight) {
                             for (auto& attr : light_node.attributes()) {
@@ -388,5 +395,6 @@ void Scene::parse_from_file(fs::path filepath) {
     }
 
     // Construct acceleration structure after all data is parsed
-    accelerator->reset(objects, 0, objects.size());
+    auto bvh_ptr = reinterpret_cast<BVHAccel*>(accelerator.get());
+    bvh_ptr->reset(objects, 0, objects.size());
 }

@@ -31,5 +31,10 @@ public:
     std::unique_ptr<Hitable> accelerator;
     std::vector<std::shared_ptr<Hitable>> objects;
     std::vector<std::unique_ptr<Light>> lights;
+
+    // OSL related
+    KazenRenderServices rend;
+    std::unique_ptr<OSL::ShadingSystem> shadingsys;
     std::unordered_map<std::string, OSL::ShaderGroupRef> shaders;
+    OSL::ErrorHandler   errhandler;
 };

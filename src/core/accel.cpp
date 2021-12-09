@@ -150,7 +150,7 @@ void BVHNode::print_bound() const {
 }
 
 BVHAccel::BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end)
-    : root(std::make_shared<BVHNode(hitables, start, end))
+    : root(std::make_shared<BVHNode>(hitables, start, end))
 {}
 
 void BVHAccel::reset(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end) {
