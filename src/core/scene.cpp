@@ -7,6 +7,7 @@
 #include <utility>
 #include <variant>
 
+#include <boost/algorithm/string.hpp>
 #include <fmt/core.h>
 #include <frozen/set.h>
 #include <frozen/string.h>
@@ -73,21 +74,37 @@ template <int N>
 using AttrSet = frozen::set<frozen::string, N>;
 
 template <typename T>
-bool parse_components(const std::string& attrstr, std::stringstream& ss, void* dst) {
+inline T string_to(const std::string& s) {
+    if constexpr (std::is_integral_v<T> && sizeof(T) == 4)
+        return std::stoi(s);
+    else if constexpr (std::is_floating_point_v<T>) {
+        if constexpr (sizeof(T) == 4)
+            return std::stof(s);
+        else
+            return std::stod(s);
+    }
+}
+
+template <typename T>
+//bool parse_components(const std::string& attrstr, std::stringstream& ss, void* dst) {
+bool parse_components(const std::vector<std::string>& strs, void* dst) {
     if constexpr (std::is_arithmetic_v<T>) {
-        auto found = attrstr.find(TypeInfo<T>::name);
+        //auto found = attrstr.find(TypeInfo<T>::name);
+        auto found = strs[0].find(TypeInfo<T>::name);
         if (found != std::string::npos) {
             int namelength = TypeInfo<T>::namelength;
             int cnt = 1;
             if (attrstr.size() > namelength)
-                cnt = attrstr[namelength] - '0';
+                //cnt = attrstr[namelength] - '0';
+                cnt = strs[0].back() - '0';
 
             // Stringstream is causing problem, use boost split
             // Assume we have 4 components at most
             //std::array<T, 4> buf;
             auto buf = reinterpret_cast<T*>(dst);
             for (int i = 0; i < cnt; i++)
-                ss >> buf[i];
+                //ss >> buf[i];
+                buf[i] = string_to<T>(strs[i + 1]);
             //memcpy(dst, &buf, cnt * sizeof(T));
             return true;
         }
@@ -104,18 +121,21 @@ bool parse_components(const std::string& attrstr, std::stringstream& ss, void* d
 template <typename T>
 void parse_attribute(std::stringstream& ss, pugi::xml_attribute attr, DictLike* obj, T& attr_set) {
     auto it = attr_set.find(frozen::string(attr.name()));
-    std::string typestr;
+    //std::string typestr;
+    std::vector<std::string> ret;
     if (it != attr_set.end()) {
         // attribute string format : type value1 value2..
-        ss.str(attr.value());
-        ss >> typestr;
-        int cnt = 1;
+        //ss.str(attr.value());
+        //ss >> typestr;
+        boost::split(ret, attr.value(), boost::is_any_of(" "));
+        //int cnt = 1;
 
         // float  type
-        if (parse_components<float>(typestr, ss, obj->address_of(attr.name())))
+        //if (parse_components<float>(typestr, ss, obj->address_of(attr.name())))
+        if (parse_components<float>(ret, obj->address_of(attr.name())))
             return;
         // int type
-        if (parse_components<int>(typestr, ss, obj->address_of(attr.name())))
+        if (parse_components<int>(ret, obj->address_of(attr.name())))
             return;
     }
 }
