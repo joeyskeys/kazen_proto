@@ -13,7 +13,7 @@ public:
 class Light : public DictLike {
 public:
     Light(RGBSpectrum l=RGBSpectrum(1.f, 1.f, 1.f), bool d=true)
-        : light_radiance(l)
+        : radiance(l)
         , is_delta(d)
     {}
 
@@ -23,7 +23,7 @@ public:
     }
 
     // members
-    RGBSpectrum light_radiance;
+    RGBSpectrum radiance;
     bool is_delta;
 };
 

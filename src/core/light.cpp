@@ -18,12 +18,12 @@ RGBSpectrum PointLight::sample_l(const Intersection& isect, Vec3f& wi, float& pd
         return RGBSpectrum(0.f, 0.f, 0.f);
 
     // length squared falloff
-    return light_radiance / (length * length);
+    return radiance / (length * length);
 }
 
 void* PointLight::address_of(const std::string& name) {
-    if (name == "light_radiance")
-        return &light_radiance;
+    if (name == "radiance")
+        return &radiance;
     else if (name == "position")
         return &position;
     return nullptr;

@@ -29,7 +29,10 @@ Film::Film()
     : width(800)
     , height(600)
     , filename("test.jpg")
-{}
+{
+    output = OIIO::ImageOutput::create(filename);
+    spec = OIIO::ImageSpec(width, height, OIIO::TypeDesc::UINT8);
+}
 
 Film::Film(unsigned int w, unsigned int h, const std::string& f)
     : width(w)
