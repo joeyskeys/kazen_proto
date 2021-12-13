@@ -409,6 +409,7 @@ void Scene::parse_from_file(fs::path filepath) {
     }
 
     // Construct acceleration structure after all data is parsed
+    camera->init();
     auto bvh_ptr = reinterpret_cast<BVHAccel*>(accelerator.get());
     bvh_ptr->reset(objects, 0, objects.size());
     integrator->accel_ptr = accelerator.get();

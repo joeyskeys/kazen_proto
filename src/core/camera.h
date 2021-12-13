@@ -15,7 +15,7 @@ public:
         : position(Vec3f(0, 0, 5))
         , lookat(Vec3f(0, 0, 0))
         , up(Vec3f(0, 1, 0))
-        , near_plane(0)
+        , near_plane(1)
         , far_plane(1000)
         , fov(60)
         , film(nullptr)
@@ -36,6 +36,10 @@ public:
         , fov(fov)
         , film(film)
     {
+        init();
+    }
+
+    inline void init() {
         ratio =  static_cast<float>(film->width) / static_cast<float>(film->height);
 
         auto dir = normalize(lookat - position);

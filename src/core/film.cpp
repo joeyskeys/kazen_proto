@@ -50,7 +50,6 @@ Film::Film(unsigned int w, unsigned int h, std::string&& f)
 {
     output = OIIO::ImageOutput::create(f);
     spec = OIIO::ImageSpec(w, h, 3, OIIO::TypeDesc::UINT8);
-    output->open(f, spec);
 }
 
 bool Film::write(void* data, OIIO::TypeDesc pixel_format)
