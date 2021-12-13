@@ -55,10 +55,10 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     isect.bitangent = normalize(isect.tangent.cross(isect.normal));
     isect.mat = mat;
     isect.obj_id = obj_id;
-    isect.shader_name = shader_name;
 
     // Transform back to world space
     isect = local_to_world.apply(isect);
+    isect.shader_name = shader_name;
     
     return true;
 }
@@ -144,8 +144,8 @@ bool Triangle::intersect(const Ray& r, Intersection& isect) const {
     if (ret && !isect.backface) {
         isect.mat = mat;
         isect.obj_id = obj_id;
-        isect.shader_name = shader_name;
         isect = local_to_world.apply(isect);
+        isect.shader_name = shader_name;
         return true;
     }
 

@@ -130,6 +130,9 @@ void parse_attribute(std::stringstream& ss, pugi::xml_attribute attr, DictLike* 
         // int type
         if (parse_components<int>(ret, obj->address_of(attr.name())))
             return;
+        // string type
+        if (parse_components<std::string>(ret, obj->address_of(attr.name())))
+            return;
     }
 }
 
@@ -292,6 +295,7 @@ void Scene::parse_from_file(fs::path filepath) {
                 case EFilm:
                     for (auto& attr : node.attributes())
                         parse_attribute(ss, attr, film.get(), film_attributes);
+                        film->generate_tiles();
                     break;
 
                 case ECamera:
@@ -318,19 +322,17 @@ void Scene::parse_from_file(fs::path filepath) {
                         auto obj_tag = gettag(object_node);
                         if (obj_tag == ESphere) {
                             std::cout << "Parsing sphere object.." << std::endl;
-                            for (auto& attr : object_node.attributes()) {
-                                auto obj_ptr = std::make_shared<Sphere>();
+                            auto obj_ptr = std::make_shared<Sphere>();
+                            for (auto& attr : object_node.attributes())
                                 parse_attribute(ss, attr, obj_ptr.get(), sphere_attributes);
-                                objects.push_back(std::move(obj_ptr));
-                            }
+                            objects.push_back(obj_ptr);
                         }
                         else if (obj_tag == ETriangle) {
                             std::cout << "Parsing triangle object.." << std::endl;
-                            for (auto& attr : object_node.attributes()) {
-                                auto obj_ptr = std::make_shared<Triangle>();
+                            auto obj_ptr = std::make_shared<Triangle>();
+                            for (auto& attr : object_node.attributes())
                                 parse_attribute(ss, attr, obj_ptr.get(), triangle_attributes);
-                                objects.push_back(std::move(obj_ptr));
-                            }
+                            objects.push_back(obj_ptr);
                         }
                     }
                     break;
@@ -381,7 +383,9 @@ void Scene::parse_from_file(fs::path filepath) {
                                             dl.value(), dp.value());
                                 }
                             }
-                        }
+
+                            shaders[name_attr.value()] = shader_group;
+                        }                        
                     }
                     break;
 
@@ -407,4 +411,5 @@ void Scene::parse_from_file(fs::path filepath) {
     // Construct acceleration structure after all data is parsed
     auto bvh_ptr = reinterpret_cast<BVHAccel*>(accelerator.get());
     bvh_ptr->reset(objects, 0, objects.size());
+    integrator->accel_ptr = accelerator.get();
 }

@@ -80,7 +80,7 @@ void Integrator::render() {
 
     auto render_start = get_time();
 
-    //tbb::task_scheduler_init init(1);
+    tbb::task_scheduler_init init(1);
 
     tbb::parallel_for (tbb::blocked_range<size_t>(0, film_ptr->tiles.size()), [&](const tbb::blocked_range<size_t>& r) {
         auto tile_start = get_time();
@@ -110,6 +110,7 @@ void Integrator::render() {
                         auto sample_start = get_time();
 
                         RGBSpectrum radiance_per_sample{0.f, 0.f, 0.f};
+                        float pdf;
 
                         for (int k = 0; k < depth; k++) {
                             isect.ray_t = std::numeric_limits<float>::max();
@@ -138,6 +139,10 @@ void Integrator::render() {
                                 beta *= mat_ptr->calculate_response(isect, ray);
                                 */
 
+                                radiance_per_sample += beta * ret.Le;
+
+                                ret.bsdf.sample(sg, random3f(), isect.wi, pdf);
+
                                 ray.origin = isect.position;
                                 ray.direction = isect.wi;
                                 ray.tmin = 0;
@@ -145,7 +150,7 @@ void Integrator::render() {
 
                                 hit = true;
                             }
-                            else {                
+                            else {
                                 auto front_vec = Vec3f{0.f, 0.f, -1.f};
                                 auto t = 0.5f * (ray.direction.y() + 1.f);
                                 radiance_per_sample += beta * ((1.f - t) * RGBSpectrum{1.f, 1.f, 1.f} + t * RGBSpectrum{0.5f, 0.7f, 1.f});

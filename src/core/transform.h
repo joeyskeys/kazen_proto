@@ -103,6 +103,7 @@ public:
         ret.backface = isect.backface;
         ret.mat = isect.mat;
         ret.obj_id = isect.obj_id;
+        ret.shader_name = isect.shader_name;
 
         return ret;
     }
