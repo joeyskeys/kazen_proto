@@ -38,20 +38,20 @@ static RGBSpectrum estamate_direct(const Intersection& isect, const Light* light
 }
 
 static RGBSpectrum estamate_one_light(const Intersection& isect, const Integrator& integrator) {
-    auto light_cnt = integrator.lights.size();
-    auto light_ptr = integrator.lights[randomi(light_cnt - 1)];
-    return estamate_direct(isect, light_ptr, integrator);
+    auto light_cnt = integrator.lights->size();
+    const auto& light = integrator.lights->at(randomi(light_cnt - 1));
+    return estamate_direct(isect, light.get(), integrator);
 }
 
 static RGBSpectrum estamate_all_light(const Intersection& isect, const Integrator& integrator) {
-    auto light_cnt = integrator.lights.size();
+    auto light_cnt = integrator.lights->size();
     RGBSpectrum ret{0.f, 0.f, 0.f};
 
     if (light_cnt == 0)
         return ret;
 
-    for (auto& light_ptr : integrator.lights)
-        ret += estamate_direct(isect, light_ptr, integrator);
+    for (auto& light : *(integrator.lights))
+        ret += estamate_direct(isect, light.get(), integrator);
     return ret / light_cnt;
 }
 
@@ -139,7 +139,7 @@ void Integrator::render() {
                                 beta *= mat_ptr->calculate_response(isect, ray);
                                 */
 
-                                radiance_per_sample += beta * ret.Le;
+                                //radiance_per_sample += beta * ret.Le;
 
                                 //ret.bsdf.sample(sg, random3f(), isect.wi, pdf);
 
