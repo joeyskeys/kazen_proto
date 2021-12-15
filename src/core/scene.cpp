@@ -116,7 +116,7 @@ bool parse_components(const std::vector<std::string>& strs, void* dst) {
 }
 
 template <typename T>
-void parse_attribute(std::stringstream& ss, pugi::xml_attribute attr, DictLike* obj, T& attr_set) {
+void parse_attribute(pugi::xml_attribute attr, DictLike* obj, T& attr_set) {
     auto it = attr_set.find(frozen::string(attr.name()));
 
     std::vector<std::string> ret;
@@ -146,7 +146,17 @@ inline Param parse_attribute(std::stringstream& ss) {
     return Param(tmp);
 }
 
-Params parse_attributes(pugi::xml_node node) {
+template <typename T>
+inline Param parse_attribute(const pugi::xml_attribute& attr) {
+    std::vector<std::string> ret;
+    boost::split(ret, attr.value(), boost::is_any_of(" "));
+
+    Param p;
+    parse_components<float>(ret, &p);
+    return p;
+}
+
+Params parse_attributes(const pugi::xml_node& node) {
     Params params;
     for (auto& child : node.children()) {
         for (auto& attr : child.attributes()) {
@@ -288,19 +298,18 @@ void Scene::parse_from_file(fs::path filepath) {
         // Found the root scene node, parse elements
         for (auto& sub_1 : node.children()) {
             auto child_tag = gettag(sub_1);
-            std::stringstream ss;
             // Now we assume all attribute component is float type..
             std::string type_str;
             switch (child_tag) {
                 case EFilm:
                     for (auto& attr : node.attributes())
-                        parse_attribute(ss, attr, film.get(), film_attributes);
+                        parse_attribute(attr, film.get(), film_attributes);
                         film->generate_tiles();
                     break;
 
                 case ECamera:
                     for (auto& attr : node.attributes())
-                        parse_attribute(ss, attr, camera.get(), camera_attributes);
+                        parse_attribute(attr, camera.get(), camera_attributes);
                     break;
 
                 case EAccelerator:
@@ -323,15 +332,28 @@ void Scene::parse_from_file(fs::path filepath) {
                         if (obj_tag == ESphere) {
                             std::cout << "Parsing sphere object.." << std::endl;
                             auto obj_ptr = std::make_shared<Sphere>();
-                            for (auto& attr : object_node.attributes())
-                                parse_attribute(ss, attr, obj_ptr.get(), sphere_attributes);
+                            for (auto& attr : object_node.attributes()) {
+                                // Ugly code...
+                                // Attribute parsing contains member in class and also method call
+                                if (std::string(attr.value()).find("translate") >= 0) {
+                                    auto p = parse_attribute(attr);
+                                    obj_ptr->translate(std::get<Vec3f>(p));
+                                }
+                                else
+                                    parse_attribute(attr, obj_ptr.get(), sphere_attributes);
+                            }
                             objects.push_back(obj_ptr);
                         }
                         else if (obj_tag == ETriangle) {
                             std::cout << "Parsing triangle object.." << std::endl;
                             auto obj_ptr = std::make_shared<Triangle>();
-                            for (auto& attr : object_node.attributes())
-                                parse_attribute(ss, attr, obj_ptr.get(), triangle_attributes);
+                            for (auto& attr : object_node.attributes()) {
+                                if (std::string(attr.value()).find("translate") >= 0) {
+                                    auto p = parse_attribute(attr);
+                                    obj_ptr->translate(std::get<Vec3f>(p));
+                                }
+                                else
+                                    parse_attribute(attr, obj_ptr.get(), triangle_attributes);
                             objects.push_back(obj_ptr);
                         }
                     }

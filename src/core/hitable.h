@@ -43,6 +43,11 @@ public:
         std::cout << bbox() << std::endl;
     }
 
+    void translate(const Vec3f& t) const {
+        local_to_world.translate(t);
+        world_to_local.translate(-t);
+    }
+
 protected:
     Transform local_to_world, world_to_local;
     AABBf bound;
