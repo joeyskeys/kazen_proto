@@ -23,7 +23,7 @@ public:
     HitablePtr          accel_ptr;
     Camera*             camera_ptr;
     Film*               film_ptr;
-    std::vector<Light*> lights;
+    std::vector<std::unique_ptr<Light>>* lights;
 
     OSL::ShadingSystem*  shadingsys;
     //KazenRenderServices rend;

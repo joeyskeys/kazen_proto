@@ -415,11 +415,11 @@ void Scene::parse_from_file(fs::path filepath) {
                     for (auto& light_node : sub_1.children()) {
                         auto light_tag = gettag(light_node);
                         if (light_tag == EPointLight) {
+                            auto lgt_ptr = std::make_unique<PointLight>();
                             for (auto& attr : light_node.attributes()) {
-                                auto lgt_ptr = std::make_unique<PointLight>();
                                 parse_attribute(ss, attr, lgt_ptr.get(), pointlight_attributes);
-                                lights.push_back(std::move(lgt_ptr));
                             }
+                            lights.push_back(std::move(lgt_ptr));
                         }
                     }
                     break;
@@ -435,4 +435,5 @@ void Scene::parse_from_file(fs::path filepath) {
     auto bvh_ptr = reinterpret_cast<BVHAccel*>(accelerator.get());
     bvh_ptr->reset(objects, 0, objects.size());
     integrator->accel_ptr = accelerator.get();
+    integrator->lights = &lights;
 }

@@ -31,7 +31,7 @@ Film::Film()
     , filename("test.jpg")
 {
     output = OIIO::ImageOutput::create(filename);
-    spec = OIIO::ImageSpec(width, height, OIIO::TypeDesc::UINT8);
+    spec = OIIO::ImageSpec(width, height, 3, OIIO::TypeDesc::UINT8);
 }
 
 Film::Film(unsigned int w, unsigned int h, const std::string& f)
