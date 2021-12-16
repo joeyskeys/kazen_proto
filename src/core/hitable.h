@@ -43,7 +43,7 @@ public:
         std::cout << bbox() << std::endl;
     }
 
-    void translate(const Vec3f& t) const {
+    void translate(const Vec3f& t) {
         local_to_world.translate(t);
         world_to_local.translate(-t);
     }

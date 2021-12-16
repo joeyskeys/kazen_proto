@@ -27,6 +27,9 @@ include_directories(${ASSIMP_INCLUDE_DIRS})
 find_package(Boost 1.72 REQUIRED COMPONENTS filesystem)
 include_directories(${Boost_INCLUDE_DIRS})
 
+find_package(OpenEXR REQUIRED)
+include_directories(${OPENEXR_INCLUDES})
+
 find_package(OSL REQUIRED)
 include_directories(${OSL_INCLUDE_DIRS})
 
@@ -34,10 +37,7 @@ find_package(Frozen REQUIRED)
 include_directories(${Frozen_INCLUDE_DIRS})
 
 find_package(Pugixml REQUIRED)
-include_directories(${Pugi_INCLUDE_DIRS})
-
-find_package(FMT REQUIRED)
-include_directories(${FMT_INCLUDE_DIRS})
+include_directories(${Pugixml_INCLUDE_DIRS})
 
 include_directories("./src")
 
