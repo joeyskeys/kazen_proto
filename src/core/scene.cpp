@@ -151,8 +151,12 @@ inline Param parse_attribute(const pugi::xml_attribute& attr) {
     std::vector<std::string> ret;
     boost::split(ret, attr.value(), boost::is_any_of(" "));
 
-    Param p;
-    parse_components<float>(ret, &p);
+    T tmp;
+    if constexpr (std::is_arithmetic_v<T>)
+        parse_components<T>(ret, &tmp);
+    else
+        parse_components<typename T::ValueType>(ret, &tmp);
+    Param p = tmp;
     return p;
 }
 
@@ -335,8 +339,9 @@ void Scene::parse_from_file(fs::path filepath) {
                             for (auto& attr : object_node.attributes()) {
                                 // Ugly code...
                                 // Attribute parsing contains member in class and also method call
-                                if (std::string(attr.value()).find("translate") >= 0) {
-                                    auto p = parse_attribute(attr);
+                                auto found = std::string(attr.name()).find("translate");
+                                if (found != std::string::npos) {
+                                    auto p = parse_attribute<Vec3f>(attr);
                                     obj_ptr->translate(std::get<Vec3f>(p));
                                 }
                                 else
@@ -348,12 +353,15 @@ void Scene::parse_from_file(fs::path filepath) {
                             std::cout << "Parsing triangle object.." << std::endl;
                             auto obj_ptr = std::make_shared<Triangle>();
                             for (auto& attr : object_node.attributes()) {
-                                if (std::string(attr.value()).find("translate") >= 0) {
-                                    auto p = parse_attribute(attr);
+                                // FIXME : same as above code..
+                                auto found = std::string(attr.name()).find("translate");
+                                if (found != std::string::npos) {
+                                    auto p = parse_attribute<Vec3f>(attr);
                                     obj_ptr->translate(std::get<Vec3f>(p));
                                 }
                                 else
                                     parse_attribute(attr, obj_ptr.get(), triangle_attributes);
+                            }
                             objects.push_back(obj_ptr);
                         }
                     }
@@ -417,7 +425,7 @@ void Scene::parse_from_file(fs::path filepath) {
                         if (light_tag == EPointLight) {
                             auto lgt_ptr = std::make_unique<PointLight>();
                             for (auto& attr : light_node.attributes()) {
-                                parse_attribute(ss, attr, lgt_ptr.get(), pointlight_attributes);
+                                parse_attribute(attr, lgt_ptr.get(), pointlight_attributes);
                             }
                             lights.push_back(std::move(lgt_ptr));
                         }

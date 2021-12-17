@@ -39,6 +39,9 @@ include_directories(${Frozen_INCLUDE_DIRS})
 find_package(Pugixml REQUIRED)
 include_directories(${Pugixml_INCLUDE_DIRS})
 
+find_package(FMT REQUIRED)
+include_directories(${FMT_INCLUDE_DIRS})
+
 include_directories("./src")
 
 set(BASE_HEADERS
@@ -80,6 +83,7 @@ add_library(kazen_proto_lib
 target_link_libraries(kazen_proto_lib
     ${ASSIMP_LIBRARIES}
     ${Boost_LIBRARIES}
+    ${TBB_LIBRARIES}
     ${Pugixml_LIBRARIES}
     ${OSL_LIBRARIES})
 

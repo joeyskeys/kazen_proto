@@ -17,7 +17,7 @@
     </Materials>
 
     <Objects>
-        <Sphere radius="float 3" translate="float3 0 5 -20" shader_name="string checker_matte" />
+        <Sphere radius="float 3" translate="float3 5 5 -20" shader_name="string checker_matte" />
         <Triangle verta="float3 0 0 0" vertb="float3 2 0 0" vertc="float3 0 2 0" translate="float3 0 0 -10" shader_name="string checker_matte" />
     </Objects>
 
