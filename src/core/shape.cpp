@@ -137,6 +137,13 @@ void* Sphere::address_of(const std::string& name) {
     return nullptr;
 }
 
+void Sphere::sample(Vec3f& p, Vec3f& n, float& pdf) const {
+    auto sample = random3f();
+    n = sample.normalized();
+    p = center + n * radius;
+    pdf = 1;
+}
+
 bool Triangle::intersect(const Ray& r, Intersection& isect) const {
     auto local_r = world_to_local.apply(r);
 
@@ -208,6 +215,15 @@ void* Triangle::address_of(const std::string& name) {
     return nullptr;
 }
 
+void Triangle::sample(Vec3f& p, Vec3f& n, float& pdf) const {
+    auto sample = random2f();
+    float alpha = 1 - sample.x();
+    float beta = alpha * sample.y();
+    p = verts[0] + alpha * (verts[1] - verts[0]) + beta * (verts[2] - verts[0]);
+    n = normal;
+    pdf = 1;
+}
+
 bool TriangleMesh::intersect(const Ray& r, Intersection& isect) const {
     auto local_r = world_to_local.apply(r);
     bool hit = false;
@@ -263,6 +279,22 @@ AABBf TriangleMesh::bbox() const {
     }
 
     return box;
+}
+
+void TriangleMesh::sample(Vec3f& p, Vec3f& n, float& pdf) const {
+    uint idx = randomf() * indices.size();
+    Vec3f verts[3];
+    vert_indices = indice[idx];
+    verts[0] = verts[vert_indices[0]];
+    verts[1] = verts[vert_indices[1]];
+    verts[2] = verts[vert_indices[2]];
+
+    auto sample = random2f();
+    float alpha = 1 - sample.x();
+    float beta = alpha * sample.y();
+    p = verts[0] + alpha * (verts[1] - verts[0]) + beta * (verts[2] - verts[0]);
+    n = cross(verts[1] - verts[0], verts[2] - verts[0]).normalized();
+    pdf = 1;
 }
 
 static std::shared_ptr<TriangleMesh> process_mesh(aiMesh* mesh, const aiScene* scene, const MaterialPtr m) {

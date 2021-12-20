@@ -25,6 +25,7 @@ public:
         , obj_id(id)
     {}
 
+    virtial void sample(Vec3f& p, Vec3f& n, float& pdf) const = 0;
     void print_bound() const override;
 
 public:
@@ -52,6 +53,7 @@ public:
     AABBf bbox() const override;
 
     void* address_of(const std::string& name) override;
+    void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
 
     // Members
     float radius;
@@ -66,6 +68,7 @@ public:
         verts[0] = Vec3f(0, 0, 0);
         verts[1] = Vec3f(1, 0, 0);
         verts[2] = Vec3f(0, 0, -1);
+        normal = cross(verts[1] - verts[0], verts[2] - verts[0]).normalized();
     }
 
     Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c, const MaterialPtr m=nullptr)
@@ -74,6 +77,7 @@ public:
         verts[0] = a;
         verts[1] = b;
         verts[2] = c;
+        normal = cross(verts[1] - verts[0], verts[2] - verts[0]).normalized();
     }
 
     bool intersect(const Ray& r, Intersection& isect) const override;
@@ -81,8 +85,10 @@ public:
     AABBf bbox() const override;
 
     void* address_of(const std::string& name) override;
+    void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
 
     Vec3f verts[3];
+    Vec3f normal;
 };
 
 class TriangleMesh : public Shape {
@@ -98,6 +104,7 @@ public:
     AABBf bbox() const override;
 
     //void* address_of(const std::string& name) override
+    void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
 
     std::vector<Vec3f> verts;
     std::vector<Vec3i> indice;
