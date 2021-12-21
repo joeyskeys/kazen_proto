@@ -19,9 +19,10 @@ public:
         , obj_id(0)
     {}
 
-    Shape(const Transform& l2w, const MaterialPtr m, const uint& id)
+    Shape(const Transform& l2w, std::string m, bool is_l, const uint& id)
         : Hitable(l2w)
-        , mat(m)
+        , shader_name(m)
+        , is_light(is_l)
         , obj_id(id)
     {}
 
@@ -29,9 +30,10 @@ public:
     void print_bound() const override;
 
 public:
-    MaterialPtr mat;
-    uint obj_id;
     std::string shader_name;
+    bool        is_light = false;
+    std::weak_ptr<Light> light;
+    uint        obj_id;
 };
 
 class Sphere : public Shape {
@@ -42,8 +44,8 @@ public:
         , center(Vec3f(0, 0, 0))
     {}
 
-    Sphere(const Transform& l2w, const uint& id, const float r, const MaterialPtr m=nullptr, const Vec3f& c=Vec3f{0.f, 0.f, 0.f})
-        : Shape(l2w, m, id)
+    Sphere(const Transform& l2w, const uint& id, const float r, const std::string& m="", bool is_l=false, const Vec3f& c=Vec3f{0.f, 0.f, 0.f})
+        : Shape(l2w, m, is_l, id)
         , radius(r)
         , center(c)
     {}
@@ -71,8 +73,8 @@ public:
         normal = cross(verts[1] - verts[0], verts[2] - verts[0]).normalized();
     }
 
-    Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c, const MaterialPtr m=nullptr)
-        : Shape(l2w, m, 1)
+    Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c, const std::string m="", bool is_l=false)
+        : Shape(l2w, m, is_l, 1)
     {
         verts[0] = a;
         verts[1] = b;
@@ -93,8 +95,8 @@ public:
 
 class TriangleMesh : public Shape {
 public:
-    TriangleMesh(const Transform& l2w, std::vector<Vec3f>&& vs, std::vector<Vec3i>&& idx, const MaterialPtr m=nullptr)
-        : Shape(l2w, m, 2)
+    TriangleMesh(const Transform& l2w, std::vector<Vec3f>&& vs, std::vector<Vec3i>&& idx, const std::string m="", bool is_l=false)
+        : Shape(l2w, m, is_l, 2)
         , verts(vs)
         , indice(idx)
     {}

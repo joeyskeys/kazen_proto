@@ -281,6 +281,14 @@ public:
         return std::accumulate(arr.begin(), arr.end(), 0);
     }
 
+    inline auto max_component() const {
+        return std::max_element(arr.begin(), arr.end());
+    }
+
+    inline auto min_component() const {
+        return std::min_element(arr.begin(), arr.end());
+    }
+
     friend std::ostream& operator <<(std::ostream& os, const Vec& v) {
         for (auto& e : v.arr)
             os << e << " ";

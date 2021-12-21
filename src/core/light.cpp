@@ -2,23 +2,22 @@
 
 #include "light.h"
 
-RGBSpectrum PointLight::sample_l(const Intersection& isect, Vec3f& wi, float& pdf, const HitablePtr scene) const {
+RGBSpectrum PointLight::sample(const Intersection& isect, Vec3f& wi, float& pdf, const HitablePtr scene) const {
+    // TODO : how to sample delta light?
     // Visibility test
     if (scene->occluded(position, isect.position))
         return RGBSpectrum{0.f, 0.f, 0.f};
 
-    auto connected_vec = position - isect.position;
-    wi = normalize(connected_vec);
-    auto length = connected_vec.length();
+    auto length_sqr = connected_vec.length_squared();
     pdf = 1.f;
 
-    Ray r(isect.position, wi);
-    Intersection isect_tmp;
-    if (scene->intersect(r, isect_tmp) && isect.ray_t < length)
-        return RGBSpectrum(0.f, 0.f, 0.f);
-
     // length squared falloff
-    return radiance / (length * length);
+    return radiance / length_sqr;
+}
+
+RGBSpectrum PointLight::eval(const Intersection& isect, const Vec3f& wi, const Vec3f& n) const {
+    auto length_sqr = (position - isect.position).length_squared();
+    return radiance / length_sqr;
 }
 
 void* PointLight::address_of(const std::string& name) {
@@ -27,4 +26,22 @@ void* PointLight::address_of(const std::string& name) {
     else if (name == "position")
         return &position;
     return nullptr;
+}
+
+RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& wi, float& pdf, const HitablePtr scene) {
+    Vec3f p, n;
+    auto sampled_point = geomtry->sample(p, n, pdf);
+
+    // Visibility test
+    if (scene->occluded(sampled_point, isect.position))
+        return RGBSpectrum{0.f, 0.f, 0.f};
+    
+    wi = (sampled_point - isect.position).normalized();
+
+    return eval(isect, wi, n);
+}
+
+RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& wi, const Vec3f& n) {
+    auto cos_theta = dot(wi, n);
+    return cos_theta < 0.f ? radiance : 0.f;
 }

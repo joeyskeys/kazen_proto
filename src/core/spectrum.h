@@ -8,6 +8,10 @@ public:
         std::fill(arr.begin(), arr.end(), 0.f);
     }
 
+    RGBSpectrum(float v) {
+        std::fill(arr.begin(), arr.end(), v);
+    }
+
     RGBSpectrum(float r, float g, float b) {
         arr[0] = r;
         arr[1] = g;

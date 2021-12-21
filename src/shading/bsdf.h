@@ -104,7 +104,6 @@ public:
         return ret / pdf;
     }
 
-
 private:
     uint bsdf_count, byte_count;
     std::array<BSDF*, max_closure> bsdfs;
@@ -118,5 +117,5 @@ struct ShadingResult {
     CompositeBSDF bsdf;
 };
 
-void register_closures(OSL::ShadingSystem *shadingsys);
+void register_closures(OSL::ShadingSystem *shadingsyse;
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only);

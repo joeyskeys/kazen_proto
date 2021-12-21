@@ -53,6 +53,8 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
         isect.tangent = normalize(Vec3f{0.f, 1.f, 0.f}.cross(isect.normal));
 
     isect.bitangent = normalize(isect.tangent.cross(isect.normal));
+    isect.is_light = is_light;
+    isect.shape = this;
     isect.mat = mat;
     isect.obj_id = obj_id;
 
@@ -153,6 +155,8 @@ bool Triangle::intersect(const Ray& r, Intersection& isect) const {
         isect.obj_id = obj_id;
         isect = local_to_world.apply(isect);
         isect.shader_name = shader_name;
+        isect.is_light = is_light;
+        isect.shape = this;
         return true;
     }
 
@@ -183,13 +187,7 @@ static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, float& t
 
 bool Triangle::intersect(const Ray& r, float& t) const {
     auto local_r = world_to_local.apply(r);
-
-    if (moller_trumbore_intersect(local_r, verts, t)) {
-        // Not considering backfacing here
-        return true;
-    }
-
-    return false;
+    return moller_trumbore_intersect(local_r, verts, t)
 }
 
 static inline AABBf bbox_of_triangle(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) {
@@ -241,6 +239,8 @@ bool TriangleMesh::intersect(const Ray& r, Intersection& isect) const {
             isect.mat = mat;
             isect.obj_id = 2;
             isect.shader_name = shader_name;
+            isect.is_light = is_light;
+            isect.shape = this;
             isect = local_to_world.apply(isect);
             return true;
         }

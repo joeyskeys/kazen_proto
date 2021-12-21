@@ -18,7 +18,8 @@ struct Intersection {
     Vec2f uv;
     float ray_t;
     bool  backface;
-    MaterialPtr mat;
+    bool  is_light;
+    Shape *shape;
     uint  obj_id;
     std::string shader_name;
 };

@@ -15,8 +15,7 @@ static RGBSpectrum estamate_direct(const Intersection& isect, const Light* light
     float light_pdf, scattering_pdf;
     Intersection isect_tmp;
     
-    // Do visibility test in light sampling
-    RGBSpectrum light_radiance = light_ptr->sample_l(isect, wi, light_pdf, integrator.accel_ptr);
+    RGBSpectrum light_radiance = light_ptr->sample(isect, wi, light_pdf, integrator.accel_ptr);
     RGBSpectrum result_radiance;
 
     if (light_pdf > 0.f && !light_radiance.is_zero()) {
@@ -74,7 +73,11 @@ Integrator::Integrator(Camera* cam_ptr, Film* flm_ptr)
 void Integrator::render() {
     auto film_width = film_ptr->width;
     auto film_height = film_ptr->height;
-    float depth = 10;
+    int  max_depth = 10;
+    int  min_depth = 4;
+
+    // No refract for now
+    float eta = 1.f;
 
     constexpr static int sample_count = 5;
 
@@ -94,7 +97,6 @@ void Integrator::render() {
             for (int j = 0; j < tile.height; j++) {
                 for (int i = 0; i < tile.width; i++) {
                     Intersection isect;
-                    RGBSpectrum l{0.f, 0.f, 0.f};
                     RGBSpectrum radiance_total{0.f, 0.f, 0.f};
 
                     for (int s = 0; s < sample_count; s++) {
@@ -103,33 +105,42 @@ void Integrator::render() {
                         uint y = tile.origin_y + j;
 
                         auto ray = camera_ptr->generate_ray(tile.origin_x + i, tile.origin_y + j);
-                        RGBSpectrum beta{1.f, 1.f, 1.f};
+                        RGBSpectrum throughput{1.f, 1.f, 1.f};
                         bool hit = false;
                         Ray tmp_ray = ray;
 
                         auto sample_start = get_time();
 
                         RGBSpectrum radiance_per_sample{0.f, 0.f, 0.f};
+                        float bsdf_weight = 1.f;
                         float pdf;
 
-                        for (int k = 0; k < depth; k++) {
+                        for (int k = 0; k < max_depth; k++) {
                             isect.ray_t = std::numeric_limits<float>::max();
-                            if (accel_ptr->intersect(ray, isect) && k < depth - 1) {
-                                // Add radiance contribution from this shading point
-                                //radiance_per_sample += beta * estamate_all_light(isect, *this);
-                                //radiance_per_sample += beta * estamate_one_light();
+                            if (accel_ptr->intersect(ray, isect) && k < max_depth - 1) {
+                                if (isect.is_light) {
+                                    // Hit geometry light
+                                    radiance_per_sample += bsdf_weight * throughput * isect.shape->light->radiance;
+                                }
 
-                                // Now we need a scene description to setup the scene
-                                // Done
-                                // Self defined xml/json or USD?
-                                // Xml
-                                // Debuging OSL now.
+                                if (depth >= min_depth) {
+                                    // Perform russian roulette to cut off path
+                                    auto probability = std::min(throughput.max_component() * eta * eta, 0.99f);
+                                    if (probability < randomf())
+                                        break;
+                                    throughput /= probability;
+                                }
+
+                                // Sample light
+                                radiance_per_sample += throughput * estamate_one_light(isect, this);
+
+                                // Sample BSDF
                                 OSL::ShaderGlobals sg;
                                 KazenRenderServices::globals_from_hit(sg, ray, isect);
-                                //shadingsys->execute(*ctx, *(*shaders)[isect.shader_name], sg);
+                                shadingsys->execute(*ctx, *(*shaders)[isect.shader_name], sg);
                                 ShadingResult ret;
-                                bool last_bounce = k == depth;
-                                //process_closure(ret, sg.Ci, RGBSpectrum(1, 1, 1), last_bounce);
+                                bool last_bounce = k == max_depth;
+                                process_closure(ret, sg.Ci, RGBSpectrum(1, 1, 1), last_bounce);
 
                                 /*
                                 // Sample material to construct next ray
@@ -139,9 +150,9 @@ void Integrator::render() {
                                 beta *= mat_ptr->calculate_response(isect, ray);
                                 */
 
-                                //radiance_per_sample += beta * ret.Le;
+                                radiance_per_sample += beta * ret.Le;
 
-                                //ret.bsdf.sample(sg, random3f(), isect.wi, pdf);
+                                ret.bsdf.sample(sg, random3f(), isect.wi, pdf);
 
                                 ray.origin = isect.position;
                                 ray.direction = isect.wi;
@@ -151,6 +162,7 @@ void Integrator::render() {
                                 hit = true;
                             }
                             else {
+                                // Hit environment
                                 auto t = 0.5f * (ray.direction.y() + 1.f);
                                 radiance_per_sample += beta * ((1.f - t) * RGBSpectrum{1.f, 1.f, 1.f} + t * RGBSpectrum{0.5f, 0.7f, 1.f});
                                 break;
