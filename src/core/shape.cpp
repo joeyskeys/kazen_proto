@@ -4,9 +4,10 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include "shape.h"
-#include "ray.h"
-#include "transform.h"
+#include "core/ray.h"
+#include "core/sampling.h"
+#include "core/shape.h"
+#include "core/transform.h"
 
 namespace fs = boost::filesystem;
 
@@ -54,8 +55,7 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
 
     isect.bitangent = normalize(isect.tangent.cross(isect.normal));
     isect.is_light = is_light;
-    isect.shape = this;
-    isect.mat = mat;
+    isect.shape = const_cast<Sphere*>(this);
     isect.obj_id = obj_id;
 
     // Transform back to world space
@@ -151,12 +151,11 @@ bool Triangle::intersect(const Ray& r, Intersection& isect) const {
 
     auto ret = moller_trumbore_intersect(local_r, verts, isect);
     if (ret && !isect.backface) {
-        isect.mat = mat;
         isect.obj_id = obj_id;
         isect = local_to_world.apply(isect);
         isect.shader_name = shader_name;
         isect.is_light = is_light;
-        isect.shape = this;
+        isect.shape = const_cast<Triangle*>(this);
         return true;
     }
 
@@ -187,7 +186,7 @@ static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, float& t
 
 bool Triangle::intersect(const Ray& r, float& t) const {
     auto local_r = world_to_local.apply(r);
-    return moller_trumbore_intersect(local_r, verts, t)
+    return moller_trumbore_intersect(local_r, verts, t);
 }
 
 static inline AABBf bbox_of_triangle(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) {
@@ -236,11 +235,10 @@ bool TriangleMesh::intersect(const Ray& r, Intersection& isect) const {
         tri[2] = verts[idx[2]];
         hit = moller_trumbore_intersect(local_r, tri, isect);
         if (hit && !isect.backface) {
-            isect.mat = mat;
             isect.obj_id = 2;
             isect.shader_name = shader_name;
             isect.is_light = is_light;
-            isect.shape = this;
+            isect.shape = const_cast<TriangleMesh*>(this);
             isect = local_to_world.apply(isect);
             return true;
         }
@@ -282,9 +280,9 @@ AABBf TriangleMesh::bbox() const {
 }
 
 void TriangleMesh::sample(Vec3f& p, Vec3f& n, float& pdf) const {
-    uint idx = randomf() * indices.size();
+    uint idx = randomf() * indice.size();
     Vec3f verts[3];
-    vert_indices = indice[idx];
+    auto vert_indices = indice[idx];
     verts[0] = verts[vert_indices[0]];
     verts[1] = verts[vert_indices[1]];
     verts[2] = verts[vert_indices[2]];
@@ -297,7 +295,7 @@ void TriangleMesh::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     pdf = 1;
 }
 
-static std::shared_ptr<TriangleMesh> process_mesh(aiMesh* mesh, const aiScene* scene, const MaterialPtr m) {
+static std::shared_ptr<TriangleMesh> process_mesh(aiMesh* mesh, const aiScene* scene, const std::string& m) {
     std::vector<Vec3f> vs(mesh->mNumVertices);
     std::vector<Vec3i> idx(mesh->mNumFaces);
 
@@ -316,7 +314,7 @@ static std::shared_ptr<TriangleMesh> process_mesh(aiMesh* mesh, const aiScene* s
     return std::make_shared<TriangleMesh>(Transform{}, std::move(vs), std::move(idx), m);
 }
 
-static void process_node(aiNode* node, const aiScene* scene, std::vector<std::shared_ptr<Hitable>>& meshes, const MaterialPtr m) {
+static void process_node(aiNode* node, const aiScene* scene, std::vector<std::shared_ptr<Hitable>>& meshes, const std::string& m) {
     for (uint i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         meshes.emplace_back(process_mesh(mesh, scene, m));
@@ -327,7 +325,7 @@ static void process_node(aiNode* node, const aiScene* scene, std::vector<std::sh
     }
 }
 
-std::vector<std::shared_ptr<Hitable>> load_triangle_mesh(const std::string& file_path, const MaterialPtr m) {
+std::vector<std::shared_ptr<Hitable>> load_triangle_mesh(const std::string& file_path, const std::string& m) {
     std::vector<std::shared_ptr<Hitable>> meshes;
 
     if (!fs::exists(fs::absolute(file_path))) {

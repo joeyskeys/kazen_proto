@@ -117,5 +117,5 @@ struct ShadingResult {
     CompositeBSDF bsdf;
 };
 
-void register_closures(OSL::ShadingSystem *shadingsyse;
+void register_closures(OSL::ShadingSystem *shadingsys);
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only);

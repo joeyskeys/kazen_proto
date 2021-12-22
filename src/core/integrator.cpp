@@ -10,23 +10,24 @@
 #include "sampling.h"
 #include "shading/bsdf.h"
 
-static RGBSpectrum estamate_direct(const Intersection& isect, const Light* light_ptr, const Integrator& integrator) {
+static RGBSpectrum estamate_direct(const Intersection& isect, const Light* light_ptr, const Integrator& integrator, ShadingResult& sr, OSL::ShaderGlobals& sg) {
     Vec3f wi;
-    float light_pdf, scattering_pdf;
+    float light_pdf, bsdf_pdf;
     Intersection isect_tmp;
     
     RGBSpectrum light_radiance = light_ptr->sample(isect, wi, light_pdf, integrator.accel_ptr);
     RGBSpectrum result_radiance;
 
     if (light_pdf > 0.f && !light_radiance.is_zero()) {
-        RGBSpectrum f = isect.mat->bxdf->f(isect.wo, wi, isect_tmp);
-        scattering_pdf = isect.mat->bxdf->pdf(isect.wo, wi);
+        //RGBSpectrum f = isect.mat->bxdf->f(isect.wo, wi, isect_tmp);
+        //scattering_pdf = isect.mat->bxdf->pdf(isect.wo, wi);
+        auto f = sr.bsdf.eval(sg, wi, bsdf_pdf);
 
         if (!f.is_zero()) {
             if (light_ptr->is_delta)
                 result_radiance += f * light_radiance / light_pdf;
             else {
-                auto weight = power_heuristic(1, light_pdf, 1, scattering_pdf);
+                auto weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
                 result_radiance += f * light_radiance * weight / light_pdf;
             }
         }
@@ -36,13 +37,19 @@ static RGBSpectrum estamate_direct(const Intersection& isect, const Light* light
     return result_radiance;
 }
 
-static RGBSpectrum estamate_one_light(const Intersection& isect, const Integrator& integrator) {
+static RGBSpectrum estamate_one_light(const Intersection& isect, const Integrator& integrator, ShadingResult& sr, OSL::ShaderGlobals& sg) {
     auto light_cnt = integrator.lights->size();
-    const auto& light = integrator.lights->at(randomi(light_cnt - 1));
-    return estamate_direct(isect, light.get(), integrator);
+    // FIXME : add a wrapper to sample
+    Light* light_ptr = nullptr;
+    if (light_cnt > 1)
+        light_ptr = integrator.lights->at(randomi(light_cnt - 1)).get();
+    else
+        light_ptr = integrator.lights->at(0).get();
+
+    return estamate_direct(isect, light_ptr, integrator, sr, sg);
 }
 
-static RGBSpectrum estamate_all_light(const Intersection& isect, const Integrator& integrator) {
+static RGBSpectrum estamate_all_light(const Intersection& isect, const Integrator& integrator, ShadingResult& sr, OSL::ShaderGlobals& sg) {
     auto light_cnt = integrator.lights->size();
     RGBSpectrum ret{0.f, 0.f, 0.f};
 
@@ -50,7 +57,7 @@ static RGBSpectrum estamate_all_light(const Intersection& isect, const Integrato
         return ret;
 
     for (auto& light : *(integrator.lights))
-        ret += estamate_direct(isect, light.get(), integrator);
+        ret += estamate_direct(isect, light.get(), integrator, sr, sg);
     return ret / light_cnt;
 }
 
@@ -83,15 +90,23 @@ void Integrator::render() {
 
     auto render_start = get_time();
 
+#define WITH_TBB
+
+#ifdef WITH_TBB
     //tbb::task_scheduler_init init(1);
-
     tbb::parallel_for (tbb::blocked_range<size_t>(0, film_ptr->tiles.size()), [&](const tbb::blocked_range<size_t>& r) {
-        auto tile_start = get_time();
-
+#else
+    {
+#endif
         OSL::PerThreadInfo *thread_info = shadingsys->create_thread_info();
         OSL::ShadingContext *ctx = shadingsys->get_context(thread_info);
 
+#ifdef WITH_TBB
         for (int t = r.begin(); t != r.end(); ++t) {
+#else
+        for (int t = 0; t < film_ptr->tiles.size(); t++) {
+#endif
+            auto tile_start = get_time();
             Tile& tile = film_ptr->tiles[t];
 
             for (int j = 0; j < tile.height; j++) {
@@ -120,10 +135,23 @@ void Integrator::render() {
                             if (accel_ptr->intersect(ray, isect) && k < max_depth - 1) {
                                 if (isect.is_light) {
                                     // Hit geometry light
-                                    radiance_per_sample += bsdf_weight * throughput * isect.shape->light->radiance;
+                                    auto light_ptr = isect.shape->light.lock();
+                                    // NOTE : light_ptr could be nullptr, that's the feature of
+                                    // weak_ptr
+                                    radiance_per_sample += bsdf_weight * throughput * light_ptr->radiance;
                                 }
 
-                                if (depth >= min_depth) {
+                                OSL::ShaderGlobals sg;
+                                KazenRenderServices::globals_from_hit(sg, ray, isect);
+                                shadingsys->execute(*ctx, *(*shaders)[isect.shader_name], sg);
+                                ShadingResult ret;
+                                bool last_bounce = k == max_depth;
+                                process_closure(ret, sg.Ci, RGBSpectrum(1, 1, 1), last_bounce);
+
+                                // Self emission
+                                //radiance_per_sample += throughput * ret.Le;
+
+                                if (k >= min_depth) {
                                     // Perform russian roulette to cut off path
                                     auto probability = std::min(throughput.max_component() * eta * eta, 0.99f);
                                     if (probability < randomf())
@@ -132,16 +160,9 @@ void Integrator::render() {
                                 }
 
                                 // Sample light
-                                radiance_per_sample += throughput * estamate_one_light(isect, this);
+                                radiance_per_sample += throughput * estamate_one_light(isect, *this, ret, sg);
 
                                 // Sample BSDF
-                                OSL::ShaderGlobals sg;
-                                KazenRenderServices::globals_from_hit(sg, ray, isect);
-                                shadingsys->execute(*ctx, *(*shaders)[isect.shader_name], sg);
-                                ShadingResult ret;
-                                bool last_bounce = k == max_depth;
-                                process_closure(ret, sg.Ci, RGBSpectrum(1, 1, 1), last_bounce);
-
                                 /*
                                 // Sample material to construct next ray
                                 auto mat_ptr = isect.mat;
@@ -149,9 +170,6 @@ void Integrator::render() {
                                 float p;
                                 beta *= mat_ptr->calculate_response(isect, ray);
                                 */
-
-                                radiance_per_sample += beta * ret.Le;
-
                                 ret.bsdf.sample(sg, random3f(), isect.wi, pdf);
 
                                 ray.origin = isect.position;
@@ -164,7 +182,7 @@ void Integrator::render() {
                             else {
                                 // Hit environment
                                 auto t = 0.5f * (ray.direction.y() + 1.f);
-                                radiance_per_sample += beta * ((1.f - t) * RGBSpectrum{1.f, 1.f, 1.f} + t * RGBSpectrum{0.5f, 0.7f, 1.f});
+                                radiance_per_sample += throughput * ((1.f - t) * RGBSpectrum{1.f, 1.f, 1.f} + t * RGBSpectrum{0.5f, 0.7f, 1.f});
                                 break;
                             }
                         }
@@ -177,15 +195,20 @@ void Integrator::render() {
                     tile.set_pixel_color(i, j, radiance_total);
                 }
             }
+
+            auto tile_end = get_time();
+            auto tile_duration = std::chrono::duration_cast<std::chrono::milliseconds>(tile_end - tile_start);
+            std::cout << "tile duration : " << tile_duration.count() << " ms\n";
         }
 
         shadingsys->release_context(ctx);
         shadingsys->destroy_thread_info(thread_info);
 
-        auto tile_end = get_time();
-        auto tile_duration = std::chrono::duration_cast<std::chrono::milliseconds>(tile_end - tile_start);
-        std::cout << "sample duration : " << tile_duration.count() << " ms\n";
+#ifdef WITH_TBB
     });
+#else
+    }
+#endif
 
     auto render_end = get_time();
     auto render_duration = std::chrono::duration_cast<std::chrono::milliseconds>(render_end - render_start);

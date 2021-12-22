@@ -1,14 +1,10 @@
 #pragma once
 
 #include "base/dictlike.h"
+#include "core/shape.h"
 #include "core/spectrum.h"
 #include "core/material.h"
 #include "core/hitable.h"
-
-class VisibilityTester {
-public:
-
-};
 
 class Light : public DictLike {
 public:
@@ -56,7 +52,7 @@ public:
         , geometry(nullptr)
     {}
 
-    GeometryLight(const RGBSpectrum& l, std::unique_ptr<Shape>g)
+    GeometryLight(const RGBSpectrum& l, std::shared_ptr<Shape>g)
         : Light(l, false)
         , geometry(g)
     {}

@@ -282,11 +282,11 @@ public:
     }
 
     inline auto max_component() const {
-        return std::max_element(arr.begin(), arr.end());
+        return *std::max_element(arr.begin(), arr.end());
     }
 
     inline auto min_component() const {
-        return std::min_element(arr.begin(), arr.end());
+        return *std::min_element(arr.begin(), arr.end());
     }
 
     friend std::ostream& operator <<(std::ostream& os, const Vec& v) {

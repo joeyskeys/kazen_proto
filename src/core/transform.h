@@ -101,7 +101,7 @@ public:
         ret.uv = isect.uv;
         ret.ray_t = isect.ray_t;
         ret.backface = isect.backface;
-        ret.mat = isect.mat;
+        ret.is_light = isect.is_light;
         ret.obj_id = isect.obj_id;
         ret.shader_name = isect.shader_name;
 

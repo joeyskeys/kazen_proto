@@ -6,6 +6,9 @@
 class Material;
 using MaterialPtr = Material*;
 
+class Shape;
+using ShapePtr = Shape*;
+
 struct Intersection {
     Vec3f position;
     Vec3f normal;
@@ -19,7 +22,7 @@ struct Intersection {
     float ray_t;
     bool  backface;
     bool  is_light;
-    Shape *shape;
+    ShapePtr shape;
     uint  obj_id;
     std::string shader_name;
 };

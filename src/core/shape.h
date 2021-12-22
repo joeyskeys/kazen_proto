@@ -10,12 +10,12 @@
 #include "core/material.h"
 
 class Ray;
+class Light;
 
 class Shape : public Hitable, public DictLike {
 public:
     Shape()
         : Hitable(Transform())
-        , mat(nullptr)
         , obj_id(0)
     {}
 
@@ -26,7 +26,7 @@ public:
         , obj_id(id)
     {}
 
-    virtial void sample(Vec3f& p, Vec3f& n, float& pdf) const = 0;
+    virtual void sample(Vec3f& p, Vec3f& n, float& pdf) const = 0;
     void print_bound() const override;
 
 public:
@@ -112,4 +112,4 @@ public:
     std::vector<Vec3i> indice;
 };
 
-std::vector<std::shared_ptr<Hitable>> load_triangle_mesh(const std::string& file_path, const MaterialPtr m=nullptr);
+std::vector<std::shared_ptr<Hitable>> load_triangle_mesh(const std::string& file_path, const std::string& m="");

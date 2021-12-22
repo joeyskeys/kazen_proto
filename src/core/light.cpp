@@ -8,7 +8,7 @@ RGBSpectrum PointLight::sample(const Intersection& isect, Vec3f& wi, float& pdf,
     if (scene->occluded(position, isect.position))
         return RGBSpectrum{0.f, 0.f, 0.f};
 
-    auto length_sqr = connected_vec.length_squared();
+    auto length_sqr = (position - isect.position).length_squared();
     pdf = 1.f;
 
     // length squared falloff
@@ -28,20 +28,20 @@ void* PointLight::address_of(const std::string& name) {
     return nullptr;
 }
 
-RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& wi, float& pdf, const HitablePtr scene) {
+RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& wi, float& pdf, const HitablePtr scene) const {
     Vec3f p, n;
-    auto sampled_point = geomtry->sample(p, n, pdf);
+    geometry->sample(p, n, pdf);
 
     // Visibility test
-    if (scene->occluded(sampled_point, isect.position))
+    if (scene->occluded(p, isect.position))
         return RGBSpectrum{0.f, 0.f, 0.f};
     
-    wi = (sampled_point - isect.position).normalized();
+    wi = (p - isect.position).normalized();
 
     return eval(isect, wi, n);
 }
 
-RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& wi, const Vec3f& n) {
+RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& wi, const Vec3f& n) const {
     auto cos_theta = dot(wi, n);
     return cos_theta < 0.f ? radiance : 0.f;
 }
