@@ -90,96 +90,75 @@ using Param = std::variant<std::string, int, float, double, Vec3f>;
 using Params = std::unordered_map<std::string, std::pair<OSL::TypeDesc, Param>>;
 };
 
-template <typename T>
-inline void parse_attribute(Comps comps, void* dst) {
+OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
+    Comps comps;
+    boost::split(comps, attr.value(), boost::is_any_of(" "));
+    if (type_pair == types.end()) {
+        std::cout << "Unknown type specified : " << std::endl;
+        return;
+    }
+
+    OSL::TypeDesc ret;
+    auto type_tag = type_pair->second;
     T* typed_dst = reinterpret_cast<T*>(dst);
-    if constexpr (std::is_arithmetic_v<T>) {
-        // basic types
-        *typed_dst = string_to<T>(comps[1]);
+    switch (type_tag) {
+        case EFloat: {
+            ret = OSL::TypeDesc::TypeFloat;
+            *typed_dst = string_to<T>(comps[1]);
+            break;
+        }
+
+        case EInt: {
+            ret = OSL::TypeDesc::TypeInt;
+            *typed_dst = string_to<T>(comps[1]);
+            break;
+        }
+
+        case EVec3f: {
+            ret = OSL::TypeDesc::TypeVector;
+            for (int i = 0; i < T::dimension; i++)
+                (*typed_dst)[i] = string_to<typename T::ValueType>(comps[i + 1]);
+            break;
+        }
+
+        case EStr: {
+            ret = OSL::TypeDesc::TypeString;
+            *typed_dst = comps[1];
+            break;
+        }
+
+        case EFuncTrans: {
+            Vec3f trans{};
+            parse_attribute<Vec3f>(ret, &trans);
+            auto hitable = reinterpret_cast<HitablePtr>(dst);
+            hitable->translate(trans);
+            break;
+        }
+
+        default:
+            // Never gonna happen
+            break;
     }
-    else if constexpr (std::is_base_of_v<Vec2f, T>
-        || std::is_base_of_v<Vec3f, T>
-        || std::is_base_of_v<Vec4f, T>
-        || std::is_base_of_v<Vec2i, T>
-        || std::is_base_of_v<Vec3i, T>
-        || std::is_base_of_v<Vec4i, T>) {
-        for (int i = 0; i < T::dimension; i++)
-            (*typed_dst)[i] = string_to<typename T::ValueType>(comps[i + 1]);
-    }
-    else if constexpr (std::is_same_v<std::string, std::decay_t<T>>) {
-        *typed_dst = comps[1];
-    }
-    else {
-        throw std::runtime_error("Unknown type : ");
-    }
+
+    return ret;
 }
 
-Params parse_attributes(const pugi::xml_node& node, DictLike* obj) {
-    Params params;
+inline std::pair<OSL::TypeDesc, Param> parse_attribute(const pugi::xml_attribute& attr) {
+    Param ret;
+    auto osl_type = parse_attribute(attr, &ret);
+    return std::make_pair(osl_type, ret);
+}
+
+void parse_attributes(const pugi::xml_node& node, DictLike* obj) {
     for (auto& attr : node.attributes()) {
-        /*
-        std::stringstream ss;
-        ss.str(attr.value());
-        std::string typestr;
-        ss >> typestr;
-        */
-
-        std::vector<std::string> ret;
-        boost::split(ret, attr.value(), boost::is_any_of(" "));
-
-        auto type_pair = types.find(frozen::string(ret[0]));
-        /*
-        if (type_pair == types.end()) {
-            std::cout << "Unknown type specified : " << std::endl;
-            continue;
-        }
-        */
-
         void* dst = obj->address_of(attr.name());
         if (dst == nullptr) {
             std::cout << "Attribute " << attr.name() << "not used.." << std::endl;
             continue;
         }
 
-        auto type_tag = type_pair->second;
-        switch (type_tag) {
-            case EFloat: {
-                //params.emplace(attr.name(), std::make_pair(OSL::TypeDesc::TypeFloat, parse_attribute<float>(ss)));
-                parse_attribute<float>(ret, dst);
-                break;
-            }
-
-            case EInt: {
-                parse_attribute<int>(ret, dst);
-                break;
-            }
-
-            case EVec3f: {
-                //params.emplace(attr.name(), std::make_pair(OSL::TypeDesc::TypeVector, parse_attribute<Vec3f>(ss)));
-                parse_attribute<Vec3f>(ret, dst);
-                break;
-            }
-
-            case EStr: {
-                parse_attribute<std::string>(ret, dst);
-                break;
-            }
-
-            case EFuncTrans: {
-                Vec3f trans{};
-                parse_attribute<Vec3f>(ret, &trans);
-                auto hitable = reinterpret_cast<HitablePtr>(dst);
-                hitable->translate(trans);
-                break;
-            }
-
-            default:
-                std::cout << "Unknow type specified : " << std::endl;
-                break;
-        }
+        parse_attribute(attr, dst);
     }
-
-    return params;
 }
 
 Scene::Scene()
@@ -253,16 +232,20 @@ void Scene::parse_from_file(fs::path filepath) {
         switch (tag) {
             case EScene:
                 break;
+
             case EFilm:
                 parse_attributes(*nodeptr, film.get());
                 break;
+
             case ECamera:
                 parse_attributes(*nodeptr, camera.get());
                 break;
+
             case EAccelerator:
                 // BVH only for now
                 accelerator = std::make_unique<BVHAccel>();
                 break;
+
             case EIntegrator: {
                 // pt only for now
                 integrator = std::make_unique<Integrator>(camera.get(), film.get());
@@ -270,22 +253,27 @@ void Scene::parse_from_file(fs::path filepath) {
                 integrator->shaders = &shaders;
                 break;
             }
+
             case EObjects:
                 break;
+
             case ESphere: {
                 auto obj_ptr = std::make_shared<Sphere>();
                 parse_attributes(*nodeptr, obj_ptr.get());
                 objects.push_back(obj_ptr);
                 break;
             }
+
             case ETriangle: {
                 auto obj_ptr = std::make_shared<Triangle>();
                 parse_attributes(*nodeptr, obj_ptr.get());
                 objects.push_back(obj_ptr);
                 break;
             }
+
             case EMaterials:
                 break;
+
             case EShaderGroup: {
                 auto name_attr = nodeptr->attribute("name");
                 if (!name_attr)
@@ -295,16 +283,42 @@ void Scene::parse_from_file(fs::path filepath) {
                 shaders[name_attr.value()] = current_shader_group;
                 break;
             }
+
             case EShader:
+                // Kinda complicate here..
                 break;
+
             case EParameter:
+                // Only one attribute allowed
+                auto attr = nodeptr->first_attribute();
+                if (!attr)
+                    throw std::runtime_error("Cannot find attribute specified in Parameter node");
+                auto [osl_type, param] = parse_attribute(attr);
+                shadingsys->Parameter(*current_shader_group, attr.name(), osl_type,
+                    &param);
                 break;
-            case EConnectShaders:
+
+            case EConnectShaders: {
+                // Ugly code for now..
+                auto sl = nodeptr->attribute("srclayer");
+                auto sp = nodeptr->attribute("srcparam");
+                auto dl = nodeptr->attribute("dstlayer");
+                auto dp = nodeptr->attribute("dstparam");
+                if (sl && sp && dl && dp)
+                    shadingsys->ConnectShaders(sl.value(), sp.value(),
+                        dl.value(), dp.value());
                 break;
+            }
+
             case ELights:
                 break;
+
             case EPointLight:
+                auto lgt_ptr = std::make_unique<PointLight>();
+                parse_attributes(*nodeptr, lgt_ptr.get());
+                lights.emplace_back(std::move(lgt_ptr));
                 break;
+
             case EInvalid:
                 break;
 
