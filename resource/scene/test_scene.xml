@@ -14,11 +14,14 @@
             <Shader name="matte" layer="layer1" />
             <ConnectShaders srclayer="tex" srcparam="Cout" dstlayer="layer1" dstparam="Cs" />
         </ShaderGroup>
+        <ShaderGroup name="single_matte">
+            <Shader name="matte" layer="layer2" />
+        </ShaderGroup>
     </Materials>
 
     <Objects>
-        <Sphere radius="float 3" translate="float3 5 5 -20" shader_name="string checker_matte" />
-        <Triangle verta="float3 0 0 0" vertb="float3 2 0 0" vertc="float3 0 2 0" translate="float3 0 0 -10" shader_name="string checker_matte" />
+        <Sphere radius="float 3" translate="float3 5 5 -20" shader_name="string single_matte" />
+        <Triangle verta="float3 0 0 0" vertb="float3 2 0 0" vertc="float3 0 2 0" translate="float3 0 0 -10" shader_name="string single_matte" />
     </Objects>
 
     <Lights>

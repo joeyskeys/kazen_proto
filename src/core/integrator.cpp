@@ -90,7 +90,7 @@ void Integrator::render() {
 
     auto render_start = get_time();
 
-#define WITH_TBB
+//#define WITH_TBB
 
 #ifdef WITH_TBB
     //tbb::task_scheduler_init init(1);
@@ -159,6 +159,9 @@ void Integrator::render() {
                                     throughput /= probability;
                                 }
 
+                                // build internal pdf
+                                ret.bsdf.compute_pdfs(sg, throughput, k >= min_depth);
+
                                 // Sample light
                                 radiance_per_sample += throughput * estamate_one_light(isect, *this, ret, sg);
 
@@ -170,7 +173,7 @@ void Integrator::render() {
                                 float p;
                                 beta *= mat_ptr->calculate_response(isect, ray);
                                 */
-                                ret.bsdf.sample(sg, random3f(), isect.wi, pdf);
+                                throughput *= ret.bsdf.sample(sg, random3f(), isect.wi, pdf);
 
                                 ray.origin = isect.position;
                                 ray.direction = isect.wi;
