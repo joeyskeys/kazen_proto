@@ -21,6 +21,9 @@ public:
     
     void parse_from_file(fs::path file_path);
 
+private:
+    bool process_shader_node(const pugi::xml_node& node);
+
 public:
     std::unique_ptr<Integrator> integrator;
 

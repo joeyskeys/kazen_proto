@@ -171,6 +171,17 @@ Scene::Scene()
     register_closures(shadingsys.get());
 }
 
+void Scene::process_shader_node(const pugi::xml_node& node, OSL::ShaderGroupRef shader_group) {
+    auto type_attr = nodeptr->attribute("type");
+    auto name_attr = nodeptr->attribute("name");
+    auto layer_attr = nodeptr->attribute("layer");
+    const char* type = type_attr ? type_attr.value() : "surface";
+    if (!name_attr || !layer_attr)
+        return false;
+    shadingsys->Shader(*shader_group, type, name_attr.value(), layer_attr.value());
+    return true;
+}
+
 void Scene::parse_from_file(fs::path filepath) {
     // Some code copied from nori:
     // https://github.com/wjakob/nori.git
@@ -225,10 +236,23 @@ void Scene::parse_from_file(fs::path filepath) {
     std::vector<pugi::xml_node*> nodes_to_process;
     nodes_to_process.push_back(&node);
     OSL::ShaderGroupRef current_shader_group;
+
+    pugi::xml_node* last_shader_node = nullptr;
+
     while (nodes_to_process.size() > 0) {
         auto nodeptr = nodes_to_process.back();
         nodes_to_process.pop_back();
         auto tag = gettag(*nodeptr);
+
+        // Finish shader processing if there's any
+        if (tag != EParameter && last_shader_node != nullptr) {
+            if (!process_shader_node(*last_shader_node))
+                // FIXME : Code redundent coz offset function is local in this method
+                throw runtime_error(fmt::format("Name or layer attribute not specified at {}",
+                    offset(nodeptr->offset_debug())));
+            last_shader_node = nullptr;
+        }
+
         switch (tag) {
             case EScene:
                 break;
@@ -284,9 +308,21 @@ void Scene::parse_from_file(fs::path filepath) {
                 break;
             }
 
-            case EShader:
+            case EShader: {
                 // Kinda complicate here..
+                auto child = nodeptr->first_child();
+                if (!child) {
+                    // No children, process imediately
+                    if (!process_shader_node(*nodeptr))
+                        throw std::runtime_error(fmt::format("Name or layer attribute not specified at {}",
+                            offset(nodeptr->offset_debug())));
+                }
+                else {
+                    // Parameter nodes in children, postpone the processing
+                    last_shader_node = nodeptr;
+                }
                 break;
+            }
 
             case EParameter:
                 // Only one attribute allowed
