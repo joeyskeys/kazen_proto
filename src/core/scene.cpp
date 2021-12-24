@@ -12,7 +12,6 @@
 #include <frozen/set.h>
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
-#include <pugixml.hpp>
 
 #include "scene.h"
 
@@ -95,44 +94,50 @@ using Params = std::unordered_map<std::string, std::pair<OSL::TypeDesc, Param>>;
 OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
     Comps comps;
     boost::split(comps, attr.value(), boost::is_any_of(" "));
+
+    auto type_pair = types.find(frozen::string(comps[0]));
     if (type_pair == types.end()) {
         std::cout << "Unknown type specified : " << std::endl;
-        return;
+        throw std::runtime_error(fmt::format("Unknown type specified : {}", comps[0]));
     }
 
     OSL::TypeDesc ret;
     auto type_tag = type_pair->second;
-    T* typed_dst = reinterpret_cast<T*>(dst);
     switch (type_tag) {
         case EFloat: {
             ret = OSL::TypeDesc::TypeFloat;
-            *typed_dst = string_to<T>(comps[1]);
+            auto typed_dst = reinterpret_cast<float*>(dst);
+            *typed_dst = string_to<float>(comps[1]);
             break;
         }
 
 
         case EInt: {
             ret = OSL::TypeDesc::TypeInt;
-            *typed_dst = string_to<T>(comps[1]);
+            auto typed_dst = reinterpret_cast<int*>(dst);
+            *typed_dst = string_to<int>(comps[1]);
             break;
         }
 
         case EVec3f: {
             ret = OSL::TypeDesc::TypeVector;
-            for (int i = 0; i < T::dimension; i++)
-                (*typed_dst)[i] = string_to<typename T::ValueType>(comps[i + 1]);
+            auto typed_dst = reinterpret_cast<Vec3f*>(dst);
+            for (int i = 0; i < Vec3f::dimension; i++)
+                (*typed_dst)[i] = string_to<typename Vec3f::ValueType>(comps[i + 1]);
             break;
         }
 
         case EStr: {
             ret = OSL::TypeDesc::TypeString;
+            auto typed_dst = reinterpret_cast<std::string*>(dst);
             *typed_dst = comps[1];
             break;
         }
 
         case EFuncTrans: {
             Vec3f trans{};
-            parse_attribute<Vec3f>(ret, &trans);
+            for (int i = 0; i < Vec3f::dimension; i++)
+                trans[i] = string_to<float>(comps[i + 1]);
             auto hitable = reinterpret_cast<HitablePtr>(dst);
             hitable->translate(trans);
             break;
@@ -177,10 +182,10 @@ Scene::Scene()
     register_closures(shadingsys.get());
 }
 
-void Scene::process_shader_node(const pugi::xml_node& node, OSL::ShaderGroupRef shader_group) {
-    auto type_attr = nodeptr->attribute("type");
-    auto name_attr = nodeptr->attribute("name");
-    auto layer_attr = nodeptr->attribute("layer");
+bool Scene::process_shader_node(const pugi::xml_node& node, OSL::ShaderGroupRef shader_group) {
+    auto type_attr = node.attribute("type");
+    auto name_attr = node.attribute("name");
+    auto layer_attr = node.attribute("layer");
     const char* type = type_attr ? type_attr.value() : "surface";
     if (!name_attr || !layer_attr)
         return false;
@@ -238,23 +243,22 @@ void Scene::parse_from_file(fs::path filepath) {
 
     // Use a stack to store unprocessed node in order to recursively
     // process nodes
-    std::vector<pugi::xml_node*> nodes_to_process;
-    nodes_to_process.push_back(&node);
+    std::vector<pugi::xml_node> nodes_to_process;
+    nodes_to_process.push_back(node);
     OSL::ShaderGroupRef current_shader_group;
-
     pugi::xml_node* last_shader_node = nullptr;
 
     while (nodes_to_process.size() > 0) {
-        auto nodeptr = nodes_to_process.back();
+        auto node = nodes_to_process.back();
         nodes_to_process.pop_back();
-        auto tag = gettag(*nodeptr);
+        auto tag = gettag(node);
 
         // Finish shader processing if there's any
         if (tag != EParameter && last_shader_node != nullptr) {
-            if (!process_shader_node(*last_shader_node))
+            if (!process_shader_node(*last_shader_node, current_shader_group))
                 // FIXME : Code redundent coz offset function is local in this method
-                throw runtime_error(fmt::format("Name or layer attribute not specified at {}",
-                    offset(nodeptr->offset_debug())));
+                throw std::runtime_error(fmt::format("Name or layer attribute not specified at {}",
+                    offset(node.offset_debug())));
             last_shader_node = nullptr;
         }
 
@@ -263,11 +267,11 @@ void Scene::parse_from_file(fs::path filepath) {
                 break;
 
             case EFilm:
-                parse_attributes(*nodeptr, film.get());
+                parse_attributes(node, film.get());
                 break;
 
             case ECamera:
-                parse_attributes(*nodeptr, camera.get());
+                parse_attributes(node, camera.get());
                 break;
 
             case EAccelerator:
@@ -288,14 +292,14 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case ESphere: {
                 auto obj_ptr = std::make_shared<Sphere>();
-                parse_attributes(*nodeptr, obj_ptr.get());
+                parse_attributes(node, obj_ptr.get());
                 objects.push_back(obj_ptr);
                 break;
             }
 
             case ETriangle: {
                 auto obj_ptr = std::make_shared<Triangle>();
-                parse_attributes(*nodeptr, obj_ptr.get());
+                parse_attributes(node, obj_ptr.get());
                 objects.push_back(obj_ptr);
                 break;
             }
@@ -304,10 +308,10 @@ void Scene::parse_from_file(fs::path filepath) {
                 break;
 
             case EShaderGroup: {
-                auto name_attr = nodeptr->attribute("name");
+                auto name_attr = node.attribute("name");
                 if (!name_attr)
                     throw std::runtime_error(fmt::format("No name specified for shader group at {}",
-                        offset(nodeptr->offset_debug())));
+                        offset(node.offset_debug())));
                 current_shader_group = shadingsys->ShaderGroupBegin(name_attr.value());
                 shaders[name_attr.value()] = current_shader_group;
                 break;
@@ -315,36 +319,37 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case EShader: {
                 // Kinda complicate here..
-                auto child = nodeptr->first_child();
+                auto child = node.first_child();
                 if (!child) {
                     // No children, process imediately
-                    if (!process_shader_node(*nodeptr))
+                    if (!process_shader_node(node, current_shader_group))
                         throw std::runtime_error(fmt::format("Name or layer attribute not specified at {}",
-                            offset(nodeptr->offset_debug())));
+                            offset(node.offset_debug())));
                 }
                 else {
                     // Parameter nodes in children, postpone the processing
-                    last_shader_node = nodeptr;
+                    last_shader_node = &node;
                 }
                 break;
             }
 
-            case EParameter:
+            case EParameter: {
                 // Only one attribute allowed
-                auto attr = nodeptr->first_attribute();
+                auto attr = node.first_attribute();
                 if (!attr)
                     throw std::runtime_error("Cannot find attribute specified in Parameter node");
                 auto [osl_type, param] = parse_attribute(attr);
                 shadingsys->Parameter(*current_shader_group, attr.name(), osl_type,
                     &param);
                 break;
+            }
 
             case EConnectShaders: {
                 // Ugly code for now..
-                auto sl = nodeptr->attribute("srclayer");
-                auto sp = nodeptr->attribute("srcparam");
-                auto dl = nodeptr->attribute("dstlayer");
-                auto dp = nodeptr->attribute("dstparam");
+                auto sl = node.attribute("srclayer");
+                auto sp = node.attribute("srcparam");
+                auto dl = node.attribute("dstlayer");
+                auto dp = node.attribute("dstparam");
                 if (sl && sp && dl && dp)
                     shadingsys->ConnectShaders(sl.value(), sp.value(),
                         dl.value(), dp.value());
@@ -354,11 +359,12 @@ void Scene::parse_from_file(fs::path filepath) {
             case ELights:
                 break;
 
-            case EPointLight:
+            case EPointLight: {
                 auto lgt_ptr = std::make_unique<PointLight>();
-                parse_attributes(*nodeptr, lgt_ptr.get());
+                parse_attributes(node, lgt_ptr.get());
                 lights.emplace_back(std::move(lgt_ptr));
                 break;
+            }
 
             case EInvalid:
                 break;
@@ -367,8 +373,8 @@ void Scene::parse_from_file(fs::path filepath) {
                 break;
         }
 
-        for (auto& child : nodeptr->children())
-            nodes_to_process.push_back(&child);
+        for (auto& child : node.children())
+            nodes_to_process.push_back(child);
     }
 
     // Construct acceleration structure after all data is parsed
