@@ -1,6 +1,7 @@
 #include <cstring>
 #include <iostream>
 #include <fstream>
+#include <deque>
 #include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
@@ -27,7 +28,8 @@ enum ETag {
     ETriangle,
     // materials
     EMaterials,
-    EShaderGroup,
+    EShaderGroupBegin,
+    EShaderGroupEnd,
     EShader,
     EParameter,
     EConnectShaders,
@@ -37,7 +39,7 @@ enum ETag {
     EInvalid
 };
 
-constexpr static frozen::unordered_map<frozen::string, ETag, 15> tags = {
+constexpr static frozen::unordered_map<frozen::string, ETag, 16> tags = {
     {"Scene", EScene},
     {"Film", EFilm},
     {"Camera", ECamera},
@@ -47,7 +49,8 @@ constexpr static frozen::unordered_map<frozen::string, ETag, 15> tags = {
     {"Sphere", ESphere},
     {"Triangle", ETriangle},
     {"Materials", EMaterials},
-    {"ShaderGroup", EShaderGroup},
+    {"ShaderGroupBegin", EShaderGroupBegin},
+    {"ShaderGroupEnd", EShaderGroupEnd},
     {"Shader", EShader},
     {"Parameter", EParameter},
     {"ConnectShaders", EConnectShaders},
@@ -70,8 +73,6 @@ constexpr static frozen::unordered_map<frozen::string, EType, 5> types = {
     {"string", EStr},
     {"func_translate", EFuncTrans}
 };
-
-
 
 template <typename T>
 inline T string_to(const std::string& s) {
@@ -110,7 +111,6 @@ OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
             *typed_dst = string_to<float>(comps[1]);
             break;
         }
-
 
         case EInt: {
             ret = OSL::TypeDesc::TypeInt;
@@ -152,9 +152,9 @@ OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
     return ret;
 }
 
-inline std::pair<OSL::TypeDesc, Param> parse_attribute(const pugi::xml_attribute& attr) {
+inline auto parse_attribute(const pugi::xml_attribute& attr) {
     Param ret;
-    auto osl_type = parse_attribute(attr, &ret);
+    OSL::TypeDesc osl_type = parse_attribute(attr, &ret);
     return std::make_pair(osl_type, ret);
 }
 
@@ -168,8 +168,6 @@ void parse_attributes(const pugi::xml_node& node, DictLike* obj) {
 
         parse_attribute(attr, dst);
     }
-
-
 }
 
 Scene::Scene()
@@ -223,14 +221,14 @@ void Scene::parse_from_file(fs::path filepath) {
     if (!ret) /* There was a parser / file IO error */
         throw std::runtime_error(fmt::format("Error while parsing \"{}\": {} (at {})", filepath, ret.description(), offset(ret.offset)));
 
-    auto& node = *doc.begin();
+    auto root_node = *doc.begin();
     // Skip over comments
-    while (node.type() == pugi::node_comment || node.type() == pugi::node_declaration)
-        node = node.next_sibling();
+    while (root_node.type() == pugi::node_comment || root_node.type() == pugi::node_declaration)
+        root_node = root_node.next_sibling();
 
-    if (node.type() != pugi::node_element)
+    if (root_node.type() != pugi::node_element)
         throw std::runtime_error(
-            fmt::format("Error while parsing \"{}\": unexpected content at {}", filepath, offset(node.offset_debug())));
+            fmt::format("Error while parsing \"{}\": unexpected content at {}", filepath, offset(root_node.offset_debug())));
 
     auto gettag = [&filepath, &offset](pugi::xml_node& node) {
         auto it = tags.find(frozen::string(node.name()));
@@ -243,14 +241,18 @@ void Scene::parse_from_file(fs::path filepath) {
 
     // Use a stack to store unprocessed node in order to recursively
     // process nodes
-    std::vector<pugi::xml_node> nodes_to_process;
-    nodes_to_process.push_back(node);
+    std::deque<pugi::xml_node> nodes_to_process;
+    nodes_to_process.push_back(root_node);
     OSL::ShaderGroupRef current_shader_group;
+
+    // Shader connect must be executed after shader initialization
+    // Use a sub stack to keep track of it
     pugi::xml_node* last_shader_node = nullptr;
+    std::vector<const pugi::xml_node*> shader_connections;
 
     while (nodes_to_process.size() > 0) {
-        auto node = nodes_to_process.back();
-        nodes_to_process.pop_back();
+        auto node = nodes_to_process.front();
+        nodes_to_process.pop_front();
         auto tag = gettag(node);
 
         // Finish shader processing if there's any
@@ -307,13 +309,32 @@ void Scene::parse_from_file(fs::path filepath) {
             case EMaterials:
                 break;
 
-            case EShaderGroup: {
+            case EShaderGroupBegin: {
                 auto name_attr = node.attribute("name");
                 if (!name_attr)
                     throw std::runtime_error(fmt::format("No name specified for shader group at {}",
                         offset(node.offset_debug())));
                 current_shader_group = shadingsys->ShaderGroupBegin(name_attr.value());
                 shaders[name_attr.value()] = current_shader_group;
+                break;
+            }
+
+            case EShaderGroupEnd: {
+                // Now process the shader connections
+                for (auto nodeptr : shader_connections) {
+                    // Ugly code for now..
+                    auto sl = nodeptr->attribute("srclayer");
+                    auto sp = nodeptr->attribute("srcparam");
+                    auto dl = nodeptr->attribute("dstlayer");
+                    auto dp = nodeptr->attribute("dstparam");
+                    if (sl && sp && dl && dp)
+                        shadingsys->ConnectShaders(sl.value(), sp.value(),
+                            dl.value(), dp.value());
+                }
+
+                shadingsys->ShaderGroupEnd(*current_shader_group);
+                // Maybe also push the group into shader here ?
+                shader_connections.clear();
                 break;
             }
 
@@ -345,14 +366,10 @@ void Scene::parse_from_file(fs::path filepath) {
             }
 
             case EConnectShaders: {
-                // Ugly code for now..
-                auto sl = node.attribute("srclayer");
-                auto sp = node.attribute("srcparam");
-                auto dl = node.attribute("dstlayer");
-                auto dp = node.attribute("dstparam");
-                if (sl && sp && dl && dp)
-                    shadingsys->ConnectShaders(sl.value(), sp.value(),
-                        dl.value(), dp.value());
+                // Since we're using deque now, if ConnectShader nodes are placed after
+                // Shader nodes, we're cool. 
+                // Postpone the handling will relieve this restriction.
+                shader_connections.push_back(&node);
                 break;
             }
 
@@ -373,8 +390,16 @@ void Scene::parse_from_file(fs::path filepath) {
                 break;
         }
 
-        for (auto& child : node.children())
-            nodes_to_process.push_back(child);
+        // Put Parameter nodes in front of the deque to make it processed
+        // imediately after the Shader node is processed
+        if (tag != EShader) {
+            for (auto& child : node.children())
+                nodes_to_process.push_back(child);
+        }
+        else {
+            for (auto& child : node.children())
+                nodes_to_process.push_front(child);
+        }
     }
 
     // Construct acceleration structure after all data is parsed

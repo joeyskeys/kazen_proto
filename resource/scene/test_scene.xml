@@ -4,7 +4,7 @@
     <Camera position="float3 7 8 15" lookat="float3 0, 3 -20" up="float3 0 1 0" fov="float 60" />
 
     <Materials>
-        <ShaderGroup name="checker_matte">
+        <ShaderGroupBegin name="checker_matte" />
             <Shader name="checkerboard" layer="tex">
                 <Parameter scale_s="float 20" />
                 <Parameter scale_t="float 20" />
@@ -13,10 +13,10 @@
             </Shader>
             <Shader name="matte" layer="layer1" />
             <ConnectShaders srclayer="tex" srcparam="Cout" dstlayer="layer1" dstparam="Cs" />
-        </ShaderGroup>
-        <ShaderGroup name="single_matte">
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="single_matte" />
             <Shader name="matte" layer="layer2" />
-        </ShaderGroup>
+        <ShaderGroupEnd />
     </Materials>
 
     <Objects>
