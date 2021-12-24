@@ -1,3 +1,5 @@
+#include <functional>
+
 #include <boost/filesystem.hpp>
 
 #include <assimp/Importer.hpp>
@@ -136,6 +138,9 @@ void* Sphere::address_of(const std::string& name) {
         return &center;
     else if (name == "shader_name")
         return &shader_name;
+    else if (name == "translate")
+        // function call param is kinda special
+        return this;
     return nullptr;
 }
 
@@ -209,6 +214,8 @@ void* Triangle::address_of(const std::string& name) {
         return &verts[2];
     else if (name == "shader_name")
         return &shader_name;
+    else if (name == "translate")
+        return this;
     return nullptr;
 }
 

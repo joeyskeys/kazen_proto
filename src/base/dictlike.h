@@ -1,6 +1,9 @@
 #pragma once
 
 #include <string>
+#include <functional>
+
+using FuncPtr = std::function<void(void)>;
 
 class DictLike {
 public:
