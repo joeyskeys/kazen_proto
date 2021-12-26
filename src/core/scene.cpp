@@ -244,6 +244,7 @@ void Scene::parse_from_file(fs::path filepath) {
     std::deque<pugi::xml_node> nodes_to_process;
     nodes_to_process.push_back(root_node);
     OSL::ShaderGroupRef current_shader_group;
+    std::unique_ptr<char[]> osl_param_buf{new char[sizeof(Param)]};
 
     // Shader connect must be executed after shader initialization
     // Use a sub stack to keep track of it
@@ -270,6 +271,7 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case EFilm:
                 parse_attributes(node, film.get());
+                film->generate_tiles();
                 break;
 
             case ECamera:
@@ -359,9 +361,10 @@ void Scene::parse_from_file(fs::path filepath) {
                 auto attr = node.first_attribute();
                 if (!attr)
                     throw std::runtime_error("Cannot find attribute specified in Parameter node");
-                auto [osl_type, param] = parse_attribute(attr);
+                //auto [osl_type, param] = parse_attribute(attr);
+                auto osl_type = parse_attribute(attr, osl_param_buf.get());
                 shadingsys->Parameter(*current_shader_group, attr.name(), osl_type,
-                    &param);
+                    osl_param_buf.get());
                 break;
             }
 
