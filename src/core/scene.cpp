@@ -248,8 +248,8 @@ void Scene::parse_from_file(fs::path filepath) {
 
     // Shader connect must be executed after shader initialization
     // Use a sub stack to keep track of it
-    pugi::xml_node* last_shader_node = nullptr;
-    std::vector<const pugi::xml_node*> shader_connections;
+    pugi::xml_node last_shader_node;
+    std::vector<pugi::xml_node> shader_connections;
 
     while (nodes_to_process.size() > 0) {
         auto node = nodes_to_process.front();
@@ -257,12 +257,12 @@ void Scene::parse_from_file(fs::path filepath) {
         auto tag = gettag(node);
 
         // Finish shader processing if there's any
-        if (tag != EParameter && last_shader_node != nullptr) {
-            if (!process_shader_node(*last_shader_node, current_shader_group))
+        if (tag != EParameter && last_shader_node) {
+            if (!process_shader_node(last_shader_node, current_shader_group))
                 // FIXME : Code redundent coz offset function is local in this method
                 throw std::runtime_error(fmt::format("Name or layer attribute not specified at {}",
                     offset(node.offset_debug())));
-            last_shader_node = nullptr;
+            last_shader_node = pugi::xml_node();
         }
 
         switch (tag) {
@@ -323,12 +323,12 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case EShaderGroupEnd: {
                 // Now process the shader connections
-                for (auto nodeptr : shader_connections) {
+                for (auto conn_node : shader_connections) {
                     // Ugly code for now..
-                    auto sl = nodeptr->attribute("srclayer");
-                    auto sp = nodeptr->attribute("srcparam");
-                    auto dl = nodeptr->attribute("dstlayer");
-                    auto dp = nodeptr->attribute("dstparam");
+                    auto sl = conn_node.attribute("srclayer");
+                    auto sp = conn_node.attribute("srcparam");
+                    auto dl = conn_node.attribute("dstlayer");
+                    auto dp = conn_node.attribute("dstparam");
                     if (sl && sp && dl && dp)
                         shadingsys->ConnectShaders(sl.value(), sp.value(),
                             dl.value(), dp.value());
@@ -351,7 +351,7 @@ void Scene::parse_from_file(fs::path filepath) {
                 }
                 else {
                     // Parameter nodes in children, postpone the processing
-                    last_shader_node = &node;
+                    last_shader_node = node;
                 }
                 break;
             }
@@ -372,7 +372,7 @@ void Scene::parse_from_file(fs::path filepath) {
                 // Since we're using deque now, if ConnectShader nodes are placed after
                 // Shader nodes, we're cool. 
                 // Postpone the handling will relieve this restriction.
-                shader_connections.push_back(&node);
+                shader_connections.push_back(node);
                 break;
             }
 
@@ -395,7 +395,7 @@ void Scene::parse_from_file(fs::path filepath) {
 
         // Put Parameter nodes in front of the deque to make it processed
         // imediately after the Shader node is processed
-        if (tag != EShader) {
+        if (tag != EShader && tag != EShaderGroupBegin) {
             for (auto& child : node.children())
                 nodes_to_process.push_back(child);
         }
