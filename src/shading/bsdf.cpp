@@ -140,7 +140,7 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
             if (!light_only) {
                 bool status = false;
                 switch (comp->id) {
-                    case DiffuseID:        status = ret.bsdf.add_bsdf<Diffuse, DiffuseParams>(cw, comp->as<Diffuse>()->params);
+                    case DiffuseID:        status = ret.bsdf.add_bsdf<Diffuse, DiffuseParams>(cw, *comp->as<DiffuseParams>());
                         break;
                 }
                 OSL_ASSERT(status && "Invalid closure invoked");
