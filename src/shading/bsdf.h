@@ -25,6 +25,31 @@ public:
 static constexpr uint max_closure = 8;
 static constexpr uint max_size = 256 * sizeof(float);
 
+static inline void power_heuristic(RGBSpectrum* w, float* pdf, RGBSpectrum ow, float opdf, float b) {
+    // Code copied from OpenShadingLanguage sample
+    assert(*pdf >= 0);
+    assert(opdf >= 0);
+    assert(b >= 0);
+    assert(b <= 1);
+
+    if (b > std::numeric_limits<float>::min()) {
+        opdf *= b;
+        ow *= 1.f / b;
+        float mis;
+        if (*pdf < opdf)
+            mis = 1.f / (1.f + *pdf / opdf);
+        else if (opdf < *pdf)
+            mis = 1.f - 1.f / (1.f + opdf / *pdf);
+        else
+            mis = 0.5f;
+
+        *w = *w * (1 - mis) + ow * mis;
+        *pdf += opdf;
+    }
+
+    assert(*pdf >= 0);
+}
+
 class CompositeBSDF {
 public:
     CompositeBSDF()
@@ -53,7 +78,7 @@ public:
             weight_sum += pdfs[i];
         }
 
-        if ((!cut_off && weight_sum > 0) || weight_sum) {
+        if ((!cut_off && weight_sum > 0) || weight_sum > 1) {
             std::for_each(std::execution::par, pdfs.begin(), pdfs.end(), [&weight_sum](float& pdf) {
                 pdf /= weight_sum;
             });
@@ -70,11 +95,13 @@ public:
         pdf = 0;
         for (int i = 0; i < bsdf_count; i++) {
             float bsdf_pdf = 0;
-            ret += weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
-            pdf += bsdf_pdf * pdfs[i];
+            //ret += weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
+            //pdf += bsdf_pdf * pdfs[i];
+            RGBSpectrum bsdf_weight = weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
+            power_heuristic(&ret, &pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
         }
 
-        return ret / pdf;
+        return ret;
     }
 
     RGBSpectrum sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const {
@@ -90,18 +117,21 @@ public:
          */
 
         uint idx = sample[0] * bsdf_count;
-        ret = bsdfs[idx]->sample(sg, sample, wi, pdf) * weights[idx];
+        ret = weights[idx] * (bsdfs[idx]->sample(sg, sample, wi, pdf) / pdfs[idx]);
         pdf *= pdfs[idx];
 
         // Add up contributions from other bsdfs
         for (int i = 0; i < bsdf_count; i++) {
             if (i == idx) continue;
-            float other_pdf = 0;
-            ret += weights[i] * bsdfs[i]->eval(sg, wi, other_pdf);
-            pdf += other_pdf * pdfs[i];
+            //float other_pdf = 0;
+            //ret += weights[i] * bsdfs[i]->eval(sg, wi, other_pdf);
+            //pdf += other_pdf * pdfs[i];
+            float bsdf_pdf = 0;
+            RGBSpectrum bsdf_weight = weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
+            power_heuristic(&ret, &pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
         }
 
-        return ret / pdf;
+        return ret;
     }
 
 private:

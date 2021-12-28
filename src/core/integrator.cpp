@@ -81,7 +81,7 @@ void Integrator::render() {
     auto film_width = film_ptr->width;
     auto film_height = film_ptr->height;
     int  max_depth = 10;
-    int  min_depth = 4;
+    int  min_depth = 3;
 
     // No refract for now
     float eta = 1.f;
@@ -162,10 +162,8 @@ void Integrator::render() {
                                 // build internal pdf
                                 ret.bsdf.compute_pdfs(sg, throughput, k >= min_depth);
 
-                                // Sample light
                                 radiance_per_sample += throughput * estamate_one_light(isect, *this, ret, sg);
 
-                                // Sample BSDF
                                 /*
                                 // Sample material to construct next ray
                                 auto mat_ptr = isect.mat;
@@ -179,6 +177,9 @@ void Integrator::render() {
                                 ray.direction = isect.wi;
                                 ray.tmin = 0;
                                 ray.tmax = std::numeric_limits<float>::max();
+
+                                if (!accel_ptr->intersect(ray, isect))
+                                    break;
 
                                 hit = true;
                             }

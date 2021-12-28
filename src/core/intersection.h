@@ -1,5 +1,7 @@
 #pragma once
 
+#include <OSL/oslexec.h>
+
 #include "base/vec.h"
 #include "base/utils.h"
 
@@ -25,4 +27,5 @@ struct Intersection {
     ShapePtr shape;
     uint  obj_id;
     std::string shader_name;
+    OSL::ShaderGroupRef shader;
 };

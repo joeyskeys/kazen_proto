@@ -15,7 +15,9 @@
             <ConnectShaders srclayer="tex" srcparam="Cout" dstlayer="layer1" dstparam="Cs" />
         <ShaderGroupEnd />
         <ShaderGroupBegin name="single_matte" />
-            <Shader name="matte" layer="layer2" />
+            <Shader name="matte" layer="layer2" >
+                <Parameter Cs="float3 0.9 0.2 0.2" />
+            </Shader>
         <ShaderGroupEnd />
     </Materials>
 

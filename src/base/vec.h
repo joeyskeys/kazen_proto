@@ -277,8 +277,10 @@ public:
         return sqrt(length_squared());
     }
 
-    auto sum() const {
-        return std::accumulate(arr.begin(), arr.end(), 0);
+    inline auto sum() const {
+        // Be very careful when using template function
+        // Using 0 for third parameter directly cause inf...
+        return std::accumulate(arr.begin(), arr.end(), T{0});
     }
 
     inline auto max_component() const {
