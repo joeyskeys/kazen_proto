@@ -10,7 +10,7 @@ RGBSpectrum PointLight::sample(const Intersection& isect, Vec3f& wi, float& pdf,
 
     auto connected_vec = position - isect.position;
     wi = connected_vec.normalized();
-    auto length_sqr = connected_vec.length_squared();
+    auto length_sqr = connected_vec.length_squared() * 0.1;
     pdf = 1.f;
 
     // length squared falloff
