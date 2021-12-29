@@ -153,7 +153,7 @@ void Integrator::render() {
 
                                 if (k >= min_depth) {
                                     // Perform russian roulette to cut off path
-                                    auto probability = std::min(throughput.max_component() * eta * eta, 0.99f);
+                                    auto probability = std::min(throughput.max_component() * eta * eta, 0.8f);
                                     if (probability < randomf())
                                         break;
                                     throughput /= probability;
@@ -177,9 +177,6 @@ void Integrator::render() {
                                 ray.direction = isect.wi;
                                 ray.tmin = 0;
                                 ray.tmax = std::numeric_limits<float>::max();
-
-                                if (!accel_ptr->intersect(ray, isect))
-                                    break;
 
                                 hit = true;
                             }
