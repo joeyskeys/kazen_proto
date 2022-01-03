@@ -246,6 +246,7 @@ void Scene::parse_from_file(fs::path filepath) {
     OSL::ShaderGroupRef current_shader_group;
     std::unique_ptr<char[]> osl_param_buf{new char[sizeof(Param)]};
 
+
     // Shader connect must be executed after shader initialization
     // Use a sub stack to keep track of it
     pugi::xml_node last_shader_node;

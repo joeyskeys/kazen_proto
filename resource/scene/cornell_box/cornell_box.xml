@@ -40,6 +40,8 @@
         <!--Spheres-->
         <Sphere radius="float 4" translate="func_translate -5 -6 -10" shader_name="white_matte" />
         <Sphere radius="float 2.5" translate="func_translate 5 -7.5 -8" shader_name="white_matte" />
+        <!--Quad Light-->
+        <Quad />
     </Objects>
 
     <Lights>
@@ -58,6 +60,9 @@
                    path is going to stop at a geometry light hit and geometry
                    light is also able to reflect light from other source
                    theoretically.
+                
+                Update: According to the documentation of OSL, lights are
+                        surfaces with emissive material.
             -->
             <Sphere radius="float 2" translate="func_translate 0 7 -10" />
         </GeometryLight>

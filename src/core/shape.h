@@ -62,6 +62,38 @@ public:
     Vec3f center;
 };
 
+class Quad : public Shape {
+public:
+    Quad()
+        : Shape()
+        , center(Vec3f{0, 0, 0})
+        , dir(Vec3f{0, 1, 0})
+        , half_width(1)
+        , half_height(1)
+    {}
+
+    Quad(const Transform& l2w, const Vec3f& c, const Vec3f& d, const float w, cosnt float h, const std::string& m="", bool is_l=false)
+        : Shape(l2w, m, is_l, 2)
+        , center(c)
+        , dir(d)
+        , half_width(w)
+        , half_height(h)
+    {}
+
+    bool intersect(const Ray& r, Intersection& isect) const override;
+    bool intersect(const Ray& r, float& t) const override;
+
+    AABBf bbox() const override;
+
+    void* address_of(const std::string& name) overrdie;
+    void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
+
+    Vec3f center;
+    Vec3f dir;
+    float half_width;
+    float half_height;
+};
+
 class Triangle : public Shape {
 public:
     Triangle()
