@@ -68,21 +68,28 @@ public:
         : Shape()
         , center(Vec3f{0, 0, 0})
         , dir(Vec3f{0, 1, 0})
+        , vertical_vec(Vec3f{0, 0, 1})
+        , horizontal_vec(cross(vertical_vec, dir))
         , half_width(1)
         , half_height(1)
-    {}
+    {
+        down_left = center - horizontal_vec * half_width - vertical_vec * half_height;
+    }
 
-    Quad(const Transform& l2w, const Vec3f& c, const Vec3f& d, const float w, cosnt float h, const std::string& m="", bool is_l=false)
+    Quad(const Transform& l2w, const Vec3f& c, const Vec3f& d, const Vec3f& u, const float w, cosnt float h, const std::string& m="", bool is_l=false)
         : Shape(l2w, m, is_l, 2)
         , center(c)
-        , dir(d)
+        , dir(d.normalized())
+        , vertical_vec(u.normalized())
+        , horizontal_vec(cross(vertical_vec, dir))
         , half_width(w)
         , half_height(h)
-    {}
+    {
+        down_left = center - horizontal_vec * half_width - vertical_vec * half_height;
+    }
 
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
-
     AABBf bbox() const override;
 
     void* address_of(const std::string& name) overrdie;
@@ -90,8 +97,11 @@ public:
 
     Vec3f center;
     Vec3f dir;
+    Vec3f vertical_vec;
+    Vec3f horizontal_vec;
     float half_width;
     float half_height;
+    Vec3f down_left;
 };
 
 class Triangle : public Shape {

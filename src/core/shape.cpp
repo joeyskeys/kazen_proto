@@ -1,3 +1,4 @@
+#include <cmath>
 #include <functional>
 
 #include <boost/filesystem.hpp>
@@ -101,6 +102,108 @@ AABBf Sphere::bbox() const {
     return AABBf{center_in_world - radius_vec, center_in_world + radius_vec};
 }
 
+
+void* Sphere::address_of(const std::string& name) {
+    if (name == "radius")
+        return &radius;
+    else if (name == "center")
+        return &center;
+    else if (name == "shader_name")
+        return &shader_name;
+    else if (name == "translate")
+        // function call param is kinda special
+        return this;
+    return nullptr;
+}
+
+void Sphere::sample(Vec3f& p, Vec3f& n, float& pdf) const {
+    auto sample = random3f();
+    n = sample.normalized();
+    p = center + n * radius;
+    pdf = 1;
+}
+
+static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3f& dir, float& t) {
+    auto pos_vec = center - r.origin;
+    auto projected_distance = dot(pos_vec, dir);
+
+    // Back facing hit ignored
+    if (projected_distance >= 0)
+        return false;
+
+    // Plane direction vector is supposed to be normalized
+    // No extra check here
+    t = projected_distance;
+}
+
+static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3f& dir, float& t, Vec3f& pos) {
+    plane_intersect(r, center, dir, t);
+    pos = ray.origin + ray.direction * t;
+}
+
+bool Quad::intersect(const Ray& r, Intersection& isect) const {
+    if (!plane_intersect(r, center, dir, isect.ray_t, isect.position))
+        return false;
+
+    auto position_vec = isect.position - center;
+    float horizontal_distance = fabsf(dot(position_vec, horizontal_vec));
+    float vertical_distance = fabsf(dot(position_vec, vertical_vec));
+
+    if (horizontal_distance > half_width ||  vertical_distance > half_height)
+        return false;
+
+    isect.normal = dir;
+    isect.tangent = horizontal_vec;
+    isect.bitangent = vertical_vec;
+    isect.backface = false;
+    isect.is_light = is_light;
+    isect.shape = const_cast<Quad*>(this);
+    isect.shader_name = shader_name;
+}
+
+bool Quad::intersect(const Ray& r, float& t) const {
+    if (!plane_intersect(r, center, dir, t))
+        return false;
+    return true;
+}
+
+AABBf bbox() const {
+    auto down_left_pt = local_to_world.apply(down_left);
+    auto down_right_pt = local_to_world.apply(down_left + horizontal_vec * half_width * 2);
+    auto up_left_pt = local_to_world.apply(down_left + vertical_vec * half_height * 2);
+    auto up_right_pt = local_to_world.apply(down_left + horizontal_vec * half_width * 2 + vertical_vec * half_height * 2);
+    auto bbox_of_three_pt = bbox_of(triangle(down_left_pt, down_right_pt, up_left_pt));
+    return bound_union(bbox_of_three_pt, up_right_pt);
+}
+
+void* Quad::address_of(const std::string& name) {
+    if (name == "center")
+        return &center;
+    else if (name == "dir")
+        return &dir;
+    else if (name == "vertical_vec")
+        return &vertical_vec;
+    else if (name == "horizontal_vec")
+        return &horizontal_vec;
+    else if (name == "half_width")
+        return &half_width;
+    else if (name == "half_height")
+        return &half_height;
+    else
+        return nullptr;
+}
+
+void Quad::sample(Vec3f& p, Vec3f& n, float& pdf) const {
+    auto sample = random2f();
+    p = center + horizontal_vec * half_width * (sample.x() * 2 - 1) + \
+        vertical_vec * half_height * (sample.y() * 2 - 1);
+    p = local_to_world(p);
+    n = dir;
+    // TODO : normal transformation...
+    //n = local_to_world(n);
+    pdf = 1;
+}
+
 static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, Intersection& isect) {
     Vec3f v1v0 = verts[1] - verts[0];
     Vec3f v2v0 = verts[2] - verts[0];
@@ -129,26 +232,6 @@ static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, Intersec
     isect.backface = t < 0.f ? true : false;
 
     return true;
-}
-
-void* Sphere::address_of(const std::string& name) {
-    if (name == "radius")
-        return &radius;
-    else if (name == "center")
-        return &center;
-    else if (name == "shader_name")
-        return &shader_name;
-    else if (name == "translate")
-        // function call param is kinda special
-        return this;
-    return nullptr;
-}
-
-void Sphere::sample(Vec3f& p, Vec3f& n, float& pdf) const {
-    auto sample = random3f();
-    n = sample.normalized();
-    p = center + n * radius;
-    pdf = 1;
 }
 
 bool Triangle::intersect(const Ray& r, Intersection& isect) const {
