@@ -20,11 +20,12 @@ enum ClosureID {
     //GlossyID,
 
     // Emission closures
-    //EmissionID,
+    EmissionID,
 
     NumClosureIDs
 };
 
+struct EmptyParams      {};
 struct DiffuseParams    { OSL::Vec3 N; };
 
 class Diffuse : public BSDF {
@@ -99,11 +100,24 @@ public:
 };
 */
 
-/*
 class Emission : public BSDF {
+public:
+    static void register_closures(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_FINISH_PARAM(EmptyParams)
+        };
 
+        shadingsys.register_closure("emission", EmissionID, params, nullptr, nullptr);
+    }
+
+    Emission() {}
+
+    float eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const override
+    { return 0.f; }
+
+    float sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override
+    { return 0.f; }
 };
-*/
 
 namespace
 {
@@ -115,6 +129,7 @@ namespace
 
 void register_closures(OSL::ShadingSystem *shadingsys) {
     register_closure<Diffuse>(*shadingsys);
+    register_closure<Emission>(*shadingsys);
 }
 
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only) {
@@ -123,21 +138,26 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
 
     RGBSpectrum cw;
     switch (closure->id) {
-        case OSL::ClosureColor::MUL:
+        case OSL::ClosureColor::MUL: {
             cw = w * closure->as_mul()->weight;
             process_closure(ret, closure->as_mul()->closure, cw, light_only);
             break;
+        }
 
-        case OSL::ClosureColor::ADD:
+        case OSL::ClosureColor::ADD: {
             process_closure(ret, closure->as_add()->closureA, w, light_only);
             process_closure(ret, closure->as_add()->closureB, w, light_only);
             break;
+        }
 
-        default:
+        default: {
             const OSL::ClosureComponent *comp = closure->as_comp();
             cw = w * comp->w;
             
-            if (!light_only) {
+            if (comp->id == EmissionID) {
+                ret.Le += cw;
+            }
+            else if (!light_only) {
                 bool status = false;
                 switch (comp->id) {
                     case DiffuseID:        status = ret.bsdf.add_bsdf<Diffuse, DiffuseParams>(cw, *comp->as<DiffuseParams>());
@@ -147,5 +167,6 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
             }
 
             break;
+        }
     }
 }
