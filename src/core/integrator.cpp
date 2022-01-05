@@ -132,21 +132,14 @@ void Integrator::render() {
 
                         RGBSpectrum radiance_per_sample{0.f, 0.f, 0.f};
                         float bsdf_weight = 1.f;
-                        float pdf;
+                        float bsdf_pdf;
+                        Vec3f light_p, light_n
+                        float light_pdf;
 
                         for (int k = 0; k < max_depth; k++) {
                             isect.ray_t = std::numeric_limits<float>::max();
                             if (accel_ptr->intersect(ray, isect) && k < max_depth - 1) {
 =
-                                // Sample Light
-                                if (isect.is_light) {
-                                    // Hit geometry light
-                                    auto light_ptr = isect.shape->light.lock();
-                                    // NOTE : light_ptr could be nullptr, that's the feature of
-                                    // weak_ptr
-                                    radiance_per_sample += bsdf_weight * throughput * light_ptr->radiance;
-                                }
-
                                 OSL::ShaderGlobals sg;
                                 KazenRenderServices::globals_from_hit(sg, ray, isect);
                                 shadingsys->execute(*ctx, *(*shaders)[isect.shader_name], sg);
@@ -154,11 +147,15 @@ void Integrator::render() {
                                 bool last_bounce = k == max_depth;
                                 process_closure(ret, sg.Ci, RGBSpectrum(1, 1, 1), last_bounce);
 
-                                // Self emission or geometry light
+                                // Sample BSDF, evaluate light
+                                float light_weight = 1.f;
                                 if (isect.is_light) {
-                                    // Should we do MIS here?
-                                    radiance_per_sample += throughput * ret.Le;
+                                    // something like light->eval(isect.position, light_pdf);
+                                    // TODO : GeometryLight is a light or a geometry and what
+                                    //        should be stored in lights.
+                                    light_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
                                 }
+                                radiance_per_sample += throughput * light_weight * ret.Le;
 
                                 if (k >= min_depth) {
                                     // Perform russian roulette to cut off path
@@ -171,11 +168,18 @@ void Integrator::render() {
                                 // build internal pdf
                                 ret.bsdf.compute_pdfs(sg, throughput, k >= min_depth);
 
+                                // Sample Light, evaluate BSDF
+                                // find a light with sampling
+                                {
+                                    //light.sample(light_p, light_n, light_pdf);
+                                    auto light_dir = (light_p - isect.position).normalized();
+                                    auto bsdf_albedo = ret.bsdf.eval(sg, light_dir, bsdf_pdf);
+                                    radiance_per_sample += throughput * bsdf_albedo * power_heuristic(1, light_pdf, 1, bsdf_pdf);
+                                }
+
                                 // Sample BSDF to construct next ray
                                 // Code pattern from pbrt does not suits here..
-                                //throughput *= ret.bsdf.sample(sg, random3f(), isect.wi, pdf);
-                                //radiance_per_sample += throughput * estamate_one_light(isect, *this, ret, sg);
-
+                                throughput *= ret.bsdf.sample(sg, random3f(), isect.wi, pdf);
                                 ray.origin = isect.position;
                                 ray.direction = isect.wi;
                                 ray.tmin = 0;
