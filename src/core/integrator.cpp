@@ -10,11 +10,12 @@
 #include "sampling.h"
 #include "shading/bsdf.h"
 
-static RGBSpectrum estamate_direct(const Intersection& isect, const Light* light_ptr, const Integrator& integrator, ShadingResult& sr, OSL::ShaderGlobals& sg) {
+static RGBSpectrum estamate_direct(Intersection& isect, const Light* light_ptr, const Integrator& integrator, ShadingResult& sr, OSL::ShaderGlobals& sg, RGBSpectrum& throughput) {
     Vec3f wi;
     float light_pdf, bsdf_pdf;
     Intersection isect_tmp;
-    
+
+    // Light sampling
     RGBSpectrum light_radiance = light_ptr->sample(isect, wi, light_pdf, integrator.accel_ptr);
     RGBSpectrum result_radiance;
 
@@ -33,11 +34,14 @@ static RGBSpectrum estamate_direct(const Intersection& isect, const Light* light
         }
     }
 
+    // BSDF sampling
+    throughput *= sr.bsdf.sample(sg, random3f(), isect.wi, bsdf_pdf);
+
     // TODO: apply MIS after area light is added
     return result_radiance;
 }
 
-static RGBSpectrum estamate_one_light(const Intersection& isect, const Integrator& integrator, ShadingResult& sr, OSL::ShaderGlobals& sg) {
+static RGBSpectrum estamate_one_light(Intersection& isect, const Integrator& integrator, ShadingResult& sr, OSL::ShaderGlobals& sg, RGBSpectrum& throughput) {
     auto light_cnt = integrator.lights->size();
     // FIXME : add a wrapper to sample
     Light* light_ptr = nullptr;
@@ -46,10 +50,10 @@ static RGBSpectrum estamate_one_light(const Intersection& isect, const Integrato
     else
         light_ptr = integrator.lights->at(0).get();
 
-    return estamate_direct(isect, light_ptr, integrator, sr, sg);
+    return estamate_direct(isect, light_ptr, integrator, sr, sg, throughput);
 }
 
-static RGBSpectrum estamate_all_light(const Intersection& isect, const Integrator& integrator, ShadingResult& sr, OSL::ShaderGlobals& sg) {
+static RGBSpectrum estamate_all_light(Intersection& isect, const Integrator& integrator, ShadingResult& sr, OSL::ShaderGlobals& sg, RGBSpectrum& throughput) {
     auto light_cnt = integrator.lights->size();
     RGBSpectrum ret{0.f, 0.f, 0.f};
 
@@ -57,7 +61,7 @@ static RGBSpectrum estamate_all_light(const Intersection& isect, const Integrato
         return ret;
 
     for (auto& light : *(integrator.lights))
-        ret += estamate_direct(isect, light.get(), integrator, sr, sg);
+        ret += estamate_direct(isect, light.get(), integrator, sr, sg, throughput);
     return ret / light_cnt;
 }
 
@@ -133,6 +137,8 @@ void Integrator::render() {
                         for (int k = 0; k < max_depth; k++) {
                             isect.ray_t = std::numeric_limits<float>::max();
                             if (accel_ptr->intersect(ray, isect) && k < max_depth - 1) {
+=
+                                // Sample Light
                                 if (isect.is_light) {
                                     // Hit geometry light
                                     auto light_ptr = isect.shape->light.lock();
@@ -148,8 +154,11 @@ void Integrator::render() {
                                 bool last_bounce = k == max_depth;
                                 process_closure(ret, sg.Ci, RGBSpectrum(1, 1, 1), last_bounce);
 
-                                // Self emission
-                                //radiance_per_sample += throughput * ret.Le;
+                                // Self emission or geometry light
+                                if (isect.is_light) {
+                                    // Should we do MIS here?
+                                    radiance_per_sample += throughput * ret.Le;
+                                }
 
                                 if (k >= min_depth) {
                                     // Perform russian roulette to cut off path
@@ -162,16 +171,10 @@ void Integrator::render() {
                                 // build internal pdf
                                 ret.bsdf.compute_pdfs(sg, throughput, k >= min_depth);
 
-                                radiance_per_sample += throughput * estamate_one_light(isect, *this, ret, sg);
-
-                                /*
-                                // Sample material to construct next ray
-                                auto mat_ptr = isect.mat;
-                                auto wo = -ray.direction;
-                                float p;
-                                beta *= mat_ptr->calculate_response(isect, ray);
-                                */
-                                throughput *= ret.bsdf.sample(sg, random3f(), isect.wi, pdf);
+                                // Sample BSDF to construct next ray
+                                // Code pattern from pbrt does not suits here..
+                                //throughput *= ret.bsdf.sample(sg, random3f(), isect.wi, pdf);
+                                //radiance_per_sample += throughput * estamate_one_light(isect, *this, ret, sg);
 
                                 ray.origin = isect.position;
                                 ray.direction = isect.wi;

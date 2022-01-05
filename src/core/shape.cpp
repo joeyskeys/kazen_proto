@@ -110,6 +110,8 @@ void* Sphere::address_of(const std::string& name) {
         return &center;
     else if (name == "shader_name")
         return &shader_name;
+    else if (name == "is_light")
+        return &is_light
     else if (name == "translate")
         // function call param is kinda special
         return this;
@@ -189,6 +191,12 @@ void* Quad::address_of(const std::string& name) {
         return &half_width;
     else if (name == "half_height")
         return &half_height;
+    else if (name == "shader_name")
+        return &shader_name;
+    else if (name == "is_light")
+        return &is_light;
+    else if (name == "translate")
+        return this;
     else
         return nullptr;
 }
@@ -297,6 +305,8 @@ void* Triangle::address_of(const std::string& name) {
         return &verts[2];
     else if (name == "shader_name")
         return &shader_name;
+    else if (name == "is_light")
+        return &is_light;
     else if (name == "translate")
         return this;
     return nullptr;
