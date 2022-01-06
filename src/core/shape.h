@@ -32,7 +32,8 @@ public:
 public:
     std::string shader_name;
     bool        is_light = false;
-    std::weak_ptr<Light> light;
+    //std::weak_ptr<Light> light;
+    Light*      light;
     uint        obj_id;
 };
 

@@ -153,6 +153,7 @@ void Integrator::render() {
                                     // something like light->eval(isect.position, light_pdf);
                                     // TODO : GeometryLight is a light or a geometry and what
                                     //        should be stored in lights.
+                                    light_pdf = isect.shape->light->pdf(isect);
                                     light_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
                                 }
                                 radiance_per_sample += throughput * light_weight * ret.Le;
@@ -170,11 +171,14 @@ void Integrator::render() {
 
                                 // Sample Light, evaluate BSDF
                                 // find a light with sampling
+                                auto light_ptr = lights[randomf() * lights.size()].get();
                                 {
-                                    //light.sample(light_p, light_n, light_pdf);
+                                    // TODO : Use a OSL emission shader to sample light radiance where
+                                    //        some extra magic could happen.
+                                    auto light_radiance = light_ptr->sample(light_p, light_n, light_pdf);
                                     auto light_dir = (light_p - isect.position).normalized();
                                     auto bsdf_albedo = ret.bsdf.eval(sg, light_dir, bsdf_pdf);
-                                    radiance_per_sample += throughput * bsdf_albedo * power_heuristic(1, light_pdf, 1, bsdf_pdf);
+                                    radiance_per_sample += throughput * light_radiance * bsdf_albedo * power_heuristic(1, light_pdf, 1, bsdf_pdf);
                                 }
 
                                 // Sample BSDF to construct next ray

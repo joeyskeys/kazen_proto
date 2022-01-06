@@ -239,6 +239,25 @@ void Scene::parse_from_file(fs::path filepath) {
         return tag;
     };
 
+    auto setup_shape = [&objects, &lights](const pugi::xml_node& node, auto shape_shared_ptr) {
+        parse_attributes(node, shape_shared_ptr);
+        objects.push_back(shape_shared_ptr);
+        if (shape_shared_ptr->is_light) {
+            // If the geometry is a light, an extra radiance attribute
+            // must be added.
+            auto radiance_attr = node.attribute("radiance");
+            if (!radiance_attr)
+                throw std::runtime_error(fmt::format("No radiance specified for gemetry light \
+                    {} at {}", node.name(), offset(node.offset_debug())));
+            RGBSpectrum radiance{};
+            // Treated as Vec3f
+            parse_attribute(attr, &radiance);
+            auto light = std::make_unique<GeometryLight>(radiance, shape_shared_ptr);
+            shape_shared_ptr->light = light.get();
+            lights.emplace_back(std::move(light));
+        }
+    };
+
     // Use a stack to store unprocessed node in order to recursively
     // process nodes
     std::deque<pugi::xml_node> nodes_to_process;
@@ -297,15 +316,17 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case ESphere: {
                 auto obj_ptr = std::make_shared<Sphere>();
-                parse_attributes(node, obj_ptr.get());
-                objects.push_back(obj_ptr);
+                //parse_attributes(node, obj_ptr.get());
+                //objects.push_back(obj_ptr);
+                setup_shape(node, obj_ptr);
                 break;
             }
 
             case ETriangle: {
                 auto obj_ptr = std::make_shared<Triangle>();
-                parse_attributes(node, obj_ptr.get());
-                objects.push_back(obj_ptr);
+                //parse_attributes(node, obj_ptr.get());
+                //objects.push_back(obj_ptr);
+                setup_shape(node, obj_ptr);
                 break;
             }
 
