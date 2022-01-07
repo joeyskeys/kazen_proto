@@ -14,6 +14,10 @@
 
 namespace fs = boost::filesystem;
 
+static inline AABBf bbox_of_triangle(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) {
+    return bound_union(AABBf{vec_min(v0, v1), vec_max(v0, v1)}, v2);
+}
+
 void Shape::print_bound() const {
     std::cout << "id : " << obj_id << std::endl;
     Hitable::print_bound();
@@ -102,7 +106,6 @@ AABBf Sphere::bbox() const {
     return AABBf{center_in_world - radius_vec, center_in_world + radius_vec};
 }
 
-
 void* Sphere::address_of(const std::string& name) {
     if (name == "radius")
         return &radius;
@@ -111,7 +114,7 @@ void* Sphere::address_of(const std::string& name) {
     else if (name == "shader_name")
         return &shader_name;
     else if (name == "is_light")
-        return &is_light
+        return &is_light;
     else if (name == "translate")
         // function call param is kinda special
         return this;
@@ -140,7 +143,7 @@ static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3
 
 static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3f& dir, float& t, Vec3f& pos) {
     plane_intersect(r, center, dir, t);
-    pos = ray.origin + ray.direction * t;
+    pos = r.origin + r.direction * t;
 }
 
 bool Quad::intersect(const Ray& r, Intersection& isect) const {
@@ -169,12 +172,12 @@ bool Quad::intersect(const Ray& r, float& t) const {
     return true;
 }
 
-AABBf bbox() const {
+AABBf Quad::bbox() const {
     auto down_left_pt = local_to_world.apply(down_left);
     auto down_right_pt = local_to_world.apply(down_left + horizontal_vec * half_width * 2);
     auto up_left_pt = local_to_world.apply(down_left + vertical_vec * half_height * 2);
     auto up_right_pt = local_to_world.apply(down_left + horizontal_vec * half_width * 2 + vertical_vec * half_height * 2);
-    auto bbox_of_three_pt = bbox_of(triangle(down_left_pt, down_right_pt, up_left_pt));
+    auto bbox_of_three_pt = bbox_of_triangle(down_left_pt, down_right_pt, up_left_pt);
     return bound_union(bbox_of_three_pt, up_right_pt);
 }
 
@@ -205,7 +208,7 @@ void Quad::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     auto sample = random2f();
     p = center + horizontal_vec * half_width * (sample.x() * 2 - 1) + \
         vertical_vec * half_height * (sample.y() * 2 - 1);
-    p = local_to_world(p);
+    p = local_to_world.apply(p);
     n = dir;
     // TODO : normal transformation...
     //n = local_to_world(n);
@@ -285,9 +288,6 @@ bool Triangle::intersect(const Ray& r, float& t) const {
     return moller_trumbore_intersect(local_r, verts, t);
 }
 
-static inline AABBf bbox_of_triangle(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) {
-    return bound_union(AABBf{vec_min(v0, v1), vec_max(v0, v1)}, v2);
-}
 
 AABBf Triangle::bbox() const {
     auto v0_in_world = local_to_world.apply(verts[0]);

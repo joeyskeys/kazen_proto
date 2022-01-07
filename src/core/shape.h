@@ -77,7 +77,7 @@ public:
         down_left = center - horizontal_vec * half_width - vertical_vec * half_height;
     }
 
-    Quad(const Transform& l2w, const Vec3f& c, const Vec3f& d, const Vec3f& u, const float w, cosnt float h, const std::string& m="", bool is_l=false)
+    Quad(const Transform& l2w, const Vec3f& c, const Vec3f& d, const Vec3f& u, const float w, const float h, const std::string& m="", bool is_l=false)
         : Shape(l2w, m, is_l, 2)
         , center(c)
         , dir(d.normalized())
@@ -93,7 +93,7 @@ public:
     bool intersect(const Ray& r, float& t) const override;
     AABBf bbox() const override;
 
-    void* address_of(const std::string& name) overrdie;
+    void* address_of(const std::string& name) override;
     void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
 
     Vec3f center;

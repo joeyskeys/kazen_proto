@@ -133,13 +133,13 @@ void Integrator::render() {
                         RGBSpectrum radiance_per_sample{0.f, 0.f, 0.f};
                         float bsdf_weight = 1.f;
                         float bsdf_pdf;
-                        Vec3f light_p, light_n
+                        Vec3f light_p, light_n;
                         float light_pdf;
 
                         for (int k = 0; k < max_depth; k++) {
                             isect.ray_t = std::numeric_limits<float>::max();
                             if (accel_ptr->intersect(ray, isect) && k < max_depth - 1) {
-=
+                                
                                 OSL::ShaderGlobals sg;
                                 KazenRenderServices::globals_from_hit(sg, ray, isect);
                                 shadingsys->execute(*ctx, *(*shaders)[isect.shader_name], sg);
@@ -171,19 +171,20 @@ void Integrator::render() {
 
                                 // Sample Light, evaluate BSDF
                                 // find a light with sampling
-                                auto light_ptr = lights[randomf() * lights.size()].get();
+                                int sampled_light_idx = randomf() * lights->size();
+                                auto light_ptr = lights->at(sampled_light_idx).get();
                                 {
                                     // TODO : Use a OSL emission shader to sample light radiance where
                                     //        some extra magic could happen.
-                                    auto light_radiance = light_ptr->sample(light_p, light_n, light_pdf);
-                                    auto light_dir = (light_p - isect.position).normalized();
+                                    Vec3f light_dir;
+                                    auto light_radiance = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
                                     auto bsdf_albedo = ret.bsdf.eval(sg, light_dir, bsdf_pdf);
                                     radiance_per_sample += throughput * light_radiance * bsdf_albedo * power_heuristic(1, light_pdf, 1, bsdf_pdf);
                                 }
 
                                 // Sample BSDF to construct next ray
                                 // Code pattern from pbrt does not suits here..
-                                throughput *= ret.bsdf.sample(sg, random3f(), isect.wi, pdf);
+                                throughput *= ret.bsdf.sample(sg, random3f(), isect.wi, bsdf_pdf);
                                 ray.origin = isect.position;
                                 ray.direction = isect.wi;
                                 ray.tmin = 0;

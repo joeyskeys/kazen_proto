@@ -239,8 +239,8 @@ void Scene::parse_from_file(fs::path filepath) {
         return tag;
     };
 
-    auto setup_shape = [&objects, &lights](const pugi::xml_node& node, auto shape_shared_ptr) {
-        parse_attributes(node, shape_shared_ptr);
+    auto setup_shape = [&](const pugi::xml_node& node, auto shape_shared_ptr) {
+        parse_attributes(node, shape_shared_ptr.get());
         objects.push_back(shape_shared_ptr);
         if (shape_shared_ptr->is_light) {
             // If the geometry is a light, an extra radiance attribute
@@ -251,7 +251,7 @@ void Scene::parse_from_file(fs::path filepath) {
                     {} at {}", node.name(), offset(node.offset_debug())));
             RGBSpectrum radiance{};
             // Treated as Vec3f
-            parse_attribute(attr, &radiance);
+            parse_attribute(radiance_attr, &radiance);
             auto light = std::make_unique<GeometryLight>(radiance, shape_shared_ptr);
             shape_shared_ptr->light = light.get();
             lights.emplace_back(std::move(light));

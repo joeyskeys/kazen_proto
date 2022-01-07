@@ -102,7 +102,7 @@ public:
 
 class Emission : public BSDF {
 public:
-    static void register_closures(OSL::ShadingSystem& shadingsys) {
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_FINISH_PARAM(EmptyParams)
         };
