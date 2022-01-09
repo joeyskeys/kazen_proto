@@ -26,6 +26,7 @@ enum ETag {
     EObjects,
     ESphere,
     ETriangle,
+    EQuad,
     // materials
     EMaterials,
     EShaderGroupBegin,
@@ -39,7 +40,7 @@ enum ETag {
     EInvalid
 };
 
-constexpr static frozen::unordered_map<frozen::string, ETag, 16> tags = {
+constexpr static frozen::unordered_map<frozen::string, ETag, 17> tags = {
     {"Scene", EScene},
     {"Film", EFilm},
     {"Camera", ECamera},
@@ -48,6 +49,7 @@ constexpr static frozen::unordered_map<frozen::string, ETag, 16> tags = {
     {"Objects", EObjects},
     {"Sphere", ESphere},
     {"Triangle", ETriangle},
+    {"Quad", EQuad},
     {"Materials", EMaterials},
     {"ShaderGroupBegin", EShaderGroupBegin},
     {"ShaderGroupEnd", EShaderGroupEnd},
@@ -59,6 +61,7 @@ constexpr static frozen::unordered_map<frozen::string, ETag, 16> tags = {
 };
 
 enum EType {
+    EBool,
     EFloat,
     EInt,
     EVec3f,
@@ -66,7 +69,8 @@ enum EType {
     EFuncTrans
 };
 
-constexpr static frozen::unordered_map<frozen::string, EType, 5> types = {
+constexpr static frozen::unordered_map<frozen::string, EType, 6> types = {
+    {"bool", EBool},
     {"float", EFloat},
     {"int", EInt},
     {"float3", EVec3f},
@@ -105,6 +109,16 @@ OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
     OSL::TypeDesc ret;
     auto type_tag = type_pair->second;
     switch (type_tag) {
+        case EBool: {
+            ret = OSL::TypeDesc::TypeInt;
+            auto typed_dest = reinterpret_cast<bool*>(dst);
+            if (comps[1] == "true")
+                *typed_dest = true;
+            else
+                *typed_dest = false;
+            break;
+        }
+
         case EFloat: {
             ret = OSL::TypeDesc::TypeFloat;
             auto typed_dst = reinterpret_cast<float*>(dst);
@@ -162,7 +176,7 @@ void parse_attributes(const pugi::xml_node& node, DictLike* obj) {
     for (auto& attr : node.attributes()) {
         void* dst = obj->address_of(attr.name());
         if (dst == nullptr) {
-            std::cout << "Attribute " << attr.name() << "not used.." << std::endl;
+            std::cout << "Attribute " << attr.name() << " not directly used.." << std::endl;
             continue;
         }
 
@@ -326,6 +340,12 @@ void Scene::parse_from_file(fs::path filepath) {
                 auto obj_ptr = std::make_shared<Triangle>();
                 //parse_attributes(node, obj_ptr.get());
                 //objects.push_back(obj_ptr);
+                setup_shape(node, obj_ptr);
+                break;
+            }
+
+            case EQuad: {
+                auto obj_ptr = std::make_shared<Quad>();
                 setup_shape(node, obj_ptr);
                 break;
             }

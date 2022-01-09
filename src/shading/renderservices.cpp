@@ -237,6 +237,11 @@ void KazenRenderServices::globals_from_hit(
     sg.P = P;
     auto N = isect.normal;
     sg.Ng = sg.N = N;
+
+    // TODO : setup dPdu dPdv correctly
+    sg.dPdu = isect.tangent;
+    sg.dPdu = isect.bitangent;
+
     sg.I = r.direction;
     sg.backfacing = sg.N.dot(sg.I) > 0;
     if (sg.backfacing) {

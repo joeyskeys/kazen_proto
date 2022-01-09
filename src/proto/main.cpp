@@ -77,7 +77,7 @@ int main() {
     */
 
     Scene scene;
-    scene.parse_from_file("../resource/scene/test_scene.xml");
+    scene.parse_from_file("../resource/scene/cornell_box/cornell_box.xml");
     scene.integrator->render();
     scene.film->write_tiles();
 

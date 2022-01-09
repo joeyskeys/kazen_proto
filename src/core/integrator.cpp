@@ -90,11 +90,11 @@ void Integrator::render() {
     // No refract for now
     float eta = 1.f;
 
-    constexpr static int sample_count = 5;
+    constexpr static int sample_count = 3;
 
     auto render_start = get_time();
 
-//#define WITH_TBB
+#define WITH_TBB
 
 #ifdef WITH_TBB
     //tbb::task_scheduler_init init(1);
@@ -161,8 +161,10 @@ void Integrator::render() {
                                 if (k >= min_depth) {
                                     // Perform russian roulette to cut off path
                                     auto probability = std::min(throughput.max_component() * eta * eta, 0.8f);
-                                    if (probability < randomf())
+                                    if (probability < randomf()) {
+                                        //std::cout << "break at k = " << k << ";" << std::endl;
                                         break;
+                                    }
                                     throughput /= probability;
                                 }
 
@@ -196,6 +198,7 @@ void Integrator::render() {
                                 // Hit environment
                                 auto t = 0.5f * (ray.direction.y() + 1.f);
                                 radiance_per_sample += throughput * ((1.f - t) * RGBSpectrum{1.f, 1.f, 1.f} + t * RGBSpectrum{0.5f, 0.7f, 1.f});
+                                //std::cout << "miss at k = " << k << ";" << std::endl;
                                 break;
                             }
                         }

@@ -6,6 +6,7 @@
 #include <OSL/genclosure.h>
 
 #include "bsdf.h"
+#include "base/utils.h"
 #include "core/sampling.h"
 
 using OSL::TypeDesc;
@@ -52,6 +53,7 @@ public:
 
     float sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override {
         wi = sample_hemisphere();
+        wi = tangent_to_world(wi, sg.N, sg.dPdu, sg.dPdv);
         //pdf = std::max(dot(wi, params.N), 0.f) * std::numbers::inv_pi_v;
         // dot(wi, params.N) becomes available after a dot overload is added
         pdf = std::max(dot(wi, params.N), 0.f) * boost::math::constants::one_div_pi<float>();

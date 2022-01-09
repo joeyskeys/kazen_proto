@@ -40,7 +40,6 @@ Film::Film(unsigned int w, unsigned int h, const std::string& f)
     , filename(f)
 {
     output = OIIO::ImageOutput::create(f);
-    spec = OIIO::ImageSpec(w, h, 3, OIIO::TypeDesc::UINT8);
 }
 
 Film::Film(unsigned int w, unsigned int h, std::string&& f)
@@ -49,11 +48,11 @@ Film::Film(unsigned int w, unsigned int h, std::string&& f)
     , filename(f)
 {
     output = OIIO::ImageOutput::create(f);
-    spec = OIIO::ImageSpec(w, h, 3, OIIO::TypeDesc::UINT8);
 }
 
 bool Film::write(void* data, OIIO::TypeDesc pixel_format)
 {
+    spec = OIIO::ImageSpec(width, height, 3, OIIO::TypeDesc::UINT8);
     output->open(filename, spec);
     output->write_image(pixel_format, data);
     return true;
@@ -78,6 +77,7 @@ void Film::generate_tiles(uint xres, uint yres)
 
 bool Film::write_tiles()
 {
+    spec = OIIO::ImageSpec(width, height, 3, OIIO::TypeDesc::UINT8);
     spec.tile_width = tile_width;
     spec.tile_height = tile_height;
     output->open(filename, spec);
