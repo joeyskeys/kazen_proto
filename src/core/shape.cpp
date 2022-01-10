@@ -47,6 +47,10 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
         if (t > r.tmax) return false;
     }
 
+    // Return false if not nearer than previous t
+    if (t < 0 || t > isect.ray_t)
+        return false;
+
     // Calculate in local space
     isect.ray_t = t;
     // small bias to avoid self intersection
@@ -138,7 +142,7 @@ static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3
 
     // Plane direction vector is supposed to be normalized
     // No extra check here
-    t = projected_distance;
+    t = -projected_distance;
 }
 
 static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3f& dir, float& t, Vec3f& pos) {
@@ -147,9 +151,14 @@ static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3
 }
 
 bool Quad::intersect(const Ray& r, Intersection& isect) const {
-    if (!plane_intersect(r, center, dir, isect.ray_t, isect.position))
+    float t;
+    Vec3f pos;
+    if (!plane_intersect(r, center, dir, t, pos))
+        return false;
+    if (t < 0 || t > isect.ray_t)
         return false;
 
+    isect.ray_t = t;
     auto position_vec = isect.position - center;
     float horizontal_distance = fabsf(dot(position_vec, horizontal_vec));
     float vertical_distance = fabsf(dot(position_vec, vertical_vec));
@@ -233,6 +242,10 @@ static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, Intersec
     if (v < 0.f || u + v > 1.f) return false;
 
     float t = dot(v2v0, qvec) * det_inv;
+
+    // Return false if not nearer than previous hit
+    if (t < 0 || t > isect.ray_t)
+        return false;
 
     isect.position = r.at(t - 0.00001f);
     isect.normal = cross(v1v0, v2v0).normalized();

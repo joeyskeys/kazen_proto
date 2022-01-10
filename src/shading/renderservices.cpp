@@ -233,14 +233,13 @@ void KazenRenderServices::globals_from_hit(
     bool flip)
 {
     memset((char*)&sg, 0, sizeof(OSL::ShaderGlobals));
-    auto P = r.at(isect.ray_t);
-    sg.P = P;
-    auto N = isect.normal;
-    sg.Ng = sg.N = N;
+    sg.P = isect.position;
+    sg.N = isect.normal;
+    sg.Ng = isect.normal;
 
     // TODO : setup dPdu dPdv correctly
     sg.dPdu = isect.tangent;
-    sg.dPdu = isect.bitangent;
+    sg.dPdv = isect.bitangent;
 
     sg.I = r.direction;
     sg.backfacing = sg.N.dot(sg.I) > 0;
