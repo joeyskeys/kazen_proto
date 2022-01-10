@@ -197,7 +197,7 @@ void Integrator::render() {
                             else {
                                 // Hit environment
                                 auto t = 0.5f * (ray.direction.y() + 1.f);
-                                radiance_per_sample += throughput * ((1.f - t) * RGBSpectrum{1.f, 1.f, 1.f} + t * RGBSpectrum{0.5f, 0.7f, 1.f});
+                                radiance_per_sample += 0.3 * throughput * ((1.f - t) * RGBSpectrum{1.f, 1.f, 1.f} + t * RGBSpectrum{0.5f, 0.7f, 1.f});
                                 //std::cout << "miss at k = " << k << ";" << std::endl;
                                 break;
                             }
