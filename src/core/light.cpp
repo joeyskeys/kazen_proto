@@ -38,12 +38,12 @@ RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, f
     if (scene->occluded(p, isect.position))
         return RGBSpectrum{0.f, 0.f, 0.f};
     
-    light_dir = (p - isect.position).normalized();
+    light_dir = (isect.position - p).normalized();
 
     return eval(isect, light_dir, n);
 }
 
 RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& n) const {
     auto cos_theta = dot(light_dir, n);
-    return cos_theta < 0.f ? radiance : 0.f;
+    return cos_theta > 0.f ? radiance : 0.f;
 }

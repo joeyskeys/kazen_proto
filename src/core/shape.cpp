@@ -127,8 +127,13 @@ void* Sphere::address_of(const std::string& name) {
 
 void Sphere::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     auto sample = random3f();
+
     n = sample.normalized();
+    n = local_to_world.apply_normal(n);
+
     p = center + n * radius;
+    p = local_to_world.apply(p);
+
     pdf = 1;
 }
 
@@ -143,11 +148,13 @@ static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3
     // Plane direction vector is supposed to be normalized
     // No extra check here
     t = -projected_distance;
+    return true;
 }
 
 static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3f& dir, float& t, Vec3f& pos) {
     plane_intersect(r, center, dir, t);
     pos = r.origin + r.direction * t;
+    return true;
 }
 
 bool Quad::intersect(const Ray& r, Intersection& isect) const {
@@ -173,6 +180,7 @@ bool Quad::intersect(const Ray& r, Intersection& isect) const {
     isect.is_light = is_light;
     isect.shape = const_cast<Quad*>(this);
     isect.shader_name = shader_name;
+    return true;
 }
 
 bool Quad::intersect(const Ray& r, float& t) const {
@@ -215,12 +223,14 @@ void* Quad::address_of(const std::string& name) {
 
 void Quad::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     auto sample = random2f();
+
     p = center + horizontal_vec * half_width * (sample.x() * 2 - 1) + \
         vertical_vec * half_height * (sample.y() * 2 - 1);
     p = local_to_world.apply(p);
+
     n = dir;
-    // TODO : normal transformation...
-    //n = local_to_world(n);
+    n = local_to_world.apply_normal(n);
+
     pdf = 1;
 }
 
@@ -329,8 +339,11 @@ void Triangle::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     auto sample = random2f();
     float alpha = 1 - sample.x();
     float beta = alpha * sample.y();
+
     p = verts[0] + alpha * (verts[1] - verts[0]) + beta * (verts[2] - verts[0]);
-    n = normal;
+    p = local_to_world.apply(p);
+    n = local_to_world.apply_normal(normal);
+
     pdf = 1;
 }
 

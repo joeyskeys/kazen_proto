@@ -94,7 +94,7 @@ void Integrator::render() {
 
     auto render_start = get_time();
 
-#define WITH_TBB
+//#define WITH_TBB
 
 #ifdef WITH_TBB
     //tbb::task_scheduler_init init(1);
@@ -142,7 +142,13 @@ void Integrator::render() {
                                 
                                 OSL::ShaderGlobals sg;
                                 KazenRenderServices::globals_from_hit(sg, ray, isect);
-                                shadingsys->execute(*ctx, *(*shaders)[isect.shader_name], sg);
+
+                                // TODO : move this verification into parsing code
+                                auto shader_ptr = (*shaders)[isect.shader_name];
+                                if (shader_ptr == nullptr)
+                                    throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", isect.shader_name));
+
+                                shadingsys->execute(*ctx, *shader_ptr, sg);
                                 ShadingResult ret;
                                 bool last_bounce = k == max_depth;
                                 process_closure(ret, sg.Ci, RGBSpectrum(1, 1, 1), last_bounce);

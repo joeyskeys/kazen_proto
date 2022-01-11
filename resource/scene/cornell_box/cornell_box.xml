@@ -19,6 +19,11 @@
                 <Parameter Cs="float3 0.8 0.8 0.8" />
             </Shader>
         <ShaderGroupEnd />
+        <ShaderGroupBegin name="white_emitter" />
+            <Shader name="emitter" layer="layer4">
+                <Parameter Cs="float3 1 1 1" />
+            </Shader>
+        <ShaderGroupEnd />
     </Materials>
 
     <Objects>
@@ -41,7 +46,7 @@
         <Sphere radius="float 4" translate="func_translate -5 -6 -10" shader_name="string white_matte" />
         <Sphere radius="float 2.5" translate="func_translate 5 -7.5 -8" shader_name="string white_matte" />
         <!--Quad Light-->
-        <Quad center="float3 0 9.5 -10" dir="float3 0 -1 0" vertical_vec="float3 0 0 1" half_width="float 1" half_height="float 1" shader_name="string emission" is_light="bool true" radiance="float3 1 1 1" />
+        <Quad center="float3 0 9.5 -10" dir="float3 0 -1 0" vertical_vec="float3 0 0 1" half_width="float 1" half_height="float 1" shader_name="string white_emitter" is_light="bool true" radiance="float3 1 1 1" />
     </Objects>
 
     <Lights>

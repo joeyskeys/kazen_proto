@@ -90,6 +90,10 @@ public:
         return mat * v;
     }
 
+    inline Vec3f apply_normal(const Vec3f& v) const {
+        return (mat_inv.transpose() * Vec4f(v, 0.f)).reduct<3>();
+    }
+
     Intersection apply(const Intersection& isect) const {
         Intersection ret;
         ret.position = apply(isect.position);
