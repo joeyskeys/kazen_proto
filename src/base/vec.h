@@ -243,10 +243,10 @@ public:
     }
 
     bool is_zero() const {
-        bool is_0 = false;
         for (int i = 0; i < N; i++)
-            is_0 &= (abs(arr[i]) < epsilon<T>);
-        return is_0;
+            if (abs(arr[i]) >= epsilon<T>)
+                return false;
+        return true;
     }
 
     void normalize() {
