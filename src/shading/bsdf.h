@@ -116,7 +116,8 @@ public:
          * TODO : More tests and analytical expected value deduce.
          */
 
-        uint idx = sample[0] * bsdf_count;
+        // An extra 0.9999999 to ensure sampled index don't overflow
+        uint idx = sample[0] * 0.9999999f * bsdf_count;
         ret = weights[idx] * (bsdfs[idx]->sample(sg, sample, wi, pdf) / pdfs[idx]);
         pdf *= pdfs[idx];
 

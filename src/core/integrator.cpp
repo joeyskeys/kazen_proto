@@ -84,17 +84,17 @@ Integrator::Integrator(Camera* cam_ptr, Film* flm_ptr)
 void Integrator::render() {
     auto film_width = film_ptr->width;
     auto film_height = film_ptr->height;
-    int  max_depth = 10;
+    int  max_depth = 6;
     int  min_depth = 3;
 
     // No refract for now
     float eta = 1.f;
 
-    constexpr static int sample_count = 3;
+    constexpr static int sample_count = 64;
 
     auto render_start = get_time();
 
-//#define WITH_TBB
+#define WITH_TBB
 
 #ifdef WITH_TBB
     //tbb::task_scheduler_init init(1);
@@ -161,8 +161,10 @@ void Integrator::render() {
                                     //        should be stored in lights.
                                     light_pdf = isect.shape->light->pdf(isect);
                                     light_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
+                                    radiance_per_sample += throughput * light_weight * ret.Le;
+                                    break;
                                 }
-                                radiance_per_sample += throughput * light_weight * ret.Le;
+                                //radiance_per_sample += throughput * light_weight * ret.Le;
 
                                 if (k >= min_depth) {
                                     // Perform russian roulette to cut off path
