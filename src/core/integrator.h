@@ -16,7 +16,9 @@ public:
     Integrator();
     Integrator(Camera* cam_ptr, Film* flm_ptr);
 
-    void render();
+    //void render();
+
+    virtual void Li(const Ray& r) const = 0;
 
     //Sphere*           sphere;
     //ListAccel*        accel_ptr;
@@ -28,4 +30,11 @@ public:
     OSL::ShadingSystem*  shadingsys;
     //KazenRenderServices rend;
     std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
+};
+
+class NormalIntegrator : public Integrator {
+    NormalIntegrator();
+    NormalIntegrator(Camera* cam_ptr, Film* flm_ptr);
+
+    RGBSpectrum Li(const Ray& r) const override;
 };

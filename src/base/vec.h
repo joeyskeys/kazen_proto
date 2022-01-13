@@ -283,6 +283,13 @@ public:
         return std::accumulate(arr.begin(), arr.end(), T{0});
     }
 
+    inline auto abs() const {
+        Vec tmp;
+        for (int i = 0; i < N; i++)
+            tmp.arr[i] = abs(arr[i]);
+        return tmp;
+    }
+
     inline auto max_component() const {
         return *std::max_element(arr.begin(), arr.end());
     }

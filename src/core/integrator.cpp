@@ -10,77 +10,37 @@
 #include "sampling.h"
 #include "shading/bsdf.h"
 
-static RGBSpectrum estamate_direct(Intersection& isect, const Light* light_ptr, const Integrator& integrator, ShadingResult& sr, OSL::ShaderGlobals& sg, RGBSpectrum& throughput) {
-    Vec3f wi;
-    float light_pdf, bsdf_pdf;
-    Intersection isect_tmp;
-
-    // Light sampling
-    RGBSpectrum light_radiance = light_ptr->sample(isect, wi, light_pdf, integrator.accel_ptr);
-    RGBSpectrum result_radiance;
-
-    if (light_pdf > 0.f && !light_radiance.is_zero()) {
-        //RGBSpectrum f = isect.mat->bxdf->f(isect.wo, wi, isect_tmp);
-        //scattering_pdf = isect.mat->bxdf->pdf(isect.wo, wi);
-        auto f = sr.bsdf.eval(sg, wi, bsdf_pdf);
-
-        if (!f.is_zero()) {
-            if (light_ptr->is_delta)
-                result_radiance += f * light_radiance / light_pdf;
-            else {
-                auto weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
-                result_radiance += f * light_radiance * weight / light_pdf;
-            }
-        }
-    }
-
-    // BSDF sampling
-    throughput *= sr.bsdf.sample(sg, random3f(), isect.wi, bsdf_pdf);
-
-    // TODO: apply MIS after area light is added
-    return result_radiance;
-}
-
-static RGBSpectrum estamate_one_light(Intersection& isect, const Integrator& integrator, ShadingResult& sr, OSL::ShaderGlobals& sg, RGBSpectrum& throughput) {
-    auto light_cnt = integrator.lights->size();
-    // FIXME : add a wrapper to sample
-    Light* light_ptr = nullptr;
-    if (light_cnt > 1)
-        light_ptr = integrator.lights->at(randomi(light_cnt - 1)).get();
-    else
-        light_ptr = integrator.lights->at(0).get();
-
-    return estamate_direct(isect, light_ptr, integrator, sr, sg, throughput);
-}
-
-static RGBSpectrum estamate_all_light(Intersection& isect, const Integrator& integrator, ShadingResult& sr, OSL::ShaderGlobals& sg, RGBSpectrum& throughput) {
-    auto light_cnt = integrator.lights->size();
-    RGBSpectrum ret{0.f, 0.f, 0.f};
-
-    if (light_cnt == 0)
-        return ret;
-
-    for (auto& light : *(integrator.lights))
-        ret += estamate_direct(isect, light.get(), integrator, sr, sg, throughput);
-    return ret / light_cnt;
-}
-
 Integrator::Integrator()
     : accel_ptr(nullptr)
     , camera_ptr(nullptr)
     , film_ptr(nullptr)
-{
-
-}
+{}
 
 Integrator::Integrator(Camera* cam_ptr, Film* flm_ptr)
     : camera_ptr(cam_ptr)
     , film_ptr(flm_ptr)
-{
-    //shadingsys = std::make_unique<OSL::ShadingSystem>(&rend, nullptr, &errhandler);
-    //register_closures(shadingsys.get());
+{}
+
+NormalIntegrator::NormalIntegrator()
+    : accel_ptr(nullptr)
+    , camera_ptr(nullptr)
+    , film_ptr(nullptr)
+{}
+
+NormalIntegrator::NormalIntegrator(Camera* cam_ptr, Film* flm_ptr)
+    : camera_ptr(cam_ptr)
+    , film_ptr(flm_ptr)
+{}
+
+RGBSpectrum NormalIntegrator::Li(const Ray& r) const {
+    Intersection isect;
+    if (!accel_ptr->intersect(r, isect))
+        return RGBSpectrum{0};
+
+    return isect.normal.abs();
 }
 
+/*
 void Integrator::render() {
     auto film_width = film_ptr->width;
     auto film_height = film_ptr->height;
@@ -238,3 +198,4 @@ void Integrator::render() {
     auto render_duration = std::chrono::duration_cast<std::chrono::milliseconds>(render_end - render_start);
     std::cout << "render duration : " << render_duration.count() << " ms\n";
 }
+*/
