@@ -244,7 +244,7 @@ public:
 
     bool is_zero() const {
         for (int i = 0; i < N; i++)
-            if (abs(arr[i]) >= epsilon<T>)
+            if (std::abs(arr[i]) >= epsilon<T>)
                 return false;
         return true;
     }
