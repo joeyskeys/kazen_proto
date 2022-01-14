@@ -86,6 +86,7 @@ int main() {
     constexpr static int sample_count = 5;
 
     auto render_start = get_time();
+    bool hit = false;
 
 //#define WITH_TBB
 
@@ -118,6 +119,8 @@ int main() {
 
                         auto ray = scene.camera->generate_ray(x, y);
                         pixel_radiance += scene.integrator->Li(ray);
+                        if (!pixel_radiance.is_zero())
+                            hit = true;
                     }
 
                     pixel_radiance /= sample_count;
@@ -144,6 +147,10 @@ int main() {
     std::cout << "render duration : " << render_duration.count() << " ms\n";
 
     scene.film->write_tiles();
+
+    std::cout << "hit : " << hit << std::endl;
+    if (!hit)
+        throw std::runtime_error("BVH might have problem");
 
     return 0;
 }

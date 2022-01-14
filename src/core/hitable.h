@@ -43,6 +43,10 @@ public:
         std::cout << bbox() << std::endl;
     }
 
+    virtual void print_info() const {
+        std::cout << "Not implemented." << std::endl;
+    }
+
     void translate(const Vec3f& t) {
         local_to_world.translate(t);
         world_to_local.translate(-t);

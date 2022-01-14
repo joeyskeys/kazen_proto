@@ -78,6 +78,8 @@ public:
     bool intersect(const Ray& r, float& t) const override;
     void print_bound() const override;
 
+    void print_info() const override;
+
 private:
     std::shared_ptr<Hitable> children[2];
 };
@@ -149,6 +151,18 @@ void BVHNode::print_bound() const {
     children[1]->print_bound();
 }
 
+void BVHNode::print_info() const {
+    if (indent == 0)
+        std::cout << "root" << std::endl;
+    else {
+        for (int i = 0; i < indent; i++)
+            std::cout << "\t";
+        std::cout
+    }
+    reinterpret_cast<BVHNode*>(children[0].get())->print_tree(indent + 1);
+    reinterpret_cast<BVHNode*>(children[1].get())->print_tree(indent + 1);
+}
+
 BVHAccel::BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end)
     : root(std::make_shared<BVHNode>(hitables, start, end))
 {}
@@ -163,4 +177,8 @@ bool BVHAccel::intersect(const Ray& r, Intersection& isect) const {
 
 bool BVHAccel::intersect(const Ray& r, float& t) const {
     return root->intersect(r, t);
+}
+
+void BVHAccel::print_info() const {
+    root->print_info();
 }
