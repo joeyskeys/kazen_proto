@@ -18,7 +18,7 @@ public:
 
     //void render();
 
-    virtual void Li(const Ray& r) const = 0;
+    virtual RGBSpectrum Li(const Ray& r) const = 0;
 
     //Sphere*           sphere;
     //ListAccel*        accel_ptr;
@@ -33,6 +33,7 @@ public:
 };
 
 class NormalIntegrator : public Integrator {
+public:
     NormalIntegrator();
     NormalIntegrator(Camera* cam_ptr, Film* flm_ptr);
 

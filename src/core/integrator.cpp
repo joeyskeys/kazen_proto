@@ -22,14 +22,11 @@ Integrator::Integrator(Camera* cam_ptr, Film* flm_ptr)
 {}
 
 NormalIntegrator::NormalIntegrator()
-    : accel_ptr(nullptr)
-    , camera_ptr(nullptr)
-    , film_ptr(nullptr)
+    : Integrator()
 {}
 
 NormalIntegrator::NormalIntegrator(Camera* cam_ptr, Film* flm_ptr)
-    : camera_ptr(cam_ptr)
-    , film_ptr(flm_ptr)
+    : Integrator(cam_ptr, flm_ptr)
 {}
 
 RGBSpectrum NormalIntegrator::Li(const Ray& r) const {
@@ -37,7 +34,8 @@ RGBSpectrum NormalIntegrator::Li(const Ray& r) const {
     if (!accel_ptr->intersect(r, isect))
         return RGBSpectrum{0};
 
-    return isect.normal.abs();
+    auto ret = isect.normal.abs();
+    return ret;
 }
 
 /*

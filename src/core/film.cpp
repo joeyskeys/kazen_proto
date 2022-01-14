@@ -55,6 +55,7 @@ bool Film::write(void* data, OIIO::TypeDesc pixel_format)
     spec = OIIO::ImageSpec(width, height, 3, OIIO::TypeDesc::UINT8);
     output->open(filename, spec);
     output->write_image(pixel_format, data);
+    output->close();
     return true;
 }
 
@@ -89,6 +90,7 @@ bool Film::write_tiles()
             OIIO::TypeDesc::FLOAT, tile.get_data_ptr(),
             xstride, ystride);
     }
+    output->close();
     return true;
 }
 

@@ -1,4 +1,7 @@
+#include <tbb/tbb.h>
+
 #include "core/scene.h"
+#include "core/state.h"
 
 int main() {
     /*
@@ -80,11 +83,11 @@ int main() {
     scene.parse_from_file("../resource/scene/cornell_box/cornell_box.xml");
 
     //scene.integrator->render();
-    constexpr static int sample_count = 64;
+    constexpr static int sample_count = 1;
 
     auto render_start = get_time();
 
-#define WITH_TBB
+//#define WITH_TBB
 
 #ifdef WITH_TBB
     tbb::parallel_for (tbb::blocked_range<size_t>(0, scene.film->tiles.size()),
@@ -114,7 +117,7 @@ int main() {
                         uint y = tile.origin_y + j;
 
                         auto ray = scene.camera->generate_ray(x, y);
-                        pixel_radiance += scene.integrator->Li(r);
+                        pixel_radiance += scene.integrator->Li(ray);
                     }
 
                     pixel_radiance /= sample_count;

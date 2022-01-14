@@ -21,7 +21,8 @@ enum ETag {
     EFilm,
     ECamera,
     EAccelerator,
-    EIntegrator,
+    //EIntegrator,
+    ENormalIntegrator,
     // objects
     EObjects,
     ESphere,
@@ -45,7 +46,8 @@ constexpr static frozen::unordered_map<frozen::string, ETag, 17> tags = {
     {"Film", EFilm},
     {"Camera", ECamera},
     {"Accelerator", EAccelerator},
-    {"Integrator", EIntegrator},
+    //{"Integrator", EIntegrator},
+    {"NormalIntegrator", ENormalIntegrator},
     {"Objects", EObjects},
     {"Sphere", ESphere},
     {"Triangle", ETriangle},
@@ -317,12 +319,21 @@ void Scene::parse_from_file(fs::path filepath) {
                 accelerator = std::make_unique<BVHAccel>();
                 break;
 
+            /*
             case EIntegrator: {
                 // pt only for now
                 integrator = std::make_unique<Integrator>(camera.get(), film.get());
                 integrator->shadingsys = shadingsys.get();
                 integrator->shaders = &shaders;
                 break;
+            }
+            */
+
+            case ENormalIntegrator: {
+                integrator = std::make_unique<NormalIntegrator>(camera.get(),
+                    film.get());
+                integrator->shadingsys = shadingsys.get();
+                integrator->shaders = &shaders;
             }
 
             case EObjects:

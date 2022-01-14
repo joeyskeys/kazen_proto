@@ -286,7 +286,7 @@ public:
     inline auto abs() const {
         Vec tmp;
         for (int i = 0; i < N; i++)
-            tmp.arr[i] = abs(arr[i]);
+            tmp.arr[i] = std::abs(arr[i]);
         return tmp;
     }
 
