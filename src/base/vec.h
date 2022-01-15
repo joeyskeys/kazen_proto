@@ -298,10 +298,16 @@ public:
         return *std::min_element(arr.begin(), arr.end());
     }
 
+    std::string to_str() const {
+        std::string ret = std::to_string(arr[0]);
+        for (int i = 1; i < N; i++)
+            ret += " " + std::to_string(arr[i]);
+        return ret;
+    }
+
     friend std::ostream& operator <<(std::ostream& os, const Vec& v) {
         for (auto& e : v.arr)
             os << e << " ";
-        os << std::endl;
 
         return os;
     }

@@ -1,11 +1,11 @@
 #include <cmath>
 #include <functional>
 
-#include <boost/filesystem.hpp>
-
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <boost/filesystem.hpp>
+#include <fmt/core.h>
 
 #include "core/ray.h"
 #include "core/sampling.h"
@@ -85,13 +85,13 @@ bool Sphere::intersect(const Ray& r, float& t) const {
     auto c = oc.length_squared() - radius * radius;
     auto discriminant = half_b * half_b - a * c;
 
-    if (discriminant < 0.f)
-        return false;
+    if (discriminant < 0.f) return false;
 
     auto t0 = (-half_b - sqrtf(discriminant)) / a;
     auto t1 = (-half_b + sqrtf(discriminant)) / a;
 
     if (t0 > r.tmax || t1 < r.tmin) return false;
+
     float tmp_t = t0;
     if (tmp_t <= r.tmin) {
         tmp_t = t1;
@@ -100,7 +100,7 @@ bool Sphere::intersect(const Ray& r, float& t) const {
 
     // Calculate in local space
     t = tmp_t;
-    
+
     return true;
 }
 
@@ -135,6 +135,11 @@ void Sphere::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     p = local_to_world.apply(p);
 
     pdf = 1;
+}
+
+void Sphere::print_info() const {
+    std::cout << fmt::format("shape Sphere : radius {}", radius) << std::endl;
+    print_bound();
 }
 
 static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3f& dir, float& t) {
@@ -234,22 +239,31 @@ void Quad::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     pdf = 1;
 }
 
+void Quad::print_info() const {
+    std::cout << fmt::format("shape Quad : center {}, dir {}",
+        center.to_str(), dir.to_str()) << std::endl;
+    print_bound();
+}
+
 static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, Intersection& isect) {
     Vec3f v1v0 = verts[1] - verts[0];
     Vec3f v2v0 = verts[2] - verts[0];
     Vec3f pvec = cross(r.direction, v2v0);
     float det = dot(v1v0, pvec);
 
-    if (det < 0.000001) return false;
+    if (det < 0.000001)
+        return false;
 
     float det_inv = 1.f / det;
     Vec3f tvec = r.origin - verts[0];
     float u = dot(tvec, pvec) * det_inv;
-    if (u < 0.f || u > 1.f) return false;
+    if (u < 0.f || u > 1.f)
+        return false;
 
     Vec3f qvec = cross(tvec, v1v0);
     float v = dot(r.direction, qvec) * det_inv; 
-    if (v < 0.f || u + v > 1.f) return false;
+    if (v < 0.f || u + v > 1.f)
+        return false;
 
     float t = dot(v2v0, qvec) * det_inv;
 
@@ -347,6 +361,12 @@ void Triangle::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     pdf = 1;
 }
 
+void Triangle::print_info() const {
+    std::cout << fmt::format("shape Triangle : verts {} {} {}", verts[0], verts[1], verts[2])
+        << std::endl;
+    print_bound();
+}
+
 bool TriangleMesh::intersect(const Ray& r, Intersection& isect) const {
     auto local_r = world_to_local.apply(r);
     bool hit = false;
@@ -419,6 +439,10 @@ void TriangleMesh::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     p = verts[0] + alpha * (verts[1] - verts[0]) + beta * (verts[2] - verts[0]);
     n = cross(verts[1] - verts[0], verts[2] - verts[0]).normalized();
     pdf = 1;
+}
+
+void TriangleMesh::print_info() const {
+    std::cout << "shape TriangleMesh" << std::endl;
 }
 
 static std::shared_ptr<TriangleMesh> process_mesh(aiMesh* mesh, const aiScene* scene, const std::string& m) {

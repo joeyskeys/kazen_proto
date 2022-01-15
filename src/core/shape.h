@@ -58,6 +58,8 @@ public:
     void* address_of(const std::string& name) override;
     void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
 
+    void print_info() const override;
+
     // Members
     float radius;
     Vec3f center;
@@ -96,6 +98,8 @@ public:
     void* address_of(const std::string& name) override;
     void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
 
+    void print_info() const override;
+
     Vec3f center;
     Vec3f dir;
     Vec3f vertical_vec;
@@ -132,6 +136,8 @@ public:
     void* address_of(const std::string& name) override;
     void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
 
+    void print_info() const override;
+
     Vec3f verts[3];
     Vec3f normal;
 };
@@ -150,6 +156,8 @@ public:
 
     //void* address_of(const std::string& name) override
     void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
+
+    void print_info() const override;
 
     std::vector<Vec3f> verts;
     std::vector<Vec3i> indice;

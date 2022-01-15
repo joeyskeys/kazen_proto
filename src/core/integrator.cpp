@@ -31,8 +31,10 @@ NormalIntegrator::NormalIntegrator(Camera* cam_ptr, Film* flm_ptr)
 
 RGBSpectrum NormalIntegrator::Li(const Ray& r) const {
     Intersection isect;
-    if (!accel_ptr->intersect(r, isect))
+    isect.ray_t = std::numeric_limits<float>::max();
+    if (!accel_ptr->intersect(r, isect)) {
         return RGBSpectrum{0};
+    }
 
     auto ret = isect.normal.abs();
     return ret;

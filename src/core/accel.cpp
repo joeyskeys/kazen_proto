@@ -49,6 +49,15 @@ bool ListAccel::intersect(const Ray& r, float& t) const {
     return hit;
 }
 
+void ListAccel::print_info() const {
+    std::cout << fmt::format("List Accelerator with {} objects", size()) << std::endl;
+    for (auto& objptr : hitables) {
+        std::cout << "\t";
+        objptr->print_info();
+        std::cout << std::endl;
+    }
+}
+
 inline bool box_compare(const std::shared_ptr<Hitable>& a, const std::shared_ptr<Hitable>& b, int axis) {
     AABBf box_a;
     AABBf box_b;
@@ -56,23 +65,9 @@ inline bool box_compare(const std::shared_ptr<Hitable>& a, const std::shared_ptr
     return a->bbox().min[axis] < b->bbox().min[axis];
 }
 
-/*
-bool x_compare(const std::shared_ptr<Hitable>& a, const std::shared_ptr<Hitable>& b) {
-    return box_compare(a, b, 0);
-}
-
-bool y_compare(const std::shared_ptr<Hitable>& a, const std::shared_ptr<Hitable>& b) {
-    return box_compare(a, b, 1);
-}
-
-bool z_compare(const std::shared_ptr<Hitable>& a, const std::shared_ptr<Hitable>& b) {
-    return box_compare(a, b, 2);
-}
-*/
-
 class BVHNode : public Hitable {
 public:
-    BVHNode(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end);
+    BVHNode(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end, int l=0);
 
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
@@ -82,10 +77,13 @@ public:
 
 private:
     std::shared_ptr<Hitable> children[2];
+    int level;
 };
 
 //BVHAccel::BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end) {
-BVHNode::BVHNode(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end) {
+BVHNode::BVHNode(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end, int l)
+    : level(l)
+{
     int axis = randomi(2);
 
     /*
@@ -117,16 +115,15 @@ BVHNode::BVHNode(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, 
     else {
         std::sort(hitables.begin() + start, hitables.begin() + end, comparator);
         auto mid = start + object_span / 2;
-        children[0] = std::make_shared<BVHNode>(hitables, start, mid);
-        children[1] = std::make_shared<BVHNode>(hitables, mid, end);
+        children[0] = std::make_shared<BVHNode>(hitables, start, mid, l + 1);
+        children[1] = std::make_shared<BVHNode>(hitables, mid, end, l + 1);
     }
 
     bound = bound_union(children[0]->bbox(), children[1]->bbox());
 }
 
 bool BVHNode::intersect(const Ray& r, Intersection& isect) const {
-    if (!bound.intersect(r))
-        return false;
+    if (!bound.intersect(r)) return false;
 
     bool hit_0 = children[0]->intersect(r, isect);
     bool hit_1 = children[1]->intersect(r, isect);
@@ -152,15 +149,12 @@ void BVHNode::print_bound() const {
 }
 
 void BVHNode::print_info() const {
-    if (indent == 0)
-        std::cout << "root" << std::endl;
-    else {
-        for (int i = 0; i < indent; i++)
-            std::cout << "\t";
-        std::cout
-    }
-    reinterpret_cast<BVHNode*>(children[0].get())->print_tree(indent + 1);
-    reinterpret_cast<BVHNode*>(children[1].get())->print_tree(indent + 1);
+    for (int i = 0; i < level; i++)
+        std::cout << "\t";
+    std::cout << "BVHNode:" << std::endl;
+
+    children[0]->print_info();
+    children[1]->print_info();
 }
 
 BVHAccel::BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end)

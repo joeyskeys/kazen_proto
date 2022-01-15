@@ -11,7 +11,9 @@ public:
     void add_hitables(const std::vector<std::shared_ptr<Hitable>>& hs);
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
-    inline size_t size() { return hitables.size(); }
+    inline size_t size() const { return hitables.size(); }
+
+    void print_info() const override;
 
 public:
     std::vector<std::shared_ptr<Hitable>> hitables;
@@ -27,7 +29,7 @@ public:
     void reset(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end);
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
-    void print_info() const;
+    void print_info() const override;
 
 private:
     //std::shared_ptr<Hitable> children[2];
