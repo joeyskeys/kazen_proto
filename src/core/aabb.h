@@ -34,7 +34,6 @@ public:
             // inf situation
             if (inv_dir[i] != inv_dir[i]) {
                 if (r.origin[i] > min[i] && r.origin[i] < max[i]) {
-                    //std::cout << "inf and out of range index : " << i << std::endl;
                     return false;
                 }
                 else
@@ -46,7 +45,6 @@ public:
             tmin = t0 > tmin ? t0 : tmin;
             tmax = t1 < tmax ? t1 : tmax;
             if (r.tmax <= r.tmin) {
-                //std::cout << "index : " << i << ", min : " << r.tmin << ", max : " << r.tmax << std::endl;
                 return false;
             }
         }

@@ -3,6 +3,8 @@
 #include <vector>
 #include <memory>
 
+#include <embree3/rtcore.h>
+
 #include "hitable.h"
 
 class ListAccel : public Hitable {
@@ -34,4 +36,19 @@ public:
 private:
     //std::shared_ptr<Hitable> children[2];
     std::shared_ptr<BVHNode> root;
+};
+
+class EmbreeAccel : public Hitable {
+    EmbreeAccel();
+    EmbreeAccel(std::vector<std::shared_ptr<Hitable>>& hitables);
+    ~EmbreeAccel();
+
+    void build(std::vector<std::shared_ptr<Hitable>>& Hitables);
+    bool intersect(const Ray& r, Intersection& isect) const override;
+    bool intersect(const Ray& r, Intersection& isect) const override;
+    void print_info() const override;
+
+private:
+    RTCDevice   m_device = nullptr;
+    RTCScene    m_scene = nullptr;
 };
