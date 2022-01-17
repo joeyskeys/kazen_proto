@@ -31,13 +31,41 @@ NormalIntegrator::NormalIntegrator(Camera* cam_ptr, Film* flm_ptr)
 
 RGBSpectrum NormalIntegrator::Li(const Ray& r) const {
     Intersection isect;
-    isect.ray_t = std::numeric_limits<float>::max();
+    //isect.ray_t = std::numeric_limits<float>::max();
     if (!accel_ptr->intersect(r, isect)) {
         return RGBSpectrum{0};
     }
 
     auto ret = isect.normal.abs();
     return ret;
+}
+
+AmbientOcclusionIntegrator::AmbientOcclusionIntegrator()
+    : Integrator()
+{}
+
+AmbientOcclusionIntegrator::AmbientOcclusionIntegrator(Camera* cam_ptr,
+    Film* flm_ptr)
+    : Integrator(cam_ptr, flm_ptr)
+{}
+
+RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r) const {
+    Intersection isect;
+    if (!accel_ptr->intersect(r, isect)) {
+        return RGBSpectrum{0};
+    }
+
+    auto sample = sample_hemisphere().normalized();
+    auto shadow_ray_dir = tangent_to_world(sample, isect.normal, isect.tangent, isect.bitangent);
+    auto shadow_ray = Ray(isect.position, shadow_ray_dir.normalized());
+
+    float t;
+    if (!accel_ptr->intersect(shadow_ray, t)) {
+        float cos_theta_v = cos_theta(sample);
+        return RGBSpectrum{static_cast<float>(cos_theta_v * M_1_PI)} / (M_1_PI * 0.25f);
+    }
+
+    return RGBSpectrum{0};
 }
 
 /*

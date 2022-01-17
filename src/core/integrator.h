@@ -39,3 +39,11 @@ public:
 
     RGBSpectrum Li(const Ray& r) const override;
 };
+
+class AmbientOcclusionIntegrator : public Integrator {
+public:
+    AmbientOcclusionIntegrator();
+    AmbientOcclusionIntegrator(Camera* cam_ptr, Film* flm_ptr);
+
+    RGBSpectrum Li(const Ray& r) const override;
+};

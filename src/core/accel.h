@@ -45,7 +45,7 @@ class EmbreeAccel : public Hitable {
 
     void build(std::vector<std::shared_ptr<Hitable>>& Hitables);
     bool intersect(const Ray& r, Intersection& isect) const override;
-    bool intersect(const Ray& r, Intersection& isect) const override;
+    bool intersect(const Ray& r, float& t) const override;
     void print_info() const override;
 
 private:

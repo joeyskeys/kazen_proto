@@ -1,5 +1,7 @@
 #pragma once
 
+#include <limits>
+
 #include <OSL/oslexec.h>
 
 #include "base/vec.h"
@@ -21,7 +23,7 @@ struct Intersection {
     Vec3f wi;
     Vec3f bary;
     Vec2f uv;
-    float ray_t;
+    float ray_t = std::numeric_limits<float>::max();
     bool  backface;
     bool  is_light;
     ShapePtr shape;
