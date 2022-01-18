@@ -41,14 +41,12 @@ class Sphere : public Shape {
 public:
     Sphere()
         : Shape()
-        , radius(1)
-        , center(Vec3f(0, 0, 0))
+        , center(Vec3f(0, 0, 0, 1))
     {}
 
-    Sphere(const Transform& l2w, const uint& id, const float r, const std::string& m="", bool is_l=false, const Vec3f& c=Vec3f{0.f, 0.f, 0.f})
+    Sphere(const Transform& l2w, const uint& id, const Vec4f cnr, const std::string& m="", bool is_l=false)
         : Shape(l2w, m, is_l, id)
-        , radius(r)
-        , center(c)
+        , center_n_radius(cnr)
     {}
 
     bool intersect(const Ray& r, Intersection& isect) const override;
@@ -61,8 +59,8 @@ public:
     void print_info() const override;
 
     // Members
-    float radius;
-    Vec3f center;
+    // For embree data structure
+    Vec4f center_n_radius;
 };
 
 class Quad : public Shape {

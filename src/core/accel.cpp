@@ -4,19 +4,19 @@
 #include "material.h"
 #include "sampling.h"
 
-void ListAccel::add_hitable(std::shared_ptr<Hitable>&& h) {
-    bound_union(bound, h->bbox());
-    hitables.emplace_back(h);
+void Accelerator::add_hitable(std::shared_ptr<Hitable>&& h) {
+    bound = bound_union(bound, h->bbox());
+    hitables->emplace_back(h);
 }
 
-void ListAccel::add_hitables(const std::vector<std::shared_ptr<Hitable>>& hs) {
+void Accelerator::add_hitables(const std::vector<std::shared_ptr<Hitable>>& hs) {
     for (auto& h : hs) {
-        bound_union(bound, h->bbox());
-        hitables.emplace_back(h);
+        bound = bound_union(bound, h->bbox());
+        hitables->emplace_back(h);
     }
 }
 
-bool ListAccel::intersect(const Ray& r, Intersection& isect) const {
+bool Accelerator::intersect(const Ray& r, Intersection& isect) const {
     bool hit = false;
     Intersection tmp_sect;
     tmp_sect.ray_t = std::numeric_limits<float>::max();
@@ -24,7 +24,7 @@ bool ListAccel::intersect(const Ray& r, Intersection& isect) const {
     auto tmax = r.tmax;
     auto tmin = r.tmin;
 
-    for (auto& h : hitables) {
+    for (auto& h : *hitables) {
         if (h->intersect(r, tmp_sect) && tmp_sect.ray_t < isect.ray_t) {
             hit = true;
             tmax = tmp_sect.ray_t;
@@ -35,11 +35,11 @@ bool ListAccel::intersect(const Ray& r, Intersection& isect) const {
     return hit;
 }
 
-bool ListAccel::intersect(const Ray& r, float& t) const {
+bool Accelerator::intersect(const Ray& r, float& t) const {
     bool hit = false;
     float tmp_t = std::numeric_limits<float>::max();
 
-    for (auto& h : hitables) {
+    for (auto& h : *hitables) {
         if (h->intersect(r, tmp_t) && tmp_t < t) {
             hit = true;
             t = tmp_t;
@@ -49,9 +49,29 @@ bool ListAccel::intersect(const Ray& r, float& t) const {
     return hit;
 }
 
-void ListAccel::print_info() const {
+void Accelerator::add_sphere(std::shared_ptr<Sphere>&& s) {
+    bound = bound_union(bound, s.bbox());
+    hitables->emplace_back(s);
+}
+
+void Accelerator::add_quad(std::shared_ptr<Quad>&& q) {
+    bound = bound_union(bound, q.bbox());
+    hitables->emplace_back(q);
+}
+
+void Accelerator::add_triangle(std::shared_ptr<Triangle>&& t) {
+    bound = bound_union(bound, t.bbox());
+    hitables->emplace_back(t);
+}
+
+void Accelerator::add_trianglemesh(std::shared_ptr<TriangleMesh>&& t) {
+    bound = bound_union(bound, t.bbox());
+    hitables->emplace_back(t);
+}
+
+void Accelerator::print_info() const {
     std::cout << fmt::format("List Accelerator with {} objects", size()) << std::endl;
-    for (auto& objptr : hitables) {
+    for (auto& objptr : *hitables) {
         std::cout << "\t";
         objptr->print_info();
         std::cout << std::endl;
@@ -85,12 +105,6 @@ BVHNode::BVHNode(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, 
     : level(l)
 {
     int axis = randomi(2);
-
-    /*
-    auto comparator = axis == 0 ? x_compare :
-                      axis == 1 ? y_compare :
-                      z_compare;
-    */
 
     auto comparator = [&axis](auto a, auto b) {
         return box_compare(a, b, axis);
@@ -157,12 +171,8 @@ void BVHNode::print_info() const {
     children[1]->print_info();
 }
 
-BVHAccel::BVHAccel(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end)
-    : root(std::make_shared<BVHNode>(hitables, start, end))
-{}
-
-void BVHAccel::reset(std::vector<std::shared_ptr<Hitable>>& hitables, size_t start, size_t end) {
-    root = std::make_shared<BVHNode>(hitables, start, end);
+void BVHAccel::build() {
+    root = std::make_shared<BVHNode>(hitables, 0, hitables->size());
 }
 
 bool BVHAccel::intersect(const Ray& r, Intersection& isect) const {
@@ -175,4 +185,82 @@ bool BVHAccel::intersect(const Ray& r, float& t) const {
 
 void BVHAccel::print_info() const {
     root->print_info();
+}
+
+EmbreeAccel::EmbreeAccel(std::vector<std::shared_ptr<Hitable>>& hitables) {
+    m_device = rtcNewDevice(nullptr);
+    if (!m_device)
+        std::cout << "Error : " << rtcGetDeviceError(nullptr)
+            << "cannot create devic" << std::endl;
+    
+    m_scene = rtcNewScene(m_device);
+    rtcSetSceneFlags(m_scene, RTC_SCENE_FLAG_ROBUST);
+    rtcSetSceneBuildQuality(m_scene, RTC_BUILD_QUALITY_HIGH);
+}
+
+EmbreeAccel::~EmbreeAccel() {
+    if (m_scene)
+        rtcReleaseScene(m_scene);
+
+    if (m_device)
+        rtcReleaseDevice(m_device);
+}
+
+void EmbreeAccel::add_sphere(std::shared_ptr<Sphere>&& s) {
+    Accelerator::add_sphere(s);
+
+    RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_SPHERE_POINT);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
+        RTC_FORMAT_FLOAT4, s->center_n_radius.data(), 0, sizeof(Vec4f), 1);
+    rtcCommitGeometry(geom);
+    rtcAttachGeometry(m_scene, geom);
+    rtcReleaseGeometry(geom);
+}
+
+void EmbreeAccel::add_quad(std::shared_ptr<Quad>&& q) {
+    Accelerator::add_quad(q);
+
+    RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_QUAD);
+    // hmmm, no vertices in quad now...
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
+        RTC_FORMAT_FLOAT3, );
+    rtcCommitGeometry(geom);
+    rtcAttachGeometry(m_scene, geom);
+    rtcReleaseGeometry(geom);
+}
+
+void EmbreeAccel::add_triangle(std::shared_ptr<Triangle>&& t) {
+    Accelerator::add_triangle(t);
+
+    RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
+        RTC_FORMAT_FLOAT3, t->verts, 0, sizeof(Vec3f), 1);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0,
+        RTC_FORMAT_UINT3, [0, 1, 2], 0, 3 * sizeof(uint), 1);
+    rtcAttachGeometry(m_scene, geom);
+    rtcReleaseGeometry(geom);
+}
+
+void EmbreeAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>&& t) {
+    Accelerator::add_trianglemesh(t);
+
+    RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
+        RTC_FORMAT_FLOAT3, t->verts.data(), 0, sizeof(Vec3f), t->verts.size());
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0,
+        RTC_FORMAT_UINT3, t->indice.data(), 0, sizeof(Vec3i), t->indice.size());
+    rtcAttachGeometry(m_scene, geom);
+    rtcReleaseGeometry(geom);
+}
+
+void EmbreeAccel::build() {
+    rtcCommitScene(m_scene);
+}
+
+bool EmbreeAccel::intersect(const Ray& r, Intersection& isect) const {
+
+}
+
+bool EmbreeAccel::intersect(const Ray& r, float& t) const {
+    
 }
