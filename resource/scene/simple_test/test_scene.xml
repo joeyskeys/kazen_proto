@@ -22,7 +22,7 @@
     </Materials>
 
     <Objects>
-        <Sphere radius="float 3" translate="func_translate 0 5 -20" shader_name="string single_matte" />
+        <Sphere center_n_radius="float4 0 0 0 3" translate="func_translate 0 5 -20" shader_name="string single_matte" />
         <Triangle verta="float3 0 0 0" vertb="float3 2 0 0" vertc="float3 0 2 0" translate="func_translate 0 0 -10" shader_name="string single_matte" />
     </Objects>
 

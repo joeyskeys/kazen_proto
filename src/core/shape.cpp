@@ -111,10 +111,8 @@ AABBf Sphere::bbox() const {
 }
 
 void* Sphere::address_of(const std::string& name) {
-    if (name == "radius")
-        return &radius;
-    else if (name == "center")
-        return &center;
+    if (name == "center_n_radius")
+        return &center_n_radius;
     else if (name == "shader_name")
         return &shader_name;
     else if (name == "is_light")

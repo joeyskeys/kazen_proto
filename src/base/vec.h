@@ -88,6 +88,10 @@ public:
         return arr[3];
     }
 
+    inline T* data() {
+        return arr.data();
+    }
+
     inline const T& w() const {
         static_assert(N > 3, "This vec does not have w component");
         return arr[3];
