@@ -243,6 +243,18 @@ void Quad::print_info() const {
     print_bound();
 }
 
+void Quad::get_verts(Vec3f* verts) const {
+    // No bound checking could be dangerous
+    auto left_top = center - horizontal_vec + vertical_vec;
+    auto left_bottom = center - horizontal_vec - vertical_vec;
+    auto right_top = center + horizontal_vec + vertical_vec;
+    auto right_bottom = center + horizontal_vec - vertical_vec;
+    verts[0] = right_top;
+    verts[1] = left_top;
+    verts[2] = left_bottom;
+    verts[3] = right_bottom;
+}
+
 static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, Intersection& isect) {
     Vec3f v1v0 = verts[1] - verts[0];
     Vec3f v2v0 = verts[2] - verts[0];

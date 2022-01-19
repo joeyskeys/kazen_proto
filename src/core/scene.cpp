@@ -259,7 +259,7 @@ void Scene::parse_from_file(fs::path filepath) {
 
     auto setup_shape = [&](const pugi::xml_node& node, auto shape_shared_ptr) {
         parse_attributes(node, shape_shared_ptr.get());
-        objects.push_back(shape_shared_ptr);
+        //objects.push_back(shape_shared_ptr);
         if (shape_shared_ptr->is_light) {
             // If the geometry is a light, an extra radiance attribute
             // must be added.
@@ -350,23 +350,30 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case ESphere: {
                 auto obj_ptr = std::make_shared<Sphere>();
-                //parse_attributes(node, obj_ptr.get());
-                //objects.push_back(obj_ptr);
                 setup_shape(node, obj_ptr);
+
+                // Here we let the accelerator do the job which requires
+                // accelerator constructed before object parsed. It means
+                // object node must be imbeded deeper than the Accelerator
+                // node.
+                // This modification is due to adding support for Embree
+                // which need different geometry data setup methods for
+                // different type of shapes.
+                accelerator->add_sphere(std::move(obj_ptr));
                 break;
             }
 
             case ETriangle: {
                 auto obj_ptr = std::make_shared<Triangle>();
-                //parse_attributes(node, obj_ptr.get());
-                //objects.push_back(obj_ptr);
                 setup_shape(node, obj_ptr);
+                accelerator->add_triangle(std::move(obj_ptr));
                 break;
             }
 
             case EQuad: {
                 auto obj_ptr = std::make_shared<Quad>();
                 setup_shape(node, obj_ptr);
+                accelerator->add_quad(std::move(obj_ptr));
                 break;
             }
 

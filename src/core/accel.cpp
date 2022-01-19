@@ -213,7 +213,7 @@ void EmbreeAccel::add_sphere(std::shared_ptr<Sphere>&& s) {
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
         RTC_FORMAT_FLOAT4, s->center_n_radius.data(), 0, sizeof(Vec4f), 1);
     rtcCommitGeometry(geom);
-    rtcAttachGeometry(m_scene, geom);
+    rtcAttachGeometryByID(m_scene, geom, hitables->size() - 1);
     rtcReleaseGeometry(geom);
 }
 
@@ -221,11 +221,16 @@ void EmbreeAccel::add_quad(std::shared_ptr<Quad>&& q) {
     Accelerator::add_quad(q);
 
     RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_QUAD);
-    // hmmm, no vertices in quad now...
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
-        RTC_FORMAT_FLOAT3, );
+    auto vert_ptr = rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
+        RTC_FORMAT_FLOAT3, sizeof(Vec3f), 1);
+    q->get_verts(verts);
+    uint* indice_ptr = rtcSetNewGeometryBuffer(m_device, RTC_BUFFER_TYPE_INDEX,
+        0, RTC_FORMAT_UINT3, 4 * sizeof(uint), 1);
+    indice_ptr[0] = 0;
+    indice_ptr[1] = 1;
+    indice_ptr[2] = 2;
     rtcCommitGeometry(geom);
-    rtcAttachGeometry(m_scene, geom);
+    rtcAttachGeometryByID(m_scene, geom, hitables->size() - 1);
     rtcReleaseGeometry(geom);
 }
 
@@ -235,9 +240,14 @@ void EmbreeAccel::add_triangle(std::shared_ptr<Triangle>&& t) {
     RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_TRIANGLE);
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
         RTC_FORMAT_FLOAT3, t->verts, 0, sizeof(Vec3f), 1);
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0,
-        RTC_FORMAT_UINT3, [0, 1, 2], 0, 3 * sizeof(uint), 1);
-    rtcAttachGeometry(m_scene, geom);
+    uint* indice_ptr = rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0,
+        RTC_FORMAT_UINT3, 3 * sizeof(uint), 1);
+    indice_ptr[0] = 0;
+    indice_ptr[1] = 1;
+    indice_ptr[2] = 2;
+    indice_ptr[3] = 3;
+    rtcCommitGeometry(geom);
+    rtcAttachGeometryByID(m_scene, geom, hitables->size() - 1);
     rtcReleaseGeometry(geom);
 }
 
@@ -249,7 +259,8 @@ void EmbreeAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>&& t) {
         RTC_FORMAT_FLOAT3, t->verts.data(), 0, sizeof(Vec3f), t->verts.size());
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0,
         RTC_FORMAT_UINT3, t->indice.data(), 0, sizeof(Vec3i), t->indice.size());
-    rtcAttachGeometry(m_scene, geom);
+    rtcCommitGeometry(geom);
+    rtcAttachGeometryByID(m_scene, geom, hitables->size() - 1);
     rtcReleaseGeometry(geom);
 }
 
@@ -258,9 +269,63 @@ void EmbreeAccel::build() {
 }
 
 bool EmbreeAccel::intersect(const Ray& r, Intersection& isect) const {
+    RTCIntersectContext isect_ctx;
+    rtcInitIntersectContext(&isect_ctx);
 
+    RTCRayHit rayhit;
+    rayhit.ray.org_x = r.origin.x();
+    rayhit.ray.org_y = r.origin.y();
+    rayhit.ray.org_z = r.origin.z();
+    rayhit.ray.dir_x = r.direction.x();
+    rayhit.ray.dir_y = r.direction.y();
+    rayhit.ray.dir_z = r.direction.z();
+    rayhit.ray.tnear = r.tmin;
+    rayhit.ray.tfar = r.tmax;
+    rayhit.ray.mask = -1;
+    rayhit.ray.flags = 0;
+    rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+
+    rtcIntersect1(m_scene, &isect_ctx, &rayhit);
+    if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
+        isect.ray_t = rayhit.ray.tfar;
+        isect.normal = Vec3f(rayhit.hit.Ng_x, rayhit.hit.Ng_y, rayhit.hit.Ng_z).normalized();
+        isect.uv = Vec2f(rayhit.hit.u, rayhit.hit.v);
+
+        isect.position = r.at(isect.ray_t);
+        auto hitable = hitables->at(rayhit.hit.geomID);
+        //hitable->post_hit(isect);
+
+        return true;
+    }
+
+    return false;
 }
 
 bool EmbreeAccel::intersect(const Ray& r, float& t) const {
-    
+    RTCIntersectContext isect_ctx;
+    rtcInitIntersectContext(&isect_ctx);
+
+    RTCRayHit rayhit;
+    rayhit.ray.org_x = r.origin.x();
+    rayhit.ray.org_y = r.origin.y();
+    rayhit.ray.org_z = r.origin.z();
+    rayhit.ray.dir_x = r.direction.x();
+    rayhit.ray.dir_y = r.direction.y();
+    rayhit.ray.dir_z = r.direction.z();
+    rayhit.ray.tnear = r.tmin;
+    rayhit.ray.tfar = r.tmax;
+    rayhit.ray.mask = -1;
+    rayhit.ray.flags = 0;
+    rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+
+    rtcIntersect1(m_scene, &isect_ctx, &rayhit);
+    if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
+        t = rayhit.ray.tfar;
+        return true;
+    }
+    return false;
+}
+
+void EmbreeAccel::print_info() const {
+    std::cout << "Embree Accelerator" << std::endl;
 }

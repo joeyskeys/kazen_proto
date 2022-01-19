@@ -42,6 +42,9 @@ include_directories(${Pugixml_INCLUDE_DIRS})
 find_package(FMT REQUIRED)
 include_directories(${FMT_INCLUDE_DIRS})
 
+find_package(embree REQUIRED)
+include_directories(${embree_INCLUDE_DIR})
+
 include_directories("./src")
 
 set(BASE_HEADERS

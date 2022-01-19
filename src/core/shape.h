@@ -98,6 +98,8 @@ public:
 
     void print_info() const override;
 
+    void get_verts(float* verts) const;
+
     Vec3f center;
     Vec3f dir;
     Vec3f vertical_vec;

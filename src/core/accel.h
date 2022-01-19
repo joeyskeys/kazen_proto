@@ -14,17 +14,18 @@ public:
         : hitables(hs)
     {}
 
+    inline size_t size() const { return hitables.size(); }
+    void add_hitable(std::shared_ptr<Hitable>&& h);
+    void add_hitables(const std::vector<std::shared_ptr<Hitable>>& hs);
+
     virtual void add_sphere(std::shared_ptr<Sphere>&& s);
     virtual void add_quad(std::shared_ptr<Quad>&& q);
     virtual void add_triangle(std::shared_ptr<Triangle>&& t);
     virtual void add_trianglemesh(std::shared_ptr<TriangleMesh>&& t);
+    virtual void build() {}
 
-    void add_hitable(std::shared_ptr<Hitable>&& h);
-    void add_hitables(const std::vector<std::shared_ptr<Hitable>>& hs);
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
-    inline size_t size() const { return hitables.size(); }
-
     void print_info() const override;
 
 public:
@@ -39,10 +40,9 @@ public:
         : Accelerator(hs)
     {}
 
-    void build();
+    void build() override;
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
-
     void print_info() const override;
 
 private:
@@ -60,11 +60,9 @@ class EmbreeAccel : public Accelerator {
     void add_quad(std::shared_ptr<Quad>&& q) override;
     void add_triangle(std::shared_ptr<Triangle>&& t) override;
     void add_trianglemesh(std::shared_ptr<TriangleMesh>&& t) override;
-
-    void build();
+    void build() override;
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
-
     void print_info() const override;
 
 private:
