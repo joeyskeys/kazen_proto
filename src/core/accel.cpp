@@ -212,8 +212,11 @@ void EmbreeAccel::add_sphere(std::shared_ptr<Sphere>& s) {
     Accelerator::add_sphere(s);
 
     RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_SPHERE_POINT);
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
-        RTC_FORMAT_FLOAT4, s->center_n_radius.data(), 0, sizeof(Vec4f), 1);
+    //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
+    //    RTC_FORMAT_FLOAT4, s->center_n_radius.data(), 0, sizeof(Vec4f), 1);
+    Vec4f* cnr = reinterpret_cast<Vec4f*>(rtcSetNewGeometryBuffer(geom,
+        RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(Vec4f), 1));
+    cnr[0] = s->center_n_radius;
     rtcCommitGeometry(geom);
     rtcAttachGeometryByID(m_scene, geom, hitables->size() - 1);
     rtcReleaseGeometry(geom);
@@ -227,10 +230,11 @@ void EmbreeAccel::add_quad(std::shared_ptr<Quad>& q) {
         RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3f), 1);
     q->get_verts(vert_ptr);
     uint* indice_ptr = reinterpret_cast<uint*>(rtcSetNewGeometryBuffer(geom,
-        RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, 4 * sizeof(uint), 1));
+        RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, 4 * sizeof(uint), 1));
     indice_ptr[0] = 0;
     indice_ptr[1] = 1;
     indice_ptr[2] = 2;
+    indice_ptr[3] = 3;
     rtcCommitGeometry(geom);
     rtcAttachGeometryByID(m_scene, geom, hitables->size() - 1);
     rtcReleaseGeometry(geom);

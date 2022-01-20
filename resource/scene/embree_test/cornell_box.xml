@@ -1,0 +1,58 @@
+<Scene>
+    <Film width="int 800" height="int 600" />
+
+    <Camera position="float3 0 0 15" lookat="float3 0 0 -10" up="float3 0 1 0" fov="float 60" />
+
+    <Materials>
+        <ShaderGroupBegin name="red_matte" />
+            <Shader name="matte" layer="layer1">
+                <Parameter Cs="float3 0.9 0.1 0.1" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="green_matte" />
+            <Shader name="matte" layer="layer2">
+                <Parameter Cs="float3 0.1 0.9 0.1" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="white_matte" />
+            <Shader name="matte" layer="layer3">
+                <Parameter Cs="float3 0.8 0.8 0.8" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="white_emitter" />
+            <Shader name="emitter" layer="layer4">
+                <Parameter Cs="float3 1 1 1" />
+            </Shader>
+        <ShaderGroupEnd />
+    </Materials>
+
+    <Objects>
+        <Sphere center_n_radius="float4 0 0 0 2.5" translate="func_translate 5 -7.5 -8" shader_name="string white_matte" />
+    </Objects>
+
+    <Lights>
+        <!--
+            Design considerations:
+            1. Can geometry light contain multiple geometries coz we
+                only have triangle parse and cannot get a quad..
+            2. Put the geometry in another node or just attributes
+                in the node? If in a child node, again we have the order
+                related problem, the child node must be insterted into
+                the front of the parse deque.
+            3. "Geometry is a Light" or "Light is a Geometry", coz
+                objects can have emissive material, which can also be
+                treated as lights. Also we must consider if the light
+                path is going to stop at a geometry light hit and geometry
+                light is also able to reflect light from other source
+                theoretically.
+            
+            Update: According to the documentation of OSL, lights are
+                    surfaces with emissive material.
+                    Lights only contain delta lights.
+        -->
+    </Lights>
+
+    <EmbreeAccelerator type="bvh" />
+    <NormalIntegrator type="pt" />
+
+</Scene>

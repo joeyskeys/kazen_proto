@@ -5,7 +5,7 @@
 
 int main() {
     Scene scene;
-    scene.parse_from_file("../resource/scene/cornell_box/cornell_box.xml");
+    scene.parse_from_file("../resource/scene/embree_test/cornell_box.xml");
 
     //scene.integrator->render();
     constexpr static int sample_count = 5;
@@ -13,7 +13,7 @@ int main() {
     auto render_start = get_time();
     bool hit = false;
 
-#define WITH_TBB
+//#define WITH_TBB
 
 #ifdef WITH_TBB
     tbb::parallel_for (tbb::blocked_range<size_t>(0, scene.film->tiles.size()),
