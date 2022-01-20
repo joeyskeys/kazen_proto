@@ -46,11 +46,12 @@ int main() {
     std::cout << "normal : " << isect.normal;
     std::cout << "t : " << isect.ray_t << std::endl;
 
-    ListAccel list;
+    std::vector<std::shared_ptr<Hitable>> hitables;
+    Accelerator list{&hitables};
     list.add_hitable(std::make_shared<Sphere>(t, 0, 1.f));
 
     auto sh = std::make_shared<Transform>();
-    auto acc = std::make_shared<BVHAccel>(list.hitables, 0, list.size() - 1);
+    auto acc = std::make_shared<BVHAccel>(&hitables);
     
     return 0;
 }

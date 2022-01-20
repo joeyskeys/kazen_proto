@@ -26,10 +26,10 @@ void Shape::print_bound() const {
 bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     auto r_local = world_to_local.apply(r);
 
-    auto oc = r_local.origin - center;
+    auto oc = r_local.origin - center_n_radius.reduct<3>();
     auto a = r_local.direction.length_squared();
     auto half_b = dot(oc, r_local.direction);
-    auto c = oc.length_squared() - radius * radius;
+    auto c = oc.length_squared() - center_n_radius.w() * center_n_radius.w();
     auto discriminant = half_b * half_b - a * c;
 
     if (discriminant < 0.f)
@@ -55,7 +55,7 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     isect.ray_t = t;
     // small bias to avoid self intersection
     isect.position = r_local.at(t) * 1.00001f;
-    isect.normal = (r_local.at(t) - center) / radius;
+    isect.normal = (r_local.at(t) - center_n_radius.reduct<3>()) / center_n_radius.w();
     if (isect.backface)
         isect.normal = -isect.normal;
 
@@ -79,10 +79,10 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
 bool Sphere::intersect(const Ray& r, float& t) const {
     auto r_local = world_to_local.apply(r);
 
-    auto oc = r_local.origin - center;
+    auto oc = r_local.origin - center_n_radius.reduct<3>();
     auto a = r_local.direction.length_squared();
     auto half_b = dot(oc, r_local.direction);
-    auto c = oc.length_squared() - radius * radius;
+    auto c = oc.length_squared() - center_n_radius.w() * center_n_radius.w();
     auto discriminant = half_b * half_b - a * c;
 
     if (discriminant < 0.f) return false;
@@ -105,8 +105,8 @@ bool Sphere::intersect(const Ray& r, float& t) const {
 }
 
 AABBf Sphere::bbox() const {
-    auto center_in_world = local_to_world.apply(center);
-    auto radius_vec = Vec3f{radius, radius, radius};
+    auto center_in_world = local_to_world.apply(center_n_radius.reduct<3>());
+    auto radius_vec = Vec3f{center_n_radius.w()};
     return AABBf{center_in_world - radius_vec, center_in_world + radius_vec};
 }
 
@@ -129,14 +129,14 @@ void Sphere::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     n = sample.normalized();
     n = local_to_world.apply_normal(n);
 
-    p = center + n * radius;
+    p = center_n_radius.reduct<3>() + n * center_n_radius.w();
     p = local_to_world.apply(p);
 
     pdf = 1;
 }
 
 void Sphere::print_info() const {
-    std::cout << fmt::format("shape Sphere : radius {}", radius) << std::endl;
+    std::cout << fmt::format("shape Sphere : radius {}", center_n_radius.w()) << std::endl;
     print_bound();
 }
 
@@ -243,12 +243,13 @@ void Quad::print_info() const {
     print_bound();
 }
 
-void Quad::get_verts(Vec3f* verts) const {
+void Quad::get_verts(void* vs) const {
     // No bound checking could be dangerous
     auto left_top = center - horizontal_vec + vertical_vec;
     auto left_bottom = center - horizontal_vec - vertical_vec;
     auto right_top = center + horizontal_vec + vertical_vec;
     auto right_bottom = center + horizontal_vec - vertical_vec;
+    auto verts = reinterpret_cast<Vec3f*>(vs);
     verts[0] = right_top;
     verts[1] = left_top;
     verts[2] = left_bottom;

@@ -42,8 +42,8 @@ include_directories(${Pugixml_INCLUDE_DIRS})
 find_package(FMT REQUIRED)
 include_directories(${FMT_INCLUDE_DIRS})
 
-find_package(embree REQUIRED)
-include_directories(${embree_INCLUDE_DIR})
+find_package(embree 3.13.0 REQUIRED)
+include_directories(${EMBREE_INCLUDE_DIRS})
 
 include_directories("./src")
 
@@ -88,7 +88,8 @@ target_link_libraries(kazen_proto_lib
     ${Boost_LIBRARIES}
     ${TBB_LIBRARIES}
     ${Pugixml_LIBRARIES}
-    ${OSL_LIBRARIES})
+    ${OSL_LIBRARIES}
+    ${EMBREE_LIBRARIES})
 
 add_executable(kazen src/proto/main.cpp)
 target_link_libraries(kazen

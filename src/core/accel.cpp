@@ -49,23 +49,23 @@ bool Accelerator::intersect(const Ray& r, float& t) const {
     return hit;
 }
 
-void Accelerator::add_sphere(std::shared_ptr<Sphere>&& s) {
-    bound = bound_union(bound, s.bbox());
+void Accelerator::add_sphere(std::shared_ptr<Sphere>& s) {
+    bound = bound_union(bound, s->bbox());
     hitables->emplace_back(s);
 }
 
-void Accelerator::add_quad(std::shared_ptr<Quad>&& q) {
-    bound = bound_union(bound, q.bbox());
+void Accelerator::add_quad(std::shared_ptr<Quad>& q) {
+    bound = bound_union(bound, q->bbox());
     hitables->emplace_back(q);
 }
 
-void Accelerator::add_triangle(std::shared_ptr<Triangle>&& t) {
-    bound = bound_union(bound, t.bbox());
+void Accelerator::add_triangle(std::shared_ptr<Triangle>& t) {
+    bound = bound_union(bound, t->bbox());
     hitables->emplace_back(t);
 }
 
-void Accelerator::add_trianglemesh(std::shared_ptr<TriangleMesh>&& t) {
-    bound = bound_union(bound, t.bbox());
+void Accelerator::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
+    bound = bound_union(bound, t->bbox());
     hitables->emplace_back(t);
 }
 
@@ -172,7 +172,7 @@ void BVHNode::print_info() const {
 }
 
 void BVHAccel::build() {
-    root = std::make_shared<BVHNode>(hitables, 0, hitables->size());
+    root = std::make_shared<BVHNode>(*hitables, 0, hitables->size());
 }
 
 bool BVHAccel::intersect(const Ray& r, Intersection& isect) const {
@@ -187,7 +187,9 @@ void BVHAccel::print_info() const {
     root->print_info();
 }
 
-EmbreeAccel::EmbreeAccel(std::vector<std::shared_ptr<Hitable>>& hitables) {
+EmbreeAccel::EmbreeAccel(std::vector<std::shared_ptr<Hitable>>* hs)
+    : Accelerator(hs)
+{
     m_device = rtcNewDevice(nullptr);
     if (!m_device)
         std::cout << "Error : " << rtcGetDeviceError(nullptr)
@@ -206,7 +208,7 @@ EmbreeAccel::~EmbreeAccel() {
         rtcReleaseDevice(m_device);
 }
 
-void EmbreeAccel::add_sphere(std::shared_ptr<Sphere>&& s) {
+void EmbreeAccel::add_sphere(std::shared_ptr<Sphere>& s) {
     Accelerator::add_sphere(s);
 
     RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_SPHERE_POINT);
@@ -217,15 +219,15 @@ void EmbreeAccel::add_sphere(std::shared_ptr<Sphere>&& s) {
     rtcReleaseGeometry(geom);
 }
 
-void EmbreeAccel::add_quad(std::shared_ptr<Quad>&& q) {
+void EmbreeAccel::add_quad(std::shared_ptr<Quad>& q) {
     Accelerator::add_quad(q);
 
     RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_QUAD);
-    auto vert_ptr = rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
-        RTC_FORMAT_FLOAT3, sizeof(Vec3f), 1);
-    q->get_verts(verts);
-    uint* indice_ptr = rtcSetNewGeometryBuffer(m_device, RTC_BUFFER_TYPE_INDEX,
-        0, RTC_FORMAT_UINT3, 4 * sizeof(uint), 1);
+    auto vert_ptr = rtcSetNewGeometryBuffer(geom,
+        RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3f), 1);
+    q->get_verts(vert_ptr);
+    uint* indice_ptr = reinterpret_cast<uint*>(rtcSetNewGeometryBuffer(geom,
+        RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, 4 * sizeof(uint), 1));
     indice_ptr[0] = 0;
     indice_ptr[1] = 1;
     indice_ptr[2] = 2;
@@ -234,14 +236,14 @@ void EmbreeAccel::add_quad(std::shared_ptr<Quad>&& q) {
     rtcReleaseGeometry(geom);
 }
 
-void EmbreeAccel::add_triangle(std::shared_ptr<Triangle>&& t) {
+void EmbreeAccel::add_triangle(std::shared_ptr<Triangle>& t) {
     Accelerator::add_triangle(t);
 
     RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_TRIANGLE);
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
         RTC_FORMAT_FLOAT3, t->verts, 0, sizeof(Vec3f), 1);
-    uint* indice_ptr = rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0,
-        RTC_FORMAT_UINT3, 3 * sizeof(uint), 1);
+    uint* indice_ptr = reinterpret_cast<uint*>(rtcSetNewGeometryBuffer(geom,
+        RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, 3 * sizeof(uint), 1));
     indice_ptr[0] = 0;
     indice_ptr[1] = 1;
     indice_ptr[2] = 2;
@@ -251,7 +253,7 @@ void EmbreeAccel::add_triangle(std::shared_ptr<Triangle>&& t) {
     rtcReleaseGeometry(geom);
 }
 
-void EmbreeAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>&& t) {
+void EmbreeAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
     Accelerator::add_trianglemesh(t);
 
     RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_TRIANGLE);

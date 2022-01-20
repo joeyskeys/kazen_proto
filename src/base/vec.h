@@ -24,9 +24,13 @@ public:
         std::fill(arr.begin(), arr.end(), static_cast<T>(0));
     }
 
+    template <typename M, typename = std::enable_if_t<std::is_arithmetic_v<M>>>
+    Vec(M arg) {
+        std::fill(arr.begin(), arr.end(), static_cast<T>(arg));
+    }
+
     template <typename ...Ts, typename = std::enable_if_t<(... && std::is_arithmetic_v<Ts>)>>
     Vec(Ts... args) {
-        static_assert(sizeof...(Ts) == N, "Dimensional error");
         arr = { static_cast<T>(args)... };
     }
 

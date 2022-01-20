@@ -41,7 +41,7 @@ class Sphere : public Shape {
 public:
     Sphere()
         : Shape()
-        , center(Vec3f(0, 0, 0, 1))
+        , center_n_radius(Vec4f(0, 0, 0, 1))
     {}
 
     Sphere(const Transform& l2w, const uint& id, const Vec4f cnr, const std::string& m="", bool is_l=false)
@@ -98,7 +98,7 @@ public:
 
     void print_info() const override;
 
-    void get_verts(float* verts) const;
+    void get_verts(void* verts) const;
 
     Vec3f center;
     Vec3f dir;

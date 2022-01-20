@@ -21,6 +21,8 @@ enum ETag {
     EFilm,
     ECamera,
     EAccelerator,
+    EBVHAccelerator,
+    EEmbreeAccelerator,
     //EIntegrator,
     ENormalIntegrator,
     EAmbientOcclusionIntegrator,
@@ -42,11 +44,13 @@ enum ETag {
     EInvalid
 };
 
-constexpr static frozen::unordered_map<frozen::string, ETag, 18> tags = {
+constexpr static frozen::unordered_map<frozen::string, ETag, 20> tags = {
     {"Scene", EScene},
     {"Film", EFilm},
     {"Camera", ECamera},
     {"Accelerator", EAccelerator},
+    {"BVHAccelerator", EBVHAccelerator},
+    {"EmbreeAccelerator", EEmbreeAccelerator},
     //{"Integrator", EIntegrator},
     {"NormalIntegrator", ENormalIntegrator},
     {"AmbientOcclusionIntegrator", EAmbientOcclusionIntegrator},
@@ -307,19 +311,31 @@ void Scene::parse_from_file(fs::path filepath) {
             case EScene:
                 break;
 
-            case EFilm:
+            case EFilm: {
                 parse_attributes(node, film.get());
                 film->generate_tiles();
                 break;
+            }
 
-            case ECamera:
+            case ECamera: {
                 parse_attributes(node, camera.get());
                 break;
+            }
 
-            case EAccelerator:
-                // BVH only for now
-                accelerator = std::make_unique<BVHAccel>();
+            case EAccelerator: {
+                accelerator = std::make_unique<Accelerator>(&objects);
                 break;
+            }
+
+            case EBVHAccelerator: {
+                accelerator = std::make_unique<BVHAccel>(&objects);
+                break;
+            }
+
+            case EEmbreeAccelerator: {
+                accelerator = std::make_unique<EmbreeAccel>(&objects);
+                break;
+            }
 
             /*
             case EIntegrator: {
@@ -359,21 +375,21 @@ void Scene::parse_from_file(fs::path filepath) {
                 // This modification is due to adding support for Embree
                 // which need different geometry data setup methods for
                 // different type of shapes.
-                accelerator->add_sphere(std::move(obj_ptr));
+                accelerator->add_sphere(obj_ptr);
                 break;
             }
 
             case ETriangle: {
                 auto obj_ptr = std::make_shared<Triangle>();
                 setup_shape(node, obj_ptr);
-                accelerator->add_triangle(std::move(obj_ptr));
+                accelerator->add_triangle(obj_ptr);
                 break;
             }
 
             case EQuad: {
                 auto obj_ptr = std::make_shared<Quad>();
                 setup_shape(node, obj_ptr);
-                accelerator->add_quad(std::move(obj_ptr));
+                accelerator->add_quad(obj_ptr);
                 break;
             }
 
@@ -476,8 +492,7 @@ void Scene::parse_from_file(fs::path filepath) {
 
     // Construct acceleration structure after all data is parsed
     camera->init();
-    auto bvh_ptr = reinterpret_cast<BVHAccel*>(accelerator.get());
-    bvh_ptr->reset(objects, 0, objects.size());
+    accelerator->build();
     integrator->accel_ptr = accelerator.get();
     integrator->lights = &lights;
 }
