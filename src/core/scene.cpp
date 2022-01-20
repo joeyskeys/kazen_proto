@@ -73,15 +73,17 @@ enum EType {
     EFloat,
     EInt,
     EVec3f,
+    EVec4f,
     EStr,
     EFuncTrans
 };
 
-constexpr static frozen::unordered_map<frozen::string, EType, 6> types = {
+constexpr static frozen::unordered_map<frozen::string, EType, 7> types = {
     {"bool", EBool},
     {"float", EFloat},
     {"int", EInt},
     {"float3", EVec3f},
+    {"float4", EVec4f},
     {"string", EStr},
     {"func_translate", EFuncTrans}
 };
