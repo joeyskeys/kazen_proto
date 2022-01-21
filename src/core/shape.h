@@ -166,3 +166,36 @@ public:
 };
 
 std::vector<std::shared_ptr<Hitable>> load_triangle_mesh(const std::string& file_path, const std::string& m="");
+
+class Spheres {
+public:
+    void add_sphere();
+    bool intersect(const Ray& r, Intersection& isect, uint idx) const;
+    bool intersect(const Ray& r) const;
+
+    std::vector<Vec4f>  cnrs; // Center & Radius s
+    std::vector<Light*> light_ptr;
+};
+
+class Quads {
+public:
+    void add_quad();
+    bool intersect(const Ray& r, Intersection& isect, uint idx) const;
+    bool intersect(const Ray& r) const;
+
+    std::vector<Vec3f>  verts;
+    std::vector<Vec4u>  indice;
+    std::vector<Light*> light_ptr;
+};
+
+class Triangles {
+public:
+    void add_triangle();
+    void add_triangles();
+    bool intersect(const Ray& r, Intersection& isect, uint idx) const;
+    bool intersect(const Ray& r) const;
+
+    std::vector<Vec3f>  verts;
+    std::vector<Vec3u>  indice;
+    std::vector<Light*> light_ptr;
+};
