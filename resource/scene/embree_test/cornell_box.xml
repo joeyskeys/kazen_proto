@@ -27,7 +27,26 @@
     </Materials>
 
     <Objects>
+        <!--Left-->
+        <Triangle verta="float3 -10 -10 0" vertb="float3 -10 -10 -20" vertc="float3 -10 10 -20" shader_name="string red_matte" />
+        <Triangle verta="float3 -10 10 -20" vertb="float3 -10 10 0" vertc="float3 -10 -10 0" shader_name="string red_matte" />
+        <!--Right-->
+        <Triangle verta="float3 10 -10 0" vertb="float3 10 10 0" vertc="float3 10 10 -20" shader_name="string green_matte" />
+        <Triangle verta="float3 10 10 -20" vertb="float3 10 -10 -20" vertc="float3 10 -10 0" shader_name="string green_matte" />
+        <!--Bottom-->
+        <Triangle verta="float3 -10 -10 -20" vertb="float3 -10 -10 0" vertc="float3 10 -10 -20" shader_name="string white_matte" />
+        <Triangle verta="float3 10 -10 -20" vertb="float3 -10 -10 0" vertc="float3 10 -10 0" shader_name="string white_matte" />
+        <!--Top-->
+        <Triangle verta="float3 -10 10 0" vertb="float3 -10 10 -20" vertc="float3 10 10 -20" shader_name="string white_matte" />
+        <Triangle verta="float3 10 10 -20" vertb="float3 10 10 0" vertc="float3 -10 10 0" shader_name="string white_matte" />
+        <!--Back-->
+        <Triangle verta="float3 -10 10 -20" vertb="float3 -10 -10 -20" vertc="float3 10 10 -20" shader_name="string white_matte" />
+        <Triangle verta="float3 10 10 -20" vertb="float3 -10 -10 -20" vertc="float3 10 -10 -20" shader_name="string white_matte" />
+        <!--Spheres-->
+        <Sphere center_n_radius="float4 0 0 0 4" translate="func_translate -5 -6 -10" shader_name="string white_matte" />
         <Sphere center_n_radius="float4 0 0 0 2.5" translate="func_translate 5 -7.5 -8" shader_name="string white_matte" />
+        <!--Quad Light-->
+        <Quad center="float3 0 9.5 -10" dir="float3 0 -1 0" vertical_vec="float3 0 0 1" half_width="float 1" half_height="float 1" shader_name="string white_emitter" is_light="bool true" radiance="float3 1 1 1" />
     </Objects>
 
     <Lights>

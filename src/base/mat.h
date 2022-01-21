@@ -226,7 +226,7 @@ public:
         return ret;
     }
 
-private:
+public:
     std::array<T, N * N> arr;
 };
 

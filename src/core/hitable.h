@@ -52,7 +52,7 @@ public:
         world_to_local.translate(-t);
     }
 
-protected:
+public:
     Transform local_to_world, world_to_local;
     AABBf bound;
 };
