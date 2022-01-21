@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstring>
 #include <functional>
 
 #include <assimp/Importer.hpp>
@@ -138,6 +139,10 @@ void Sphere::sample(Vec3f& p, Vec3f& n, float& pdf) const {
 void Sphere::print_info() const {
     std::cout << fmt::format("shape Sphere : radius {}", center_n_radius.w()) << std::endl;
     print_bound();
+}
+
+void Sphere::bake() {
+    std::memcpy(buf, &center_n_radius, 4 * sizeof(float));
 }
 
 static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3f& dir, float& t) {

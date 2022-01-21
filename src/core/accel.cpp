@@ -1,8 +1,9 @@
 #include <limits>
 
-#include "accel.h"
-#include "material.h"
-#include "sampling.h"
+#include "core/accel.h"
+#include "core/material.h"
+#include "core/sampling.h"
+#include "core/scene.h"
 
 void Accelerator::add_hitable(std::shared_ptr<Hitable>&& h) {
     bound = bound_union(bound, h->bbox());
@@ -49,24 +50,29 @@ bool Accelerator::intersect(const Ray& r, float& t) const {
     return hit;
 }
 
-void Accelerator::add_sphere(std::shared_ptr<Sphere>& s) {
+void Accelerator::add_sphere(Sphere* s) {
     bound = bound_union(bound, s->bbox());
-    hitables->emplace_back(s);
+    hitables->push_back(s);
 }
 
-void Accelerator::add_quad(std::shared_ptr<Quad>& q) {
+void Accelerator::add_quad(Quad* q) {
     bound = bound_union(bound, q->bbox());
-    hitables->emplace_back(q);
+    hitables->push_back(q);
 }
 
-void Accelerator::add_triangle(std::shared_ptr<Triangle>& t) {
+void Accelerator::add_triangle(Triangle* t) {
     bound = bound_union(bound, t->bbox());
-    hitables->emplace_back(t);
+    hitables->push_back(t);
 }
 
-void Accelerator::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
+void Accelerator::add_trianglemesh(TriangleMesh* t) {
     bound = bound_union(bound, t->bbox());
-    hitables->emplace_back(t);
+    hitables->push_back(t);
+}
+
+void Accelerator::build() {
+    for (auto& hitable : hitables)
+        bound = bound_union(bound, hitable->bbox());
 }
 
 void Accelerator::print_info() const {
@@ -208,21 +214,24 @@ EmbreeAccel::~EmbreeAccel() {
         rtcReleaseDevice(m_device);
 }
 
-void EmbreeAccel::add_sphere(std::shared_ptr<Sphere>& s) {
+void EmbreeAccel::add_sphere(Sphere* s) {
     Accelerator::add_sphere(s);
 
+    s->bake();
     RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_SPHERE_POINT);
-    //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
-    //    RTC_FORMAT_FLOAT4, s->center_n_radius.data(), 0, sizeof(Vec4f), 1);
-    Vec4f* cnr = reinterpret_cast<Vec4f*>(rtcSetNewGeometryBuffer(geom,
-        RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(Vec4f), 1));
-    cnr[0] = s->center_n_radius;
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
+        RTC_FORMAT_FLOAT4, s->center_n_radius.data(), 0, sizeof(Vec4f), 1);
+    //Vec4f* cnr = reinterpret_cast<Vec4f*>(rtcSetNewGeometryBuffer(geom,
+    //    RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(Vec4f), 1));
+    //cnr[0] = s->center_n_radius;
+    auto ret = rtcGetDeviceError(m_device);
+    std::cout << "bind result : " << ret << std::endl;
     rtcCommitGeometry(geom);
     rtcAttachGeometryByID(m_scene, geom, hitables->size() - 1);
     rtcReleaseGeometry(geom);
 }
 
-void EmbreeAccel::add_quad(std::shared_ptr<Quad>& q) {
+void EmbreeAccel::add_quad(Quad* q) {
     Accelerator::add_quad(q);
 
     RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_QUAD);
@@ -240,7 +249,7 @@ void EmbreeAccel::add_quad(std::shared_ptr<Quad>& q) {
     rtcReleaseGeometry(geom);
 }
 
-void EmbreeAccel::add_triangle(std::shared_ptr<Triangle>& t) {
+void EmbreeAccel::add_triangle(Triangle* t) {
     Accelerator::add_triangle(t);
 
     RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_TRIANGLE);
@@ -257,7 +266,7 @@ void EmbreeAccel::add_triangle(std::shared_ptr<Triangle>& t) {
     rtcReleaseGeometry(geom);
 }
 
-void EmbreeAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
+void EmbreeAccel::add_trianglemesh(TriangleMesh* t) {
     Accelerator::add_trianglemesh(t);
 
     RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_TRIANGLE);
@@ -271,6 +280,10 @@ void EmbreeAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
 }
 
 void EmbreeAccel::build() {
+    RTCGeometry spheres = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+    // Now we have problem since Sphere contains virtual function
+    //rtcSetSharedGeometryBuffer(spheres, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT3_FLOAT3,
+    //    scene->spheres.data(), 0, sizeof(Vec4f), scene->spheres.size());
     rtcCommitScene(m_scene);
 }
 

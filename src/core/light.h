@@ -52,7 +52,7 @@ public:
         , geometry(nullptr)
     {}
 
-    GeometryLight(const RGBSpectrum& l, std::shared_ptr<Shape>g)
+    GeometryLight(const RGBSpectrum& l, Shape* g)
         : Light(l, false)
         , geometry(g)
     {}
@@ -61,5 +61,5 @@ public:
     RGBSpectrum eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& n) const override;
 
 public:
-    std::shared_ptr<Shape> geometry;
+    Shape* geometry;
 };

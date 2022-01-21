@@ -34,8 +34,14 @@ public:
     std::unique_ptr<Film> film;
     std::unique_ptr<Camera> camera;
     std::unique_ptr<Accelerator> accelerator;
-    std::vector<std::shared_ptr<Hitable>> objects;
+    std::vector<HitablePtr> objects;
     std::vector<std::unique_ptr<Light>> lights;
+
+    // Category geometry by type will benifit embree memory footprint
+    std::vector<Sphere>         spheres;
+    std::vector<Quad>           quads;
+    std::vector<Triangle>       triangles;
+    std::vector<TriangleMesh>   trimeshes;
 
     // OSL related
     KazenRenderServices rend;

@@ -263,10 +263,10 @@ void Scene::parse_from_file(fs::path filepath) {
         return tag;
     };
 
-    auto setup_shape = [&](const pugi::xml_node& node, auto shape_shared_ptr) {
+    auto setup_shape = [&](const pugi::xml_node& node, auto shape_ptr) {
         parse_attributes(node, shape_shared_ptr.get());
         //objects.push_back(shape_shared_ptr);
-        if (shape_shared_ptr->is_light) {
+        if (shape_ptr->is_light) {
             // If the geometry is a light, an extra radiance attribute
             // must be added.
             auto radiance_attr = node.attribute("radiance");
@@ -276,8 +276,8 @@ void Scene::parse_from_file(fs::path filepath) {
             RGBSpectrum radiance{};
             // Treated as Vec3f
             parse_attribute(radiance_attr, &radiance);
-            auto light = std::make_unique<GeometryLight>(radiance, shape_shared_ptr);
-            shape_shared_ptr->light = light.get();
+            auto light = std::make_unique<GeometryLight>(radiance, shape_ptr);
+            shape_ptr->light = light.get();
             lights.emplace_back(std::move(light));
         }
     };
@@ -367,31 +367,26 @@ void Scene::parse_from_file(fs::path filepath) {
                 break;
 
             case ESphere: {
-                auto obj_ptr = std::make_shared<Sphere>();
+                spheres.emplace_back();
+                auto obj_ptr = &spheres.back();
                 setup_shape(node, obj_ptr);
-
-                // Here we let the accelerator do the job which requires
-                // accelerator constructed before object parsed. It means
-                // object node must be imbeded deeper than the Accelerator
-                // node.
-                // This modification is due to adding support for Embree
-                // which need different geometry data setup methods for
-                // different type of shapes.
-                accelerator->add_sphere(obj_ptr);
-                break;
-            }
-
-            case ETriangle: {
-                auto obj_ptr = std::make_shared<Triangle>();
-                setup_shape(node, obj_ptr);
-                accelerator->add_triangle(obj_ptr);
+                objects.push_back(obj_ptr);
                 break;
             }
 
             case EQuad: {
-                auto obj_ptr = std::make_shared<Quad>();
+                quads.emplace_back();
+                auto obj_ptr = &quads.back();
                 setup_shape(node, obj_ptr);
-                accelerator->add_quad(obj_ptr);
+                objects.push_back(obj_ptr);
+                break;
+            }
+
+            case ETriangle: {
+                triangles.emplace_back();
+                auto obj_ptr = &triangles.back();
+                setup_shape(node, obj_ptr);
+                objects.push_back(obj_ptr);
                 break;
             }
 

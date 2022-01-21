@@ -8,13 +8,15 @@
 #include "hitable.h"
 #include "shape.h"
 
+class Scene;
+
 class Accelerator : public Hitable {
 public:
-    Accelerator(std::vector<std::shared_ptr<Hitable>>* hs)
-        : hitables(hs)
+    Accelerator(const Scene* s)
+        : hitables(s)
     {}
 
-    inline size_t size() const { return hitables->size(); }
+    inline size_t size() const { return scene->objects.size(); }
     void add_hitable(std::shared_ptr<Hitable>&& h);
     void add_hitables(const std::vector<std::shared_ptr<Hitable>>& hs);
 
@@ -22,22 +24,22 @@ public:
     virtual void add_quad(std::shared_ptr<Quad>& q);
     virtual void add_triangle(std::shared_ptr<Triangle>& t);
     virtual void add_trianglemesh(std::shared_ptr<TriangleMesh>& t);
-    virtual void build() {}
+    virtual void build();
 
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
     void print_info() const override;
 
 public:
-    std::vector<std::shared_ptr<Hitable>>* hitables;
+    Scene* scene;
 };
 
 class BVHNode;
 
 class BVHAccel : public Accelerator {
 public:
-    BVHAccel(std::vector<std::shared_ptr<Hitable>>* hs)
-        : Accelerator(hs)
+    BVHAccel(const Scene* s)
+        : Accelerator(s)
         , root(nullptr)
     {}
 
@@ -53,7 +55,7 @@ private:
 
 class EmbreeAccel : public Accelerator {
 public:
-    EmbreeAccel(std::vector<std::shared_ptr<Hitable>>* hs);
+    EmbreeAccel(Scene* s);
     ~EmbreeAccel();
 
     void add_sphere(std::shared_ptr<Sphere>& s) override;
