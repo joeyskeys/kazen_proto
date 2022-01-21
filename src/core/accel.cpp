@@ -50,26 +50,6 @@ bool Accelerator::intersect(const Ray& r, float& t) const {
     return hit;
 }
 
-void Accelerator::add_sphere(Sphere* s) {
-    bound = bound_union(bound, s->bbox());
-    hitables->push_back(s);
-}
-
-void Accelerator::add_quad(Quad* q) {
-    bound = bound_union(bound, q->bbox());
-    hitables->push_back(q);
-}
-
-void Accelerator::add_triangle(Triangle* t) {
-    bound = bound_union(bound, t->bbox());
-    hitables->push_back(t);
-}
-
-void Accelerator::add_trianglemesh(TriangleMesh* t) {
-    bound = bound_union(bound, t->bbox());
-    hitables->push_back(t);
-}
-
 void Accelerator::build() {
     for (auto& hitable : hitables)
         bound = bound_union(bound, hitable->bbox());
@@ -214,6 +194,7 @@ EmbreeAccel::~EmbreeAccel() {
         rtcReleaseDevice(m_device);
 }
 
+/*
 void EmbreeAccel::add_sphere(Sphere* s) {
     Accelerator::add_sphere(s);
 
@@ -278,6 +259,7 @@ void EmbreeAccel::add_trianglemesh(TriangleMesh* t) {
     rtcAttachGeometryByID(m_scene, geom, hitables->size() - 1);
     rtcReleaseGeometry(geom);
 }
+*/
 
 void EmbreeAccel::build() {
     RTCGeometry spheres = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_TRIANGLE);
