@@ -217,12 +217,8 @@ void EmbreeAccel::add_sphere(std::shared_ptr<Sphere>& s) {
         //RTC_FORMAT_FLOAT4, s->center_n_radius.data(), 0, sizeof(Vec4f), 1);
     Vec4f* cnr = reinterpret_cast<Vec4f*>(rtcSetNewGeometryBuffer(geom,
         RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(Vec4f), 1));
-    cnr[0] = s->center_n_radius;
-
-    rtcSetGeometryInstancedScene(geom, m_scene);
-    rtcSetGeometryTimeStepCount(geom, 1);
-    rtcSetGeometryTransform(geom, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, s->local_to_world.mat.arr.data());
-
+    //cnr[0] = s->center_n_radius;
+    s->get_world_position(cnr);
     rtcAttachGeometryByID(m_scene, geom, hitables->size() - 1);
     rtcReleaseGeometry(geom);
     rtcCommitGeometry(geom);

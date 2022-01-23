@@ -58,6 +58,8 @@ public:
 
     void print_info() const override;
 
+    void get_world_position(Vec4f* cnr) const;
+
     // Members
     // For embree data structure
     Vec4f center_n_radius;

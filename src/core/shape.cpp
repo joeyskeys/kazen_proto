@@ -140,6 +140,11 @@ void Sphere::print_info() const {
     print_bound();
 }
 
+void Sphere::get_world_position(Vec4f* cnr) const {
+    auto vec4_cnr = reinterpret_cast<Vec4f*>(cnr);
+    *vec4_cnr = Vec4f(local_to_world.apply(center_n_radius.reduct<3>()), center_n_radius.w());
+}
+
 static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3f& dir, float& t) {
     auto pos_vec = center - r.origin;
     auto projected_distance = dot(pos_vec, dir);
