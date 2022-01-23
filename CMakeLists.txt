@@ -28,6 +28,7 @@ find_package(Boost 1.72 REQUIRED COMPONENTS filesystem)
 include_directories(${Boost_INCLUDE_DIRS})
 
 find_package(OpenEXR REQUIRED)
+include_directories(${ILMBASE_INCLUDES})
 include_directories(${OPENEXR_INCLUDES})
 
 find_package(OSL REQUIRED)
