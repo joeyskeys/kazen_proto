@@ -151,6 +151,14 @@ OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
             break;
         }
 
+        case EVec4f: {
+            ret = OSL::TypeDesc::TypeVector;
+            auto typed_dst = reinterpret_cast<Vec4f*>(dst);
+            for (int i = 0; i < Vec4f::dimension; i++)
+                (*typed_dst)[i] = string_to<typename Vec4f::ValueType>(comps[i + 1]);
+            break;
+        }
+
         case EStr: {
             ret = OSL::TypeDesc::TypeString;
             auto typed_dst = reinterpret_cast<std::string*>(dst);
