@@ -7,7 +7,6 @@
 #include <OSL/oslclosure.h>
 
 #include "base/vec.h"
-#include "base/types.h"
 #include "core/spectrum.h"
 
 class BSDF {

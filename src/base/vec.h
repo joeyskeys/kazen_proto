@@ -10,7 +10,7 @@
 
 #include <OSL/oslconfig.h>
 
-#include "types.h"
+#include "basic_types.h"
 
 template <typename T, uint N>
 class Vec {

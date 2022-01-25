@@ -6,7 +6,7 @@
 #include <OpenImageIO/imageio.h>
 
 #include "base/dictlike.h"
-#include "base/types.h"
+#include "base/basic_types.h"
 #include "core/pixel.h"
 #include "core/spectrum.h"
 
