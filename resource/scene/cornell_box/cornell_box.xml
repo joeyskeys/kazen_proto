@@ -72,6 +72,6 @@
     </Lights>
 
     <EmbreeAccelerator type="bvh" />
-    <NormalIntegrator type="pt" />
+    <PathIntegrator type="pt" />
 
 </Scene>

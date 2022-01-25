@@ -22,8 +22,7 @@ int main() {
     {
 #endif
 
-        OSL::PerThreadInfo *thread_info = scene.shadingsys->create_thread_info();
-        OSL::ShadingContext *ctx = scene.shadingsys->get_context(thread_info);
+        scene.setup_osl();
 
 #ifdef WITH_TBB
         for (int t = r.begin(); t != r.end(); ++t) {
@@ -58,8 +57,7 @@ int main() {
             std::cout << "tile duration : " << tile_duration.count() << " ms\n";
         }
 
-        scene.shadingsys->release_context(ctx);
-        scene.shadingsys->destroy_thread_info(thread_info);
+        scene.clear_osl();
 
 #ifdef WITH_TBB
     });

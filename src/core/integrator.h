@@ -27,7 +27,9 @@ public:
     Film*               film_ptr;
     std::vector<std::unique_ptr<Light>>* lights;
 
-    OSL::ShadingSystem*  shadingsys;
+    OSL::PerThreadInfo* thread_info;
+    OSL::ShadingContext* ctx;
+    OSL::ShadingSystem* shadingsys;
     //KazenRenderServices rend;
     std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
 };
@@ -46,4 +48,13 @@ public:
     AmbientOcclusionIntegrator(Camera* cam_ptr, Film* flm_ptr);
 
     RGBSpectrum Li(const Ray& r) const override;
+};
+
+class PathIntegrator : public Integrator {
+public:
+    PathIntegrator();
+    PathIntegrator(Camera* camera_ptr, Film* flm_ptr);
+
+    RGBSpectrum Li(const Ray& r) const override;
+
 };
