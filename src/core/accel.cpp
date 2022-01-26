@@ -295,13 +295,12 @@ bool EmbreeAccel::intersect(const Ray& r, Intersection& isect) const {
     rtcIntersect1(m_scene, &isect_ctx, &rayhit);
     if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
         isect.ray_t = rayhit.ray.tfar;
+        isect.position = r.at(isect.ray_t);
         isect.normal = Vec3f(rayhit.hit.Ng_x, rayhit.hit.Ng_y, rayhit.hit.Ng_z).normalized();
         isect.uv = Vec2f(rayhit.hit.u, rayhit.hit.v);
-
-        isect.position = r.at(isect.ray_t);
-        auto hitable = hitables->at(rayhit.hit.geomID);
-        //hitable->post_hit(isect);
-
+        isect.shape = reinterpret_cast<Shape*>(hitables->at(rayhit.hit.geomID).get());
+        isect.shape->post_hit(isect);
+    
         return true;
     }
 

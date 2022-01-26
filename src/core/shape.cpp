@@ -135,6 +135,20 @@ void Sphere::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     pdf = 1;
 }
 
+void Sphere::post_hit(Intersection& isect) const {
+    auto up_in_world = local_to_world.apply(Vec3f(0.f, 1.f, 0.f), true);
+    auto forward_in_world = local_to_world.apply(Vec3f(0.f, 0.f, -1.f), true);
+    if (isect.normal == up_in_world)
+        isect.tangent = normalize(forward_in_world.cross(isect.normal));
+    else
+        isect.tangent = normalize(up_in_world.cross(isect.normal));
+
+    isect.bitangent = normalize(isect.tangent.cross(isect.normal));
+
+    isect.is_light = is_light;
+    isect.shader_name = shader_name;
+}
+
 void Sphere::print_info() const {
     std::cout << fmt::format("shape Sphere : radius {}", center_n_radius.w()) << std::endl;
     print_bound();
@@ -240,6 +254,13 @@ void Quad::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     n = local_to_world.apply_normal(n);
 
     pdf = 1;
+}
+
+void Quad::post_hit(Intersection& isect) const {
+    isect.tangent = local_to_world.apply(horizontal_vec, true);
+    isect.bitangent = local_to_world.apply(vertical_vec, true);
+    isect.is_light = is_light;
+    isect.shader_name = shader_name;
 }
 
 void Quad::print_info() const {
@@ -377,6 +398,14 @@ void Triangle::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     pdf = 1;
 }
 
+void Triangle::post_hit(Intersection& isect) const {
+    Vec3f v1v0 = verts[1] - verts[0];
+    isect.tangent = local_to_world.apply(v1v0.normalized(), true);
+    isect.bitangent = cross(isect.tangent, isect.normal);
+    isect.is_light = is_light;
+    isect.shader_name = shader_name;
+}
+
 void Triangle::print_info() const {
     std::cout << fmt::format("shape Triangle : verts {} {} {}", verts[0], verts[1], verts[2])
         << std::endl;
@@ -455,6 +484,10 @@ void TriangleMesh::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     p = verts[0] + alpha * (verts[1] - verts[0]) + beta * (verts[2] - verts[0]);
     n = cross(verts[1] - verts[0], verts[2] - verts[0]).normalized();
     pdf = 1;
+}
+
+void TriangleMesh::post_hit(Intersection& isect) const {
+
 }
 
 void TriangleMesh::print_info() const {
