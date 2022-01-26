@@ -23,21 +23,8 @@ public:
     
     void parse_from_file(fs::path file_path);
 
-    inline void setup_osl() {
-        integrator->thread_info = shadingsys->create_thread_info();
-        integrator->ctx = shadingsys->get_context(integrator->thread_info);
-    }
-
-    inline void clear_osl() {
-        shadingsys->release_context(integrator->ctx);
-        shadingsys->destroy_thread_info(integrator->thread_info);
-    }
-
 private:
     bool process_shader_node(const pugi::xml_node& node, OSL::ShaderGroupRef shader_group);
-
-public:
-    std::unique_ptr<Integrator> integrator;
 
 public:
     // Make these fields public for now..
@@ -46,6 +33,8 @@ public:
     std::unique_ptr<Accelerator> accelerator;
     std::vector<std::shared_ptr<Hitable>> objects;
     std::vector<std::unique_ptr<Light>> lights;
+    //std::unique_ptr<Integrator> integrator;
+    IntegratorFactory integrator_fac;
 
     // OSL related
     KazenRenderServices rend;

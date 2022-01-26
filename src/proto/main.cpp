@@ -5,7 +5,7 @@
 
 int main() {
     Scene scene;
-    scene.parse_from_file("../resource/scene/embree_test/cornell_box.xml");
+    scene.parse_from_file("../resource/scene/cornell_box/cornell_box.xml");
 
     //scene.integrator->render();
     constexpr static int sample_count = 10;
@@ -22,8 +22,6 @@ int main() {
     {
 #endif
 
-        scene.setup_osl();
-
 #ifdef WITH_TBB
         for (int t = r.begin(); t != r.end(); ++t) {
 #else
@@ -32,6 +30,8 @@ int main() {
 
             auto tile_start = get_time();
             Tile& tile = scene.film->tiles[t];
+            auto integrator_ptr = scene.integrator_fac.create(scene.camera.get(), scene.film.get());
+            integrator_ptr->setup(&scene);
 
             for (int j = 0; j < tile.height; j++) {
                 for (int i = 0; i < tile.width; i++) {
@@ -42,7 +42,7 @@ int main() {
                         uint y = tile.origin_y + j;
 
                         auto ray = scene.camera->generate_ray(x, y);
-                        pixel_radiance += scene.integrator->Li(ray);
+                        pixel_radiance += integrator_ptr->Li(ray);
                         if (!pixel_radiance.is_zero())
                             hit = true;
                     }
@@ -56,8 +56,6 @@ int main() {
             auto tile_duration = std::chrono::duration_cast<std::chrono::milliseconds>(tile_end - tile_start);
             std::cout << "tile duration : " << tile_duration.count() << " ms\n";
         }
-
-        scene.clear_osl();
 
 #ifdef WITH_TBB
     });

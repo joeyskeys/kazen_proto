@@ -360,21 +360,22 @@ void Scene::parse_from_file(fs::path filepath) {
             */
 
             case ENormalIntegrator: {
-                integrator = std::make_unique<NormalIntegrator>(camera.get(),
-                    film.get());
-                //integrator->shadingsys = shadingsys.get();
-                //integrator->shaders = &shaders;
+                //integrator = std::make_unique<NormalIntegrator>(camera.get(),
+                    //film.get());
+                integrator_fac.create_functor = &NormalIntegrator::create;
                 break;
             }
 
             case EAmbientOcclusionIntegrator: {
-                integrator = std::make_unique<AmbientOcclusionIntegrator>(camera.get(),
-                    film.get());
+                //integrator = std::make_unique<AmbientOcclusionIntegrator>(camera.get(),
+                    //film.get());
+                integrator_fac.create_functor = &AmbientOcclusionIntegrator::create;
                 break;
             }
 
             case EPathIntegrator: {
-                integrator = std::make_unique<PathIntegrator>(camera.get(), film.get());
+                //integrator = std::make_unique<PathIntegrator>(camera.get(), film.get());
+                integrator_fac.create_functor = &PathIntegrator::create;
                 break;
             }
 
@@ -510,6 +511,6 @@ void Scene::parse_from_file(fs::path filepath) {
     // Construct acceleration structure after all data is parsed
     camera->init();
     accelerator->build();
-    integrator->accel_ptr = accelerator.get();
-    integrator->lights = &lights;
+    //integrator->accel_ptr = accelerator.get();
+    //integrator->lights = &lights;
 }
