@@ -208,7 +208,7 @@ Scene::Scene()
     : film(std::make_unique<Film>())
     , camera(std::make_unique<Camera>())
     , accelerator(nullptr)
-    , shadingsys(std::make_unique<OSL::ShadingSystem>(&rend, nullptr, &errhandler))
+    , shadingsys(std::make_unique<OSL::ShadingSystem>(&rend, nullptr, nullptr))
 {
     camera->film = film.get();
     register_closures(shadingsys.get());

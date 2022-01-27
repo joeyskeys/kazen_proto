@@ -90,7 +90,7 @@ void PathIntegrator::setup(Scene* scene) {
 }
 
 RGBSpectrum PathIntegrator::Li(const Ray& r) const {
-    RGBSpectrum Li{0}, throughput{0};
+    RGBSpectrum Li{0}, throughput{1};
     float eta = 1.f;
     float bsdf_weight = 1.f;
 
@@ -115,7 +115,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
 
         // Check if hit light
         if (isect.is_light) {
-            Li += bsdf_weight * throughput * isect.shape->light->eval(isect, (ray.origin - isect.position).normalized(), isect.normal);
+            Li += bsdf_weight * throughput * ret.Le;
+            break;
         }
 
         // Russian roulette
@@ -125,6 +126,9 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
                 break;
             throughput /= prob;
         }
+
+        // Build internal pdfs
+        ret.bsdf.compute_pdfs(sg, throughput, depth >= 3);
 
         // Light sampling
         int sampled_light_idx = randomf() * 0.99999 * lights->size();

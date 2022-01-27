@@ -277,9 +277,9 @@ void Quad::get_verts(void* vs) const {
     auto right_bottom = center + horizontal_vec - vertical_vec;
     auto verts = reinterpret_cast<Vec3f*>(vs);
     verts[0] = right_top;
-    verts[1] = left_top;
+    verts[1] = right_bottom;
     verts[2] = left_bottom;
-    verts[3] = right_bottom;
+    verts[3] = left_top;
 }
 
 static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, Intersection& isect) {
