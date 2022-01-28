@@ -13,11 +13,18 @@ public:
     virtual bool intersect(const Ray& r, float& t) const = 0;
 
     inline bool occluded(const Vec3f& p1, const Vec3f& p2) const {
-        auto vec_p1p2 = p2 - p1;
-        Ray r(p1, vec_p1p2);
+        auto vec_p1p2 = (p2 - p1).normalized();
+        Ray r(p1 + vec_p1p2 * 0.00001f, vec_p1p2);
         float ray_t;
 
         if (intersect(r, ray_t) && ray_t < vec_p1p2.length())
+            return true;
+        return false;
+    }
+
+    inline bool occluded(const Ray& r, size_t& dest_geom_id) const {
+        Intersection isect;
+        if (!intersect(r, isect) || isect.geom_id != dest_geom_id)
             return true;
         return false;
     }

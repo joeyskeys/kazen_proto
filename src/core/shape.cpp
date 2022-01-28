@@ -19,7 +19,7 @@ static inline AABBf bbox_of_triangle(const Vec3f& v0, const Vec3f& v1, const Vec
 }
 
 void Shape::print_bound() const {
-    std::cout << "id : " << obj_id << std::endl;
+    std::cout << "id : " << geom_id << std::endl;
     Hitable::print_bound();
 }
 
@@ -67,7 +67,7 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     isect.bitangent = normalize(isect.tangent.cross(isect.normal));
     isect.is_light = is_light;
     isect.shape = const_cast<Sphere*>(this);
-    isect.obj_id = obj_id;
+    isect.geom_id = geom_id;
 
     // Transform back to world space
     isect = local_to_world.apply(isect);
@@ -147,6 +147,7 @@ void Sphere::post_hit(Intersection& isect) const {
 
     isect.is_light = is_light;
     isect.shader_name = shader_name;
+    isect.geom_id = geom_id;
 }
 
 void Sphere::print_info() const {
@@ -202,6 +203,7 @@ bool Quad::intersect(const Ray& r, Intersection& isect) const {
     isect.is_light = is_light;
     isect.shape = const_cast<Quad*>(this);
     isect.shader_name = shader_name;
+    isect.geom_id = geom_id;
     return true;
 }
 
@@ -261,6 +263,7 @@ void Quad::post_hit(Intersection& isect) const {
     isect.bitangent = local_to_world.apply(vertical_vec, true);
     isect.is_light = is_light;
     isect.shader_name = shader_name;
+    isect.geom_id = geom_id;
 }
 
 void Quad::print_info() const {
@@ -324,10 +327,10 @@ bool Triangle::intersect(const Ray& r, Intersection& isect) const {
 
     auto ret = moller_trumbore_intersect(local_r, verts, isect);
     if (ret && !isect.backface) {
-        isect.obj_id = obj_id;
         isect = local_to_world.apply(isect);
         isect.shader_name = shader_name;
         isect.is_light = is_light;
+        isect.geom_id = geom_id;
         isect.shape = const_cast<Triangle*>(this);
         return true;
     }
@@ -361,7 +364,6 @@ bool Triangle::intersect(const Ray& r, float& t) const {
     auto local_r = world_to_local.apply(r);
     return moller_trumbore_intersect(local_r, verts, t);
 }
-
 
 AABBf Triangle::bbox() const {
     auto v0_in_world = local_to_world.apply(verts[0]);
@@ -404,6 +406,7 @@ void Triangle::post_hit(Intersection& isect) const {
     isect.bitangent = cross(isect.tangent, isect.normal);
     isect.is_light = is_light;
     isect.shader_name = shader_name;
+    isect.geom_id = geom_id;
 }
 
 void Triangle::print_info() const {
@@ -426,9 +429,9 @@ bool TriangleMesh::intersect(const Ray& r, Intersection& isect) const {
         tri[2] = verts[idx[2]];
         hit = moller_trumbore_intersect(local_r, tri, isect);
         if (hit && !isect.backface) {
-            isect.obj_id = 2;
             isect.shader_name = shader_name;
             isect.is_light = is_light;
+            isect.geom_id = geom_id;
             isect.shape = const_cast<TriangleMesh*>(this);
             isect = local_to_world.apply(isect);
             return true;

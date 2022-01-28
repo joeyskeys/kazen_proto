@@ -383,7 +383,7 @@ void Scene::parse_from_file(fs::path filepath) {
                 break;
 
             case ESphere: {
-                auto obj_ptr = std::make_shared<Sphere>();
+                auto obj_ptr = std::make_shared<Sphere>(objects.size());
                 setup_shape(node, obj_ptr);
 
                 // Here we let the accelerator do the job which requires
@@ -398,14 +398,14 @@ void Scene::parse_from_file(fs::path filepath) {
             }
 
             case ETriangle: {
-                auto obj_ptr = std::make_shared<Triangle>();
+                auto obj_ptr = std::make_shared<Triangle>(objects.size());
                 setup_shape(node, obj_ptr);
                 accelerator->add_triangle(obj_ptr);
                 break;
             }
 
             case EQuad: {
-                auto obj_ptr = std::make_shared<Quad>();
+                auto obj_ptr = std::make_shared<Quad>(objects.size());
                 setup_shape(node, obj_ptr);
                 accelerator->add_quad(obj_ptr);
                 break;

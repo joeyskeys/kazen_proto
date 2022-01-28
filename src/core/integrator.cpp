@@ -150,6 +150,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
         float bsdf_pdf;
         auto bsdf_albedo = ret.bsdf.sample(sg, random3f(), isect.wi, bsdf_pdf);
         throughput *= bsdf_albedo;
+        if (throughput.is_zero())
+            break;
         // This might have problem
         eta *= 0.95f;
 

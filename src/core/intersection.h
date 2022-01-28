@@ -27,7 +27,7 @@ struct Intersection {
     bool  backface;
     bool  is_light;
     ShapePtr shape;
-    uint  obj_id;
+    size_t geom_id;
     std::string shader_name;
     OSL::ShaderGroupRef shader;
 };

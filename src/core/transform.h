@@ -106,7 +106,7 @@ public:
         ret.ray_t = isect.ray_t;
         ret.backface = isect.backface;
         ret.is_light = isect.is_light;
-        ret.obj_id = isect.obj_id;
+        ret.geom_id = isect.geom_id;
         ret.shader_name = isect.shader_name;
 
         return ret;

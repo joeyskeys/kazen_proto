@@ -16,7 +16,6 @@ public:
 
     inline size_t size() const { return hitables->size(); }
     void add_hitable(std::shared_ptr<Hitable>&& h);
-    void add_hitables(const std::vector<std::shared_ptr<Hitable>>& hs);
 
     virtual void add_sphere(std::shared_ptr<Sphere>& s);
     virtual void add_quad(std::shared_ptr<Quad>& q);

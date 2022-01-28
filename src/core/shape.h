@@ -14,16 +14,16 @@ class Light;
 
 class Shape : public Hitable, public DictLike {
 public:
-    Shape()
+    Shape(size_t id)
         : Hitable(Transform())
-        , obj_id(0)
+        , geom_id(id)
     {}
 
     Shape(const Transform& l2w, std::string m, bool is_l, const uint& id)
         : Hitable(l2w)
         , shader_name(m)
         , is_light(is_l)
-        , obj_id(id)
+        , geom_id(id)
     {}
 
     virtual void sample(Vec3f& p, Vec3f& n, float& pdf) const = 0;
@@ -38,13 +38,13 @@ public:
     bool        is_light = false;
     //std::weak_ptr<Light> light;
     Light*      light;
-    uint        obj_id;
+    size_t      geom_id;
 };
 
 class Sphere : public Shape {
 public:
-    Sphere()
-        : Shape()
+    Sphere(size_t id)
+        : Shape(id)
         , center_n_radius(Vec4f(0, 0, 0, 1))
     {}
 
@@ -71,8 +71,8 @@ public:
 
 class Quad : public Shape {
 public:
-    Quad()
-        : Shape()
+    Quad(size_t id)
+        : Shape(id)
         , center(Vec3f{0, 0, 0})
         , dir(Vec3f{0, 1, 0})
         , vertical_vec(Vec3f{0, 0, 1})
@@ -117,8 +117,8 @@ public:
 
 class Triangle : public Shape {
 public:
-    Triangle()
-        : Shape()
+    Triangle(size_t id)
+        : Shape(id)
     {
         verts[0] = Vec3f(0, 0, 0);
         verts[1] = Vec3f(1, 0, 0);

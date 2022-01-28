@@ -35,12 +35,11 @@ RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, f
     geometry->sample(p, n, pdf);
 
     // Visibility test
-    if (scene->occluded(p, isect.position))
+    auto shadow_ray = Ray(isect.position, (p - isect.position).normalized());
+    if (scene->occluded(shadow_ray, geometry->geom_id))
         return RGBSpectrum{0.f, 0.f, 0.f};
     
-    light_dir = (isect.position - p).normalized();
-
-    return eval(isect, light_dir, n);
+    return eval(isect, -shadow_ray.direction, n);
 }
 
 RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& n) const {

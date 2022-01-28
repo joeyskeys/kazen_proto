@@ -9,13 +9,6 @@ void Accelerator::add_hitable(std::shared_ptr<Hitable>&& h) {
     hitables->emplace_back(h);
 }
 
-void Accelerator::add_hitables(const std::vector<std::shared_ptr<Hitable>>& hs) {
-    for (auto& h : hs) {
-        bound = bound_union(bound, h->bbox());
-        hitables->emplace_back(h);
-    }
-}
-
 bool Accelerator::intersect(const Ray& r, Intersection& isect) const {
     bool hit = false;
     Intersection tmp_sect;
@@ -298,6 +291,7 @@ bool EmbreeAccel::intersect(const Ray& r, Intersection& isect) const {
         isect.position = r.at(isect.ray_t);
         isect.normal = Vec3f(rayhit.hit.Ng_x, rayhit.hit.Ng_y, rayhit.hit.Ng_z).normalized();
         isect.uv = Vec2f(rayhit.hit.u, rayhit.hit.v);
+        isect.geom_id = rayhit.hit.geomID;
         isect.shape = reinterpret_cast<Shape*>(hitables->at(rayhit.hit.geomID).get());
         isect.shape->post_hit(isect);
     
