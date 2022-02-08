@@ -49,9 +49,9 @@ static inline void power_heuristic(RGBSpectrum* w, float* pdf, RGBSpectrum ow, f
     assert(*pdf >= 0);
 }
 
-class CompositeBSDF {
+class CompositeClosure {
 public:
-    CompositeBSDF()
+    CompositeClosure()
         : bsdf_count(0)
         , byte_count(0)
     {}
@@ -69,7 +69,7 @@ public:
         return true;
     }
 
-    void compute_pdfs(const OSL::ShaderGlobals& sg, const RGBSpectrum& beta, bool cut_off) {
+    virtual void compute_pdfs(const OSL::ShaderGlobals& sg, const RGBSpectrum& beta, bool cut_off) {
         float w = 1.f / beta.sum();
         float weight_sum = 0;
         for (int i = 0; i < bsdf_count; i++) {
@@ -89,50 +89,8 @@ public:
         }
     }
 
-    RGBSpectrum eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const {
-        RGBSpectrum ret;
-        pdf = 0;
-        for (int i = 0; i < bsdf_count; i++) {
-            float bsdf_pdf = 0;
-            //ret += weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
-            //pdf += bsdf_pdf * pdfs[i];
-            RGBSpectrum bsdf_weight = weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
-            power_heuristic(&ret, &pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
-        }
-
-        return ret;
-    }
-
-    RGBSpectrum sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const {
-        float acc = 0;
-        RGBSpectrum ret;
-
-        /*
-         * The mixture bsdf implementation differs between renderers.
-         * In Mitsuba, the sampled component need to multiply an extra bsdf pdf.
-         * In testrender of OSL, each compoenent divides an extra tech pdf.
-         * Code here removes the extra pdf multiply/divide..
-         * TODO : More tests and analytical expected value deduce.
-         */
-
-        // An extra 0.9999999 to ensure sampled index don't overflow
-        uint idx = sample[0] * 0.9999999f * bsdf_count;
-        ret = weights[idx] * (bsdfs[idx]->sample(sg, sample, wi, pdf) / pdfs[idx]);
-        pdf *= pdfs[idx];
-
-        // Add up contributions from other bsdfs
-        for (int i = 0; i < bsdf_count; i++) {
-            if (i == idx) continue;
-            //float other_pdf = 0;
-            //ret += weights[i] * bsdfs[i]->eval(sg, wi, other_pdf);
-            //pdf += other_pdf * pdfs[i];
-            float bsdf_pdf = 0;
-            RGBSpectrum bsdf_weight = weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
-            power_heuristic(&ret, &pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
-        }
-
-        return ret;
-    }
+    virtual RGBSpectrum sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const;
+    virtual RGBSpectrum eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const;
 
 private:
     uint bsdf_count, byte_count;
@@ -142,9 +100,26 @@ private:
     std::array<char, max_size> pool;
 };
 
+class SurfaceCompositeClosure : public CompositeClosure {
+public:
+    RGBSpectrum sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override;
+    RGBSpectrum eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const override;
+};
+
+class EmissionCompositeClosure : public CompositeClosure {
+public:
+    RGBSpectrum sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override;
+    RGBSpectrum eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const override;
+};
+
+class BackgroundCompositeClosure : public CompositeClosure {
+    RGBSpectrum sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override;
+    RGBSpectrum eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const override;
+};
+
 struct ShadingResult {
-    RGBSpectrum Le;
-    CompositeBSDF bsdf;
+    EmissionCompositeClosure emission;
+    SurfaceCompositeClosure surface;
 };
 
 void register_closures(OSL::ShadingSystem *shadingsys);

@@ -54,8 +54,6 @@ public:
     float sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override {
         wi = sample_hemisphere();
         wi = tangent_to_world(wi, sg.N, sg.dPdu, sg.dPdv);
-        //pdf = std::max(dot(wi, params.N), 0.f) * std::numbers::inv_pi_v;
-        // dot(wi, params.N) becomes available after a dot overload is added
         pdf = std::max(dot(wi, params.N), 0.f) * boost::math::constants::one_div_pi<float>();
         return 1.f;
     }
@@ -114,11 +112,17 @@ public:
 
     Emission() {}
 
-    float eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const override
-    { return 0.f; }
+    float eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const override {
+        pdf = std::max(dot(wi, static_cast<Vec3f>(params.N)), 0.f) * boost::math::constants::one_div_pi<float>();
+        return 1.f;
+    }
 
-    float sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override
-    { return 0.f; }
+    float sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override {
+        wi = sample_hemisphere();
+        wi = tangent_to_world(wi, sg.N, sg.dPdu, sg.dPdv);
+        pdf = std::max(dot(wi, params.N), 0.f) * boost::math::constants::one_div_pi<float>();
+        return 1.f;
+    }
 };
 
 namespace
@@ -132,6 +136,51 @@ namespace
 void register_closures(OSL::ShadingSystem *shadingsys) {
     register_closure<Diffuse>(*shadingsys);
     register_closure<Emission>(*shadingsys);
+}
+
+RGBSpectrum SurfaceCompositeClosure::sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const {
+    float acc = 0;
+    RGBSpectrum ret;
+
+    /*
+        * The mixture bsdf implementation differs between renderers.
+        * In Mitsuba, the sampled component need to multiply an extra bsdf pdf.
+        * In testrender of OSL, each compoenent divides an extra tech pdf.
+        * Code here removes the extra pdf multiply/divide..
+        * TODO : More tests and analytical expected value deduce.
+        */
+
+    // An extra 0.9999999 to ensure sampled index don't overflow
+    uint idx = sample[0] * 0.9999999f * bsdf_count;
+    ret = weights[idx] * (bsdfs[idx]->sample(sg, sample, wi, pdf) / pdfs[idx]);
+    pdf *= pdfs[idx];
+
+    // Add up contributions from other bsdfs
+    for (int i = 0; i < bsdf_count; i++) {
+        if (i == idx) continue;
+        //float other_pdf = 0;
+        //ret += weights[i] * bsdfs[i]->eval(sg, wi, other_pdf);
+        //pdf += other_pdf * pdfs[i];
+        float bsdf_pdf = 0;
+        RGBSpectrum bsdf_weight = weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
+        power_heuristic(&ret, &pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
+    }
+
+    return ret;
+}
+
+RGBSpectrum SurfaceCompositeClosure::eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const {
+    RGBSpectrum ret;
+    pdf = 0;
+    for (int i = 0; i < bsdf_count; i++) {
+        float bsdf_pdf = 0;
+        //ret += weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
+        //pdf += bsdf_pdf * pdfs[i];
+        RGBSpectrum bsdf_weight = weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
+        power_heuristic(&ret, &pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
+    }
+
+    return ret;
 }
 
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only) {
@@ -156,13 +205,20 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
             const OSL::ClosureComponent *comp = closure->as_comp();
             cw = w * comp->w;
             
+            /*
             if (comp->id == EmissionID) {
                 ret.Le += cw;
             }
             else if (!light_only) {
+            */
+            
+            if (!light_only) {
                 bool status = false;
                 switch (comp->id) {
                     case DiffuseID:        status = ret.bsdf.add_bsdf<Diffuse, DiffuseParams>(cw, *comp->as<DiffuseParams>());
+                        break;
+
+                    case EmissionID:       status = ret.bsdf.add_bsdf<Emission, EmptyParams>(cw, *comp->as<EmptyParams>());
                         break;
                 }
                 OSL_ASSERT(status && "Invalid closure invoked");
