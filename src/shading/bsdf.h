@@ -101,20 +101,14 @@ private:
 };
 
 class SurfaceCompositeClosure : public CompositeClosure {
-public:
-    RGBSpectrum sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override;
-    RGBSpectrum eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const override;
+
 };
 
 class EmissionCompositeClosure : public CompositeClosure {
-public:
-    RGBSpectrum sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override;
-    RGBSpectrum eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const override;
+
 };
 
 class BackgroundCompositeClosure : public CompositeClosure {
-    RGBSpectrum sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override;
-    RGBSpectrum eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const override;
 };
 
 struct ShadingResult {

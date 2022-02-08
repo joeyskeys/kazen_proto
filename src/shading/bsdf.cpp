@@ -125,20 +125,7 @@ public:
     }
 };
 
-namespace
-{
-    template <typename ClosureType>
-    void register_closure(OSL::ShadingSystem& shadingsys) {
-        ClosureType::register_closure(shadingsys);
-    }
-}
-
-void register_closures(OSL::ShadingSystem *shadingsys) {
-    register_closure<Diffuse>(*shadingsys);
-    register_closure<Emission>(*shadingsys);
-}
-
-RGBSpectrum SurfaceCompositeClosure::sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const {
+RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const {
     float acc = 0;
     RGBSpectrum ret;
 
@@ -169,7 +156,7 @@ RGBSpectrum SurfaceCompositeClosure::sample(const OSL::ShaderGlobals& sg, const 
     return ret;
 }
 
-RGBSpectrum SurfaceCompositeClosure::eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const {
+RGBSpectrum CompositeClosure::eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const {
     RGBSpectrum ret;
     pdf = 0;
     for (int i = 0; i < bsdf_count; i++) {
@@ -181,6 +168,19 @@ RGBSpectrum SurfaceCompositeClosure::eval(const OSL::ShaderGlobals& sg, const Ve
     }
 
     return ret;
+}
+
+namespace
+{
+    template <typename ClosureType>
+    void register_closure(OSL::ShadingSystem& shadingsys) {
+        ClosureType::register_closure(shadingsys);
+    }
+}
+
+void register_closures(OSL::ShadingSystem *shadingsys) {
+    register_closure<Diffuse>(*shadingsys);
+    register_closure<Emission>(*shadingsys);
 }
 
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only) {
@@ -205,20 +205,13 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
             const OSL::ClosureComponent *comp = closure->as_comp();
             cw = w * comp->w;
             
-            /*
-            if (comp->id == EmissionID) {
-                ret.Le += cw;
-            }
-            else if (!light_only) {
-            */
-            
             if (!light_only) {
                 bool status = false;
                 switch (comp->id) {
-                    case DiffuseID:        status = ret.bsdf.add_bsdf<Diffuse, DiffuseParams>(cw, *comp->as<DiffuseParams>());
+                    case DiffuseID:        status = ret.surface.add_bsdf<Diffuse, DiffuseParams>(cw, *comp->as<DiffuseParams>());
                         break;
 
-                    case EmissionID:       status = ret.bsdf.add_bsdf<Emission, EmptyParams>(cw, *comp->as<EmptyParams>());
+                    case EmissionID:       status = ret.emission.add_bsdf<Emission, EmptyParams>(cw, *comp->as<EmptyParams>());
                         break;
                 }
                 OSL_ASSERT(status && "Invalid closure invoked");

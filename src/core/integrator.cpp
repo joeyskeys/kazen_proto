@@ -115,8 +115,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
 
         // Check if hit light
         if (isect.is_light) {
-            Li += bsdf_weight * throughput * ret.Le;
-            break;
+            ret.emission.compute_pdfs(sg, throughput, depth >= 3);
+            Li += throughput * ret.emission.sample(sg, random3f(), isect.wi, light_pdf);
         }
 
         // Russian roulette
@@ -128,30 +128,33 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
         }
 
         // Build internal pdfs
-        ret.bsdf.compute_pdfs(sg, throughput, depth >= 3);
+        ret.surface.compute_pdfs(sg, throughput, depth >= 3);
 
-        // Light sampling
-        int sampled_light_idx = randomf() * 0.99999 * lights->size();
-        auto light_ptr = lights->at(sampled_light_idx).get();
-        Vec3f light_dir;
-        float light_pdf;
-        // We'are evenly sampling the lights
-        auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr) / lights->size();
-        light_pdf = light_ptr->pdf(isect);
-        if (!Ls.is_zero()) {
-            float cos_theta_v = dot(light_dir, isect.normal);
-            float bsdf_pdf;
-            auto f = ret.bsdf.eval(sg, light_dir, bsdf_pdf);
-            float light_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
-            Li += throughput * Ls * f * cos_theta_v * light_weight;
+        // Sample light for direct lighting
+        if (lights->size() > 1) {
+            // Unify light sampling and OSL light shader..
+            int sampled_light_idx = randomf() * 0.99999 * lights->size();
+            auto light_ptr = lights->at(sampled_light_idx).get();
+            Vec3f light_dir;
+            float light_pdf;
+            // We'are evenly sampling the lights
+            auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr) / lights->size();
+            light_pdf = light_ptr->pdf(isect);
+            if (!Ls.is_zero()) {
+                float cos_theta_v = dot(light_dir, isect.normal);
+                float bsdf_pdf;
+                auto f = ret.bsdf.eval(sg, light_dir, bsdf_pdf);
+                float light_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
+                Li += throughput * Ls * f * cos_theta_v * light_weight;
+            }
         }
 
-        // BSDF sampling
+        // Sample BSDF for indirect lighting
         float bsdf_pdf;
         auto bsdf_albedo = ret.bsdf.sample(sg, random3f(), isect.wi, bsdf_pdf);
         throughput *= bsdf_albedo;
         if (throughput.is_zero())
-            break;
+            return Li;
         // This might have problem
         eta *= 0.95f;
 
