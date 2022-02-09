@@ -132,16 +132,30 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
      * *********************************************/
 
     RGBSpectrum Li{0}, throughput{1};
+    float indirect_weight = 1.f;
     float eta = 1.f;
 
     Intersection isect;
     Ray ray(r);
-    if (!accel_ptr->intersect(ray, isect))
-        return Li;
 
     int depth = 1;
     constexpr int max_depth = 6;
     constexpr int min_depth = 3;
+
+    for (int i = 0; i < max_depth; ++i) {
+        if (accel_ptr->intersect(ray, isect)) {
+            // 1. Le calculation
+
+            // 2. L_direct calculation by sampling light
+
+            // 3. L_indirect calculation by sampling material
+        }
+    }
+
+    /*
+    if (!accel_ptr->intersect(ray, isect))
+        return Li;
+
     while (depth <= max_depth) {
         OSL::ShaderGlobals sg;
         KazenRenderServices::globals_from_hit(sg, ray, isect);
@@ -214,6 +228,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
 
         depth++;
     }
+    */
     
     return Li;
 }
