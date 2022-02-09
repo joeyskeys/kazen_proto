@@ -26,6 +26,7 @@ struct Intersection {
     float ray_t = std::numeric_limits<float>::max();
     bool  backface;
     bool  is_light;
+    uint  light_id;
     ShapePtr shape;
     size_t geom_id;
     std::string shader_name;

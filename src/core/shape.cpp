@@ -72,6 +72,9 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     // Transform back to world space
     isect = local_to_world.apply(isect);
     isect.shader_name = shader_name;
+
+    if (is_light)
+        isect.light_id = light->light_id;
     
     return true;
 }
@@ -148,6 +151,9 @@ void Sphere::post_hit(Intersection& isect) const {
     isect.is_light = is_light;
     isect.shader_name = shader_name;
     isect.geom_id = geom_id;
+
+    if (is_light)
+        isect.light_id = light->light_id;
 }
 
 void Sphere::print_info() const {
@@ -204,6 +210,10 @@ bool Quad::intersect(const Ray& r, Intersection& isect) const {
     isect.shape = const_cast<Quad*>(this);
     isect.shader_name = shader_name;
     isect.geom_id = geom_id;
+
+    if (is_light)
+        isect.light_id = light->light_id;
+
     return true;
 }
 
@@ -264,6 +274,9 @@ void Quad::post_hit(Intersection& isect) const {
     isect.is_light = is_light;
     isect.shader_name = shader_name;
     isect.geom_id = geom_id;
+
+    if (is_light)
+        isect.light_id = light->light_id;
 }
 
 void Quad::print_info() const {
@@ -332,6 +345,10 @@ bool Triangle::intersect(const Ray& r, Intersection& isect) const {
         isect.is_light = is_light;
         isect.geom_id = geom_id;
         isect.shape = const_cast<Triangle*>(this);
+
+        if (is_light)
+            isect.light_id = light->light_id;
+
         return true;
     }
 
@@ -407,6 +424,9 @@ void Triangle::post_hit(Intersection& isect) const {
     isect.is_light = is_light;
     isect.shader_name = shader_name;
     isect.geom_id = geom_id;
+
+    if (is_light)
+        isect.light_id = light->light_id;
 }
 
 void Triangle::print_info() const {

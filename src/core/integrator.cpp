@@ -90,9 +90,49 @@ void PathIntegrator::setup(Scene* scene) {
 }
 
 RGBSpectrum PathIntegrator::Li(const Ray& r) const {
+    /* *********************************************
+     * The rendering equation is:
+     *           /
+     * Lo = Le + | f * Li * cos dw             (1)
+     *           /hemisphere
+     * 
+     * Here with MIS and NEE, the equation is
+     * rewrite as:
+     * 
+     * Lo = Le + mis_weight_1 * L_direct       (2)
+     *      + mis_weight_2 * L_indirect
+     * 
+     * In the context of path tracing, the equation
+     * is:
+     * 
+     * Lo = Le1 + w_1_d * L_1_d + w_1_i * f1 * (3)
+     *      (Le2 + w_2_d * L_2_d + f2 *
+     *      (Le3 + ...))
+     * 
+     * In each iteration, we follow the equation 2
+     * by seperating the procedural into 3 parts:
+     * 
+     * 1. Le calculation if we hit emissive object
+     *    (delta light cannot be hit but can be
+     *    sampled);
+     * 2. L_direct calculation by sampling a light
+     *    (or all) and get its contribution;
+     * 3. L_indirect calculation by sampling material,
+     *    update throughtput and forward to next
+     *    iteration.
+     * 
+     * And:
+     * 
+     * 1. L_direct and L_indirect could be clipped off
+     *    in deeper iterations by Russian Roulette;
+     * 2. throughtput is used to represent the accumulated
+     *    effect of each hit event a.k.a "f" in the equations
+     *    with initial value 1.
+     * 
+     * *********************************************/
+
     RGBSpectrum Li{0}, throughput{1};
     float eta = 1.f;
-    float bsdf_weight = 1.f;
 
     Intersection isect;
     Ray ray(r);
@@ -101,7 +141,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
 
     int depth = 1;
     constexpr int max_depth = 6;
-    //while (true) {
+    constexpr int min_depth = 3;
     while (depth <= max_depth) {
         OSL::ShaderGlobals sg;
         KazenRenderServices::globals_from_hit(sg, ray, isect);
@@ -113,14 +153,14 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
         bool last_bounce = depth == max_depth;
         process_closure(ret, sg.Ci, RGBSpectrum{1}, last_bounce);
 
-        // Check if hit light
+        // 1. Le calculation
         if (isect.is_light) {
             ret.emission.compute_pdfs(sg, throughput, depth >= 3);
             Li += throughput * ret.emission.sample(sg, random3f(), isect.wi, light_pdf);
         }
 
         // Russian roulette
-        if (depth >= 3) {
+        if (depth >= min_depth) {
             auto prob = std::min(throughput.max_component() * eta * eta, 0.99f);
             if (prob < random())
                 break;
@@ -128,16 +168,22 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
         }
 
         // Build internal pdfs
-        ret.surface.compute_pdfs(sg, throughput, depth >= 3);
+        ret.surface.compute_pdfs(sg, throughput, depth >= min_depth);
 
-        // Sample light for direct lighting
-        if (lights->size() > 1) {
-            // Unify light sampling and OSL light shader..
-            int sampled_light_idx = randomf() * 0.99999 * lights->size();
+        // 2. L_direct calculation by sampling light
+        int light_range = lights.size();
+        if (!isect.is_light)
+            --light_range;
+
+        if (light_range > 0) {
+            // We'are evenly sampling the lights
+            int sampled_light_idx = randomf() * 0.99999 * (lights->size() - 1);
+            if (isect.is_light && sampled_light_idx >= isect.light_id)
+                ++sampled_light_idx;
             auto light_ptr = lights->at(sampled_light_idx).get();
             Vec3f light_dir;
             float light_pdf;
-            // We'are evenly sampling the lights
+            // TODO: Unify light sampling and OSL light shader..
             auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr) / lights->size();
             light_pdf = light_ptr->pdf(isect);
             if (!Ls.is_zero()) {
@@ -149,7 +195,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
             }
         }
 
-        // Sample BSDF for indirect lighting
+        // 3. L_indirect by sampling BSDF
         float bsdf_pdf;
         auto bsdf_albedo = ret.bsdf.sample(sg, random3f(), isect.wi, bsdf_pdf);
         throughput *= bsdf_albedo;
@@ -165,11 +211,6 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
         isect.ray_t = std::numeric_limits<float>::max();
         if (!accel_ptr->intersect(ray, isect))
             break;
-
-        if (isect.is_light) {
-            light_pdf = isect.shape->light->pdf(isect);
-            bsdf_weight = power_heuristic(1, bsdf_pdf, 1, light_pdf);
-        }
 
         depth++;
     }

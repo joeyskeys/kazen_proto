@@ -108,6 +108,7 @@ public:
         ret.is_light = isect.is_light;
         ret.geom_id = isect.geom_id;
         ret.shader_name = isect.shader_name;
+        ret.light_id = isect.light_id;
 
         return ret;
     }

@@ -286,7 +286,7 @@ void Scene::parse_from_file(fs::path filepath) {
             RGBSpectrum radiance{};
             // Treated as Vec3f
             parse_attribute(radiance_attr, &radiance);
-            auto light = std::make_unique<GeometryLight>(radiance, shape_shared_ptr);
+            auto light = std::make_unique<GeometryLight>(lights.size(), radiance, shape_shared_ptr);
             shape_shared_ptr->light = light.get();
             lights.emplace_back(std::move(light));
         }
@@ -483,7 +483,7 @@ void Scene::parse_from_file(fs::path filepath) {
                 break;
 
             case EPointLight: {
-                auto lgt_ptr = std::make_unique<PointLight>();
+                auto lgt_ptr = std::make_unique<PointLight>(lights.size());
                 parse_attributes(node, lgt_ptr.get());
                 lights.emplace_back(std::move(lgt_ptr));
                 break;

@@ -8,8 +8,9 @@
 
 class Light : public DictLike {
 public:
-    Light(RGBSpectrum l=RGBSpectrum(1.f, 1.f, 1.f), bool d=true)
-        : radiance(l)
+    Light(uint id, RGBSpectrum l=RGBSpectrum(1.f, 1.f, 1.f), bool d=true)
+        : light_id(id)
+        , radiance(l)
         , is_delta(d)
     {}
 
@@ -22,17 +23,18 @@ public:
     // members
     RGBSpectrum radiance;
     bool is_delta;
+    uint light_id;
 };
 
 class PointLight : public Light {
 public:
-    PointLight()
-        : Light(RGBSpectrum(1, 1, 1), true)
+    PointLight(uint id)
+        : Light(id, RGBSpectrum(1, 1, 1), true)
         , position(Vec3f(0, 5, 0))
     {}
     
-    PointLight(const RGBSpectrum& l, const Vec3f& pos)
-        : Light(l, true)
+    PointLight(uint id, const RGBSpectrum& l, const Vec3f& pos)
+        : Light(id, l, true)
         , position(pos)
     {}
 
@@ -47,13 +49,13 @@ public:
 
 class GeometryLight : public Light {
 public:
-    GeometryLight()
-        : Light(RGBSpectrum(1, 1, 1), false)
+    GeometryLight(uint id)
+        : Light(id, RGBSpectrum(1, 1, 1), false)
         , geometry(nullptr)
     {}
 
-    GeometryLight(const RGBSpectrum& l, std::shared_ptr<Shape>g)
-        : Light(l, false)
+    GeometryLight(uint id, const RGBSpectrum& l, std::shared_ptr<Shape>g)
+        : Light(id, l, false)
         , geometry(g)
     {}
 
