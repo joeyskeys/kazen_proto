@@ -112,6 +112,11 @@ class BackgroundCompositeClosure : public CompositeClosure {
 };
 
 struct ShadingResult {
+    // Now we implicitly require to seperate out emissive lobe
+    // out of the material which will cause a problem when we
+    // hit the geometry light:
+    // Get next ray direct by sampling the emission closure or
+    // the surface closure?
     EmissionCompositeClosure emission;
     SurfaceCompositeClosure surface;
 };

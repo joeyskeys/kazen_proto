@@ -132,23 +132,109 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
      * *********************************************/
 
     RGBSpectrum Li{0}, throughput{1};
+    float direct_weight;
     float indirect_weight = 1.f;
     float eta = 1.f;
+    float emission_pdf, light_pdf, bsdf_pdf;
 
     Intersection isect;
     Ray ray(r);
 
-    int depth = 1;
     constexpr int max_depth = 6;
     constexpr int min_depth = 3;
 
     for (int i = 0; i < max_depth; ++i) {
         if (accel_ptr->intersect(ray, isect)) {
-            // 1. Le calculation
+            OSL::ShaderGlobals sg;
+            KazenRenderServices::globals_from_hit(sg, ray, isect);
+            auto shader_ptr = (*shaders)[isect.shader_name];
+            if (shader_ptr == nullptr)
+                throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", isect.shader_name));
+            shadingsys->execute(*ctx, *shader_ptr, sg);
+            ShadingResult ret;
+            bool last_bounce = i == max_depth;
+            process_closure(ret, sg.Ci, RGBSpectrum{1}, last_bounce);
 
-            // 2. L_direct calculation by sampling light
+            /* *********************************************
+             * 1. Le calculation
+             * *********************************************/
+            if (isect.is_light) {
+                ret.emission.compute_pdfs(sg, throughput, i >= min_depth);
+                auto Le = ret.emission.sample(sg, random3f(), isect.wi, emission_pdf);
+                Li += throughput * indirect_weight * Le;
+            }
 
-            // 3. L_indirect calculation by sampling material
+            // Russian Roulette
+            // The time of doing the Russian Roulette will determine
+            // which part will be discarded.
+            // Here we follow the implementation in mitsuba and will
+            // discard the L_direct & L_indirect on condition.
+            // The implementation in pbrt-v3 do it in the final step
+            // of the iteration which will discard the indirect contribution
+            // of this iteration.
+            if (depth >= min_depth) {
+                auto prob = std::min(throughput.max_component() * eta * eta, 0.99f);
+                if (prob < random())
+                    break;
+                throughput /= prob;
+            }
+
+            /* *********************************************
+             * 2. L_direct calculation by sampling light
+             * *********************************************/
+            ret.surface.compute_pdfs(sg, throughput, i >= min_depth);
+
+            int light_sample_range = lights.size();
+
+            // Avoid sampling itself if we've hit a geometry light
+            if (isect.is_light)
+                --light_sample_range;
+
+            if (light_sample_range > 0) {
+                int sampled_light_idx = randomf() * 0.99999 * light_sample_range;
+
+                // Shift the index if we happen to sampled itself
+                if (isect.is_light && sampled_light_idx >= isect.light_id)
+                    ++sampled_light_idx;
+
+                auto light_ptr = lights->at(sampled_light_idx).get();
+                Vec3f light_dir;
+                auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr) / lights->size();
+                if (!Ls.is_zero()) {
+                    float cos_theta_v = dot(light_dir, isect.normal);
+                    auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
+                    direct_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
+                    Li += throughput * Ls * f * cos_theta_v * direct_weight;
+                }
+            }
+
+            /* *********************************************
+             * 3. L_indirect calculation by sampling material
+             * *********************************************/
+            RGBSpectrum f{0};
+            if (isect.is_light)
+                f = ret.surface.eval(sg, isect.wi, bsdf_pdf);
+            else
+                f = ret.surface.sample(sg, random3f(), isect.wi, bsdf_pdf);
+
+            // Add mis weight into throughput?
+            throughput *= f;
+
+            if (throughput.is_zero())
+                return Li;
+            // TODO : add the real eta calculation
+            eta *= 0.95f;
+
+            // Construct next ray
+            ray.origin = isect.position;
+            ray.direction = isect.wi;
+            ray.tmin = 0;
+            ray.tmax = std::numeric_limits<float>::max();
+            isect.ray_t = std::numeric_limits<float>::max();
+        }
+        else {
+            // Hit background
+            break;
         }
     }
 
