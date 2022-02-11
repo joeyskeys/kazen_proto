@@ -143,7 +143,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
     constexpr int max_depth = 6;
     constexpr int min_depth = 3;
 
-    for (int i = 0; i < max_depth; ++i) {
+    for (int depth = 0; depth < max_depth; ++depth) {
         if (accel_ptr->intersect(ray, isect)) {
             OSL::ShaderGlobals sg;
             KazenRenderServices::globals_from_hit(sg, ray, isect);
@@ -152,14 +152,14 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
                 throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", isect.shader_name));
             shadingsys->execute(*ctx, *shader_ptr, sg);
             ShadingResult ret;
-            bool last_bounce = i == max_depth;
+            bool last_bounce = depth == max_depth;
             process_closure(ret, sg.Ci, RGBSpectrum{1}, last_bounce);
 
             /* *********************************************
              * 1. Le calculation
              * *********************************************/
             if (isect.is_light) {
-                ret.emission.compute_pdfs(sg, throughput, i >= min_depth);
+                ret.emission.compute_pdfs(sg, throughput, depth >= min_depth);
                 auto Le = ret.emission.sample(sg, random3f(), isect.wi, emission_pdf);
                 Li += throughput * indirect_weight * Le;
             }
@@ -182,9 +182,9 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
             /* *********************************************
              * 2. L_direct calculation by sampling light
              * *********************************************/
-            ret.surface.compute_pdfs(sg, throughput, i >= min_depth);
+            ret.surface.compute_pdfs(sg, throughput, depth >= min_depth);
 
-            int light_sample_range = lights.size();
+            int light_sample_range = lights->size();
 
             // Avoid sampling itself if we've hit a geometry light
             if (isect.is_light)
@@ -237,84 +237,6 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
             break;
         }
     }
-
-    /*
-    if (!accel_ptr->intersect(ray, isect))
-        return Li;
-
-    while (depth <= max_depth) {
-        OSL::ShaderGlobals sg;
-        KazenRenderServices::globals_from_hit(sg, ray, isect);
-        auto shader_ptr = (*shaders)[isect.shader_name];
-        if (shader_ptr == nullptr)
-            throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", isect.shader_name));
-        shadingsys->execute(*ctx, *shader_ptr, sg);
-        ShadingResult ret;
-        bool last_bounce = depth == max_depth;
-        process_closure(ret, sg.Ci, RGBSpectrum{1}, last_bounce);
-
-        // 1. Le calculation
-        if (isect.is_light) {
-            ret.emission.compute_pdfs(sg, throughput, depth >= 3);
-            Li += throughput * ret.emission.sample(sg, random3f(), isect.wi, light_pdf);
-        }
-
-        // Russian roulette
-        if (depth >= min_depth) {
-            auto prob = std::min(throughput.max_component() * eta * eta, 0.99f);
-            if (prob < random())
-                break;
-            throughput /= prob;
-        }
-
-        // Build internal pdfs
-        ret.surface.compute_pdfs(sg, throughput, depth >= min_depth);
-
-        // 2. L_direct calculation by sampling light
-        int light_range = lights.size();
-        if (!isect.is_light)
-            --light_range;
-
-        if (light_range > 0) {
-            // We'are evenly sampling the lights
-            int sampled_light_idx = randomf() * 0.99999 * (lights->size() - 1);
-            if (isect.is_light && sampled_light_idx >= isect.light_id)
-                ++sampled_light_idx;
-            auto light_ptr = lights->at(sampled_light_idx).get();
-            Vec3f light_dir;
-            float light_pdf;
-            // TODO: Unify light sampling and OSL light shader..
-            auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr) / lights->size();
-            light_pdf = light_ptr->pdf(isect);
-            if (!Ls.is_zero()) {
-                float cos_theta_v = dot(light_dir, isect.normal);
-                float bsdf_pdf;
-                auto f = ret.bsdf.eval(sg, light_dir, bsdf_pdf);
-                float light_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
-                Li += throughput * Ls * f * cos_theta_v * light_weight;
-            }
-        }
-
-        // 3. L_indirect by sampling BSDF
-        float bsdf_pdf;
-        auto bsdf_albedo = ret.bsdf.sample(sg, random3f(), isect.wi, bsdf_pdf);
-        throughput *= bsdf_albedo;
-        if (throughput.is_zero())
-            return Li;
-        // This might have problem
-        eta *= 0.95f;
-
-        ray.origin = isect.position;
-        ray.direction = isect.wi;
-        ray.tmin = 0;
-        ray.tmax = std::numeric_limits<float>::max();
-        isect.ray_t = std::numeric_limits<float>::max();
-        if (!accel_ptr->intersect(ray, isect))
-            break;
-
-        depth++;
-    }
-    */
     
     return Li;
 }

@@ -7,6 +7,7 @@
 #include <boost/filesystem.hpp>
 #include <fmt/core.h>
 
+#include "core/light.h"
 #include "core/ray.h"
 #include "core/sampling.h"
 #include "core/shape.h"
