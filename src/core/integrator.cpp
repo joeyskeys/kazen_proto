@@ -226,8 +226,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
             eta *= 0.95f;
 
             // Construct next ray
-            ray.origin = isect.position;
             ray.direction = isect.wi;
+            ray.origin = isect.position + ray.direction * epsilon<float>;
             ray.tmin = 0;
             ray.tmax = std::numeric_limits<float>::max();
             isect.ray_t = std::numeric_limits<float>::max();
