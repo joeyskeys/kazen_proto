@@ -199,7 +199,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
 
                 auto light_ptr = lights->at(sampled_light_idx).get();
                 Vec3f light_dir;
-                auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr) / lights->size();
+                auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
                 if (!Ls.is_zero()) {
                     float cos_theta_v = dot(light_dir, isect.normal);
                     auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
