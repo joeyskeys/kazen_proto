@@ -7,7 +7,6 @@ int main() {
     Scene scene;
     scene.parse_from_file("../resource/scene/cornell_box/cornell_box.xml");
 
-    //scene.integrator->render();
     constexpr static int sample_count = 5;
 
     auto render_start = get_time();

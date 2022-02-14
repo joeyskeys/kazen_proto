@@ -5,6 +5,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <boost/filesystem.hpp>
+#include <boost/math/constants/constants.hpp>
 #include <fmt/core.h>
 
 #include "core/light.h"
@@ -69,6 +70,13 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     isect.is_light = is_light;
     isect.shape = const_cast<Sphere*>(this);
     isect.geom_id = geom_id;
+
+    float phi = std::atan2(isect.position.z(), isect.position.x());
+    if (phi < 0)
+        phi += boost::math::constants::two_pi<float>();
+    isect.uv[0] = phi * boost::math::constants::one_div_two_pi<float>();
+    float theta = std::acos(std::clamp(isect.position.y() / center_n_radius.w(), -1.f, 1.f));
+    isect.uv[1] = theta / boost::math::constants::pi<float>() + 0.5;
 
     // Transform back to world space
     isect = local_to_world.apply(isect);
@@ -153,6 +161,16 @@ void Sphere::post_hit(Intersection& isect) const {
     isect.shader_name = shader_name;
     isect.geom_id = geom_id;
 
+    // Embree do not calculate parametric sphere uv
+    // calculate it manually
+    auto local_pos = world_to_local.apply(isect.position);
+    float phi = std::atan2(local_pos.z(), local_pos.x());
+    if (phi < 0)
+        phi += boost::math::constants::two_pi<float>();
+    isect.uv[0] = phi * boost::math::constants::one_div_two_pi<float>();
+    float theta = std::acos(std::clamp(local_pos.y() / center_n_radius.w(), -1.f, 1.f));
+    isect.uv[1] = theta / boost::math::constants::pi<float>() + 0.5;
+
     if (is_light)
         isect.light_id = light->light_id;
 }
@@ -177,7 +195,16 @@ static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3
 
     // Plane direction vector is supposed to be normalized
     // No extra check here
-    t = -projected_distance;
+    auto projected_direction = dot(dir, r.direction);
+    
+    // Avoid zero division when ray is parallel to the plane
+    if (projected_direction == 0.f)
+        return false;
+
+    t = projected_distance / dot(dir, r.direction);
+    if (t < 0)
+        return false;
+
     return true;
 }
 

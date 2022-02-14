@@ -13,6 +13,7 @@
 #include <frozen/set.h>
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
+#include <OpenImageIO/texture.h>
 
 #include "scene.h"
 
@@ -208,9 +209,10 @@ Scene::Scene()
     : film(std::make_unique<Film>())
     , camera(std::make_unique<Camera>())
     , accelerator(nullptr)
-    , shadingsys(std::make_unique<OSL::ShadingSystem>(&rend, nullptr, nullptr))
 {
     camera->film = film.get();
+    auto texturesys = TextureSystem::create();
+    shadingsys = std::make_unique<OSL::ShadingSystem>(&rend, texturesys, nullptr);
     register_closures(shadingsys.get());
 }
 
