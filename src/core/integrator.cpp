@@ -158,11 +158,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
             /* *********************************************
              * 1. Le calculation
              * *********************************************/
-            if (isect.is_light) {
-                ret.emission.compute_pdfs(sg, throughput, depth >= min_depth);
-                auto Le = ret.emission.sample(sg, random3f(), isect.wi, emission_pdf);
-                Li += throughput * indirect_weight * Le;
-            }
+            if (isect.is_light)
+                Li += throughput * indirect_weight * ret.Le;
 
             // Russian Roulette
             // The time of doing the Russian Roulette will determine

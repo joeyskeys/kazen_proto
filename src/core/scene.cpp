@@ -211,7 +211,7 @@ Scene::Scene()
     , accelerator(nullptr)
 {
     camera->film = film.get();
-    auto texturesys = TextureSystem::create();
+    auto texturesys = OIIO::TextureSystem::create();
     shadingsys = std::make_unique<OSL::ShadingSystem>(&rend, texturesys, nullptr);
     register_closures(shadingsys.get());
 }

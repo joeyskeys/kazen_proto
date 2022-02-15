@@ -147,9 +147,6 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, const Vec3f& 
     // Add up contributions from other bsdfs
     for (int i = 0; i < bsdf_count; i++) {
         if (i == idx) continue;
-        //float other_pdf = 0;
-        //ret += weights[i] * bsdfs[i]->eval(sg, wi, other_pdf);
-        //pdf += other_pdf * pdfs[i];
         float bsdf_pdf = 0;
         RGBSpectrum bsdf_weight = weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
         power_heuristic(&ret, &pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
@@ -163,8 +160,6 @@ RGBSpectrum CompositeClosure::eval(const OSL::ShaderGlobals& sg, const Vec3f& wi
     pdf = 0;
     for (int i = 0; i < bsdf_count; i++) {
         float bsdf_pdf = 0;
-        //ret += weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
-        //pdf += bsdf_pdf * pdfs[i];
         RGBSpectrum bsdf_weight = weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
         power_heuristic(&ret, &pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
     }
@@ -206,6 +201,9 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
         default: {
             const OSL::ClosureComponent *comp = closure->as_comp();
             cw = w * comp->w;
+
+            if (comp->id == EmissionID)
+                ret.Le += cw;
             
             if (!light_only) {
                 bool status = false;
@@ -213,7 +211,7 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                     case DiffuseID:        status = ret.surface.add_bsdf<Diffuse, DiffuseParams>(cw, *comp->as<DiffuseParams>());
                         break;
 
-                    case EmissionID:       status = ret.emission.add_bsdf<Emission, EmptyParams>(cw, *comp->as<EmptyParams>());
+                    case EmissionID:       status = ret.surface.add_bsdf<Emission, EmptyParams>(cw, *comp->as<EmptyParams>());
                         break;
                 }
                 OSL_ASSERT(status && "Invalid closure invoked");

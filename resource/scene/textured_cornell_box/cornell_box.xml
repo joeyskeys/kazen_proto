@@ -1,0 +1,87 @@
+<Scene>
+    <Film width="int 800" height="int 600" />
+
+    <Camera position="float3 0 0 15" lookat="float3 0 0 -10" up="float3 0 1 0" fov="float 60" />
+
+    <Materials>
+        <ShaderGroupBegin name="red_matte" />
+            <Shader name="matte" layer="layer1">
+                <Parameter Cs="float3 0.9 0.1 0.1" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="green_matte" />
+            <Shader name="matte" layer="layer2">
+                <Parameter Cs="float3 0.1 0.9 0.1" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="white_matte" />
+            <Shader name="matte" layer="layer3">
+                <Parameter Cs="float3 0.8 0.8 0.8" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="checkerboard_white_matte" />
+            <Shader name="checker_board" layer="layer4">
+                <Parameter Ca="float3 0.1 0.1 0.1" />
+                <Parameter Cb="float3 0.5 0.5 0.5" />
+                <Parameter scale_s="float 20" />
+                <Parameter scale_t="float 20" />
+            </Shader>
+            <Shader name="matte" layer="layer5">
+                <Parameter Cs="float3 0.6 0.6 0.6" />
+            </Shader>
+            <ConnectShaders srclayer="layer4" srcparam="Cout" dstlayer="layer5" dstparam="Cs" />
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="textured_white_matte" />
+            <Shader name="textured_matte" layer="layer6">
+                <Parameter Cs="float3 0.5 0.5 0.5" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="white_emitter" />
+            <Shader name="emitter" layer="layer7">
+                <Parameter Cs="float3 1 1 1" />
+            </Shader>
+        <ShaderGroupEnd />
+    </Materials>
+
+    <Objects>
+        <!--Left-->
+        <Triangle verta="float3 -10 -10 0" vertb="float3 -10 -10 -20" vertc="float3 -10 10 -20" shader_name="string red_matte" />
+        <Triangle verta="float3 -10 10 -20" vertb="float3 -10 10 0" vertc="float3 -10 -10 0" shader_name="string red_matte" />
+        <!--Right-->
+        <Triangle verta="float3 10 -10 0" vertb="float3 10 10 0" vertc="float3 10 10 -20" shader_name="string green_matte" />
+        <Triangle verta="float3 10 10 -20" vertb="float3 10 -10 -20" vertc="float3 10 -10 0" shader_name="string green_matte" />
+        <!--Bottom-->
+        <Triangle verta="float3 -10 -10 -20" vertb="float3 -10 -10 0" vertc="float3 10 -10 -20" shader_name="string white_matte" />
+        <Triangle verta="float3 10 -10 -20" vertb="float3 -10 -10 0" vertc="float3 10 -10 0" shader_name="string white_matte" />
+        <!--Top-->
+        <Triangle verta="float3 -10 10 0" vertb="float3 -10 10 -20" vertc="float3 10 10 -20" shader_name="string white_matte" />
+        <Triangle verta="float3 10 10 -20" vertb="float3 10 10 0" vertc="float3 -10 10 0" shader_name="string white_matte" />
+        <!--Back-->
+        <Triangle verta="float3 -10 10 -20" vertb="float3 -10 -10 -20" vertc="float3 10 10 -20" shader_name="string white_matte" />
+        <Triangle verta="float3 10 10 -20" vertb="float3 -10 -10 -20" vertc="float3 10 -10 -20" shader_name="string white_matte" />
+        <!--Spheres-->
+        <Sphere center_n_radius="float4 0 0 0 4" translate="func_translate -5 -6 -10" shader_name="string checkerboard_white_matte" />
+        <Sphere center_n_radius="float4 0 0 0 2.5" translate="func_translate 5 -7.5 -8" shader_name="string textured_white_matte" />
+        <!--Quad Light-->
+        <Quad center="float3 0 9.5 -10" dir="float3 0 -1 0" vertical_vec="float3 0 0 1" half_width="float 1" half_height="float 1" shader_name="string white_emitter" is_light="bool true" radiance="float3 1 1 1" />
+    </Objects>
+
+    <Lights>
+        <!--
+            1. "Geometry is a Light" or "Light is a Geometry", coz
+                objects can have emissive material, which can also be
+                treated as lights. Also we must consider if the light
+                path is going to stop at a geometry light hit and geometry
+                light is also able to reflect light from other source
+                theoretically.
+            
+            Update: According to the documentation of OSL, lights are
+                    surfaces with emissive material.
+                    Lights only contain delta lights.
+        -->
+    </Lights>
+
+    <EmbreeAccelerator type="bvh" />
+    <PathIntegrator type="pt" />
+
+</Scene>

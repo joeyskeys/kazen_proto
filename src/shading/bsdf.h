@@ -112,12 +112,12 @@ class BackgroundCompositeClosure : public CompositeClosure {
 };
 
 struct ShadingResult {
-    // Now we implicitly require to seperate out emissive lobe
-    // out of the material which will cause a problem when we
-    // hit the geometry light:
-    // Get next ray direct by sampling the emission closure or
-    // the surface closure?
-    EmissionCompositeClosure emission;
+    // The implementation in testrender in OSL in reasonable.
+    // We want the emission lobe can be sampled later on, so
+    // put it into the composite closure. The Le will be set
+    // when processing the closure tree and a diffuse EDF will
+    // be added into the closure stack for future sampling.
+    RGBSpectrum             Le;
     SurfaceCompositeClosure surface;
 };
 
