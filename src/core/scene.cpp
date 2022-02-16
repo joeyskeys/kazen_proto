@@ -331,7 +331,7 @@ void Scene::parse_from_file(fs::path filepath) {
             }
 
             case ECamera: {
-                parse_attributes(node, camera.get());
+                //parse_attributes(node, camera.get());
                 break;
             }
 
