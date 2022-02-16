@@ -9,6 +9,7 @@
 #include <variant>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/hana.hpp>
 #include <fmt/core.h>
 #include <frozen/set.h>
 #include <frozen/string.h>
@@ -16,6 +17,8 @@
 #include <OpenImageIO/texture.h>
 
 #include "scene.h"
+
+namespace hana = boost::hana;
 
 enum ETag {
     EScene,
@@ -205,6 +208,13 @@ void parse_attributes(const pugi::xml_node& node, DictLike* obj) {
     }
 }
 
+void parse_attributes(const pugi::xml_node& node, Camera& cam) {
+    for (auto& attr : node.attributes()) {
+        auto& member = hana::at_key(cam, BOOST_HANA_STRING(attr.name()));
+        parse_attribute(attr, &member);
+    }
+}
+
 Scene::Scene()
     : film(std::make_unique<Film>())
     , camera(std::make_unique<Camera>())
@@ -332,6 +342,7 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case ECamera: {
                 //parse_attributes(node, camera.get());
+                parse_attributes(node, *camera);
                 break;
             }
 
