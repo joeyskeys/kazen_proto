@@ -28,18 +28,13 @@
 
 
 surface
-matte
+textured_matte
     [[ string description = "Lambertian diffuse material" ]]
 (
-    float Kd = 1
-        [[  string description = "Diffuse scaling",
-            float UImin = 0, float UIsoftmax = 1 ]],
-    color Cs = 1
-        [[  string description = "Base color",
-            float UImin = 0, float UImax = 1 ]]
-    string filename = "../resource/scene/textured_cornell_box/test.tif"
+    string filename = "test.tif"
         [[  string description = "Texture for base color" ]]
   )
 {
-    Ci = Kd * Cs * (color)texture(filename, u, v) * diffuse (N);
+    color c = texture(filename, u, v);
+    Ci = c * diffuse (N);
 }

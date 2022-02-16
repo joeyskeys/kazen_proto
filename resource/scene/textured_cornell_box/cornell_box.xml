@@ -20,9 +20,9 @@
             </Shader>
         <ShaderGroupEnd />
         <ShaderGroupBegin name="checkerboard_white_matte" />
-            <Shader name="checker_board" layer="layer4">
+            <Shader name="checkerboard" layer="layer4">
                 <Parameter Ca="float3 0.1 0.1 0.1" />
-                <Parameter Cb="float3 0.5 0.5 0.5" />
+                <Parameter Cb="float3 1.0 1.0 1.0" />
                 <Parameter scale_s="float 20" />
                 <Parameter scale_t="float 20" />
             </Shader>
@@ -33,7 +33,6 @@
         <ShaderGroupEnd />
         <ShaderGroupBegin name="textured_white_matte" />
             <Shader name="textured_matte" layer="layer6">
-                <Parameter Cs="float3 0.5 0.5 0.5" />
             </Shader>
         <ShaderGroupEnd />
         <ShaderGroupBegin name="white_emitter" />
@@ -63,7 +62,7 @@
         <Sphere center_n_radius="float4 0 0 0 4" translate="func_translate -5 -6 -10" shader_name="string checkerboard_white_matte" />
         <Sphere center_n_radius="float4 0 0 0 2.5" translate="func_translate 5 -7.5 -8" shader_name="string textured_white_matte" />
         <!--Quad Light-->
-        <Quad center="float3 0 9.5 -10" dir="float3 0 -1 0" vertical_vec="float3 0 0 1" half_width="float 1" half_height="float 1" shader_name="string white_emitter" is_light="bool true" radiance="float3 1 1 1" />
+        <Quad center="float3 0 9.5 -10" dir="float3 0 -1 0" vertical_vec="float3 0 0 1" half_width="float 3" half_height="float 3" shader_name="string white_emitter" is_light="bool true" radiance="float3 1 1 1" />
     </Objects>
 
     <Lights>

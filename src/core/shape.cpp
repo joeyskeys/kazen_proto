@@ -315,10 +315,12 @@ void Quad::print_info() const {
 
 void Quad::get_verts(void* vs) const {
     // No bound checking could be dangerous
-    auto left_top = center - horizontal_vec + vertical_vec;
-    auto left_bottom = center - horizontal_vec - vertical_vec;
-    auto right_top = center + horizontal_vec + vertical_vec;
-    auto right_bottom = center + horizontal_vec - vertical_vec;
+    auto hor = horizontal_vec * half_width;
+    auto ver = vertical_vec * half_height;
+    auto left_top = center - hor + ver;
+    auto left_bottom = center - hor - ver;
+    auto right_top = center + hor + ver;
+    auto right_bottom = center + hor - ver;
     auto verts = reinterpret_cast<Vec3f*>(vs);
     verts[0] = right_top;
     verts[1] = right_bottom;
