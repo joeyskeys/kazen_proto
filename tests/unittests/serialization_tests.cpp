@@ -15,8 +15,11 @@ TEST_CASE("Member reflect", "[single-file") {
     pugi::xml_document doc;
     pugi::xml_parse_result ret = doc.load_file("../tests/unittests/camera_attributes.xml");
     for (auto& node : doc) {
-        auto member = hana::at_key(cam, BOOST_HANA_STRING(node.name()));
-        std::cout << "member " << node.name() << " : " << member << std::endl;
+        auto node_name = node.name();
+        std::cout << "node name : " << node_name << std::endl;
+        // Compile time computation only..
+        auto member = hana::at_key(cam, BOOST_HANA_STRING(node_name));
+        //std::cout << "member " << node.name() << " : " << member << std::endl;
     }
 
     REQUIRE(fov == 60);

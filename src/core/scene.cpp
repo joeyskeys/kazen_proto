@@ -208,12 +208,16 @@ void parse_attributes(const pugi::xml_node& node, DictLike* obj) {
     }
 }
 
+/*
 void parse_attributes(const pugi::xml_node& node, Camera& cam) {
     for (auto& attr : node.attributes()) {
-        auto& member = hana::at_key(cam, BOOST_HANA_STRING(attr.name()));
+        auto attr_name = attr.name();
+        //auto& member = hana::at_key(cam, BOOST_HANA_STRING(attr_name));
+        auto& member = hana::at_key(cam, BOOST_HANA_STRING("test"));
         parse_attribute(attr, &member);
     }
 }
+*/
 
 Scene::Scene()
     : film(std::make_unique<Film>())
@@ -342,7 +346,7 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case ECamera: {
                 //parse_attributes(node, camera.get());
-                parse_attributes(node, *camera);
+                //parse_attributes(node, *camera);
                 break;
             }
 
