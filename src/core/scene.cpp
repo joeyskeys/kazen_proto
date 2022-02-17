@@ -105,7 +105,7 @@ inline T string_to(const std::string& s) {
 
 namespace {
 using Comps = std::vector<std::string>;
-using Param = std::variant<std::string, int, float, double, Vec3f>;
+using Param = std::variant<std::string, OSL::ustring, int, float, double, Vec3f>;
 using Params = std::unordered_map<std::string, std::pair<OSL::TypeDesc, Param>>;
 };
 
@@ -164,9 +164,10 @@ OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
 
         case EStr: {
             ret = OSL::TypeDesc::TypeString;
-            auto typed_dst = reinterpret_cast<char*>(dst);
+            auto typed_dst = reinterpret_cast<OSL::ustring>(dst);
             //*typed_dst = comps[1];
-            strcpy(typed_dst, comps[1].c_str());
+            //strcpy(typed_dst, comps[1].c_str());
+            *typed_dst = OSL::ustring(comps[1].c_str());
             break;
         }
 
