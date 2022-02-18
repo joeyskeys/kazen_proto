@@ -78,16 +78,18 @@ enum EType {
     EVec3f,
     EVec4f,
     EStr,
+    EUStr,
     EFuncTrans
 };
 
-constexpr static frozen::unordered_map<frozen::string, EType, 7> types = {
+constexpr static frozen::unordered_map<frozen::string, EType, 8> types = {
     {"bool", EBool},
     {"float", EFloat},
     {"int", EInt},
     {"float3", EVec3f},
     {"float4", EVec4f},
     {"string", EStr},
+    {"ustring", EUStr},
     {"func_translate", EFuncTrans}
 };
 
@@ -163,6 +165,15 @@ OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
         }
 
         case EStr: {
+            ret = OSL::TypeDesc::TypeString;
+            auto typed_dst = reinterpret_cast<std::string*>(dst);
+            *typed_dst = comps[1];
+            break;
+        }
+
+        case EUStr: {
+            // Becoming convoluted in order to keep code consistency.
+            // UStr should used only for OSL string parameter
             ret = OSL::TypeDesc::TypeString;
             auto typed_dst = reinterpret_cast<OSL::ustring*>(dst);
             *typed_dst = OSL::ustring(comps[1].c_str());
