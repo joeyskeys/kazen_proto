@@ -164,9 +164,7 @@ OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
 
         case EStr: {
             ret = OSL::TypeDesc::TypeString;
-            auto typed_dst = reinterpret_cast<OSL::ustring>(dst);
-            //*typed_dst = comps[1];
-            //strcpy(typed_dst, comps[1].c_str());
+            auto typed_dst = reinterpret_cast<OSL::ustring*>(dst);
             *typed_dst = OSL::ustring(comps[1].c_str());
             break;
         }
@@ -464,7 +462,7 @@ void Scene::parse_from_file(fs::path filepath) {
                 // Probably need a specialized parsing function for OSL parameters
                 auto osl_type = parse_attribute(attr, osl_param_buf.get());
                 shadingsys->Parameter(*current_shader_group, attr.name(), osl_type,
-                    &(osl_param_buf.get()));
+                    osl_param_buf.get());
                 break;
             }
 
