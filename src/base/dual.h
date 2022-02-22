@@ -31,8 +31,8 @@ inline Dual<Vec3<T>, P> normalize(const Dual<Vec3<T>, P>& a) {
     auto ay = a.y;
     auto az = a.z;
     auto len = sqrt(ax * ax + ay * ay + az * az);
-    if (len > Vec3<T>::ValueType{0}) {
-        auto invlen = Vec3<T>::ValueType{1} / len;
+    if (len > Vec3<T>::ValueType(0)) {
+        auto invlen = Vec3<T>::ValueType(1) / len;
         auto nax = ax * invlen;
         auto nay = ay * invlen;
         auto naz = az * invlen;

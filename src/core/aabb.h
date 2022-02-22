@@ -16,7 +16,8 @@ public:
     bool intersect(const Ray& r) const {
         auto tmin = r.tmin;
         auto tmax = r.tmax;
-        auto inv_dir = 1.f / r.direction;
+        //auto inv_dir = 1.f / r.direction;
+        auto inv_dir = 1.f / r.direction.val();
         for (int i = 0; i < 3; i++) {
             /*
             auto t0 = std::min((min[i] - r.origin[i]) * inv_dir[i],
@@ -28,12 +29,16 @@ public:
             if (tmax < tmin)
                 return false;
             */
-            auto t0 = (min[i] - r.origin[i]) * inv_dir[i];
-            auto t1 = (max[i] - r.origin[i]) * inv_dir[i];
+
+            //auto t0 = (min[i] - r.origin[i]) * inv_dir[i];
+            auto t0 = (min[i] - r.origin.val()[i]) * inv_dir[i];
+            //auto t1 = (max[i] - r.origin[i]) * inv_dir[i];
+            auto t1 = (max[i] - r.origin.val()[i]) * inv_dir[i];
 
             // inf situation
             if (inv_dir[i] != inv_dir[i]) {
-                if (r.origin[i] > min[i] && r.origin[i] < max[i]) {
+                //if (r.origin[i] > min[i] && r.origin[i] < max[i]) {
+                if (r.origin.val()[i] > min[i] && r.origin.val()[i] < max[i]) {
                     return false;
                 }
                 else

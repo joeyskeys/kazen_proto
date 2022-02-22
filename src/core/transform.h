@@ -90,6 +90,16 @@ public:
         return mat * v;
     }
 
+    template <int N>
+    Dual<Vec3f, N> apply(const Dual<Vec3f, N>& d, bool is_vector=false) const {
+        return (mat * Vec4f(d.val(), is_vector ? 0.f : 1.f)).reduct<3>();
+    }
+
+    template <int N>
+    Dual<Vec4f, N> apply(const Dual<Vec4f, N>& d) const {
+        return mat * d.val();
+    }
+
     inline Vec3f apply_normal(const Vec3f& v) const {
         return (mat_inv.transpose() * Vec4f(v, 0.f)).reduct<3>();
     }

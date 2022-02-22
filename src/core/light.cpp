@@ -43,7 +43,8 @@ RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, f
     return eval(isect, -shadow_ray.direction, n);
 }
 
-RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& n) const {
+//RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& n) const {
+RGBSpectrum GeometryLight::eval
     auto cos_theta = dot(light_dir, n);
     return cos_theta > 0.f ? radiance : 0.f;
 }
