@@ -11,46 +11,6 @@
 
 using OSL::TypeDesc;
 
-enum ClosureID {
-    /************
-     * Built-in
-     ************/
-    // BSDF closures
-    DiffuseID,
-    PhongID,
-    OrenNayarID,
-    WardID,
-    ReflectionID,
-    RefractionID,
-    TransparentID,
-    TranslucentID,
-
-    // Microfacet closures
-    MicrofacetID,
-
-    // BSSRDF closures
-    SubsurfaceID,
-
-    // Emission closures
-    EmissionID,
-    BackgroundID,
-
-    // Utility closures
-    DebugID,
-    HoldoutID,
-
-    /************
-     * MaterialX
-     ************/
-
-    /************
-     * Kazen specific
-     ************/
-    //GlossyID,
-
-    NumClosureIDs
-};
-
 struct EmptyParams      {};
 struct DiffuseParams    { OSL::Vec3 N; };
 
