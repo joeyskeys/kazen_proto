@@ -12,16 +12,41 @@
 using OSL::TypeDesc;
 
 enum ClosureID {
-    // Just add a few basic closures for test first
-
+    /************
+     * Built-in
+     ************/
     // BSDF closures
     DiffuseID,
+    PhongID,
+    OrenNayarID,
+    WardID,
+    ReflectionID,
+    RefractionID,
+    TransparentID,
+    TranslucentID,
 
     // Microfacet closures
-    //GlossyID,
+    MicrofacetID,
+
+    // BSSRDF closures
+    SubsurfaceID,
 
     // Emission closures
     EmissionID,
+    BackgroundID,
+
+    // Utility closures
+    DebugID,
+    HoldoutID,
+
+    /************
+     * MaterialX
+     ************/
+
+    /************
+     * Kazen specific
+     ************/
+    //GlossyID,
 
     NumClosureIDs
 };
@@ -62,6 +87,42 @@ public:
     DiffuseParams params;
 };
 
+struct PhongParams {
+    OSL::Vec3 N;
+    float exponent;
+};
+
+class Phong : public BSDF {
+
+};
+
+class Emission : public BSDF {
+public:
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_FINISH_PARAM(EmptyParams)
+        };
+
+        shadingsys.register_closure("emission", EmissionID, params, nullptr, nullptr);
+    }
+
+    Emission(const EmptyParams& p)
+        : BSDF()
+    {}
+
+    float eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const override {
+        pdf = std::max(dot(wi, sg.N), 0.f) * boost::math::constants::one_div_pi<float>();
+        return 1.f;
+    }
+
+    float sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override {
+        wi = sample_hemisphere();
+        wi = tangent_to_world(wi, sg.N, sg.dPdu, sg.dPdv);
+        pdf = std::max(dot(wi, sg.N), 0.f) * boost::math::constants::one_div_pi<float>();
+        return 1.f;
+    }
+};
+
 /*
 class Glossy : public BSDF {
 public:
@@ -99,33 +160,6 @@ public:
     }
 };
 */
-
-class Emission : public BSDF {
-public:
-    static void register_closure(OSL::ShadingSystem& shadingsys) {
-        const OSL::ClosureParam params[] = {
-            CLOSURE_FINISH_PARAM(EmptyParams)
-        };
-
-        shadingsys.register_closure("emission", EmissionID, params, nullptr, nullptr);
-    }
-
-    Emission(const EmptyParams& p)
-        : BSDF()
-    {}
-
-    float eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const override {
-        pdf = std::max(dot(wi, sg.N), 0.f) * boost::math::constants::one_div_pi<float>();
-        return 1.f;
-    }
-
-    float sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const override {
-        wi = sample_hemisphere();
-        wi = tangent_to_world(wi, sg.N, sg.dPdu, sg.dPdv);
-        pdf = std::max(dot(wi, sg.N), 0.f) * boost::math::constants::one_div_pi<float>();
-        return 1.f;
-    }
-};
 
 RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const {
     float acc = 0;
