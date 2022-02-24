@@ -13,19 +13,3 @@ Ray Camera::generate_ray(uint x, uint y) {
 
     return Ray(position, direction.normalized());
 }
-
-void* Camera::address_of(const std::string& name) {
-    if (name == "position")
-        return &position;
-    else if (name == "lookat")
-        return &lookat;
-    else if (name == "up")
-        return &up;
-    else if (name == "near")
-        return &near_plane;
-    else if (name == "far")
-        return &far_plane;
-    else if (name == "fov")
-        return &fov;
-    return nullptr;
-}

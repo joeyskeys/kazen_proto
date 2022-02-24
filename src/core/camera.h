@@ -81,22 +81,23 @@ public:
 };
 */
 
-struct Camera {
+struct Camera : public DictLikeT<Camera> {
     BOOST_HANA_DEFINE_STRUCT(Camera,
         (Vec3f, position),
         (Vec3f, lookat),
         (Vec3f, up),
-        (Vec3f, horizontal),
-        (Vec3f, vertical),
-        (Vec3f, upper_left_corner),
         (float, near_plane),
         (float, far_plane),
-        (float, fov),
-        (float, ratio),
-        (float, film_plane_width),
-        (float, film_plane_height),
-        (Film*, film)
+        (float, fov)
     );
+    
+        Vec3f horizontal;
+        Vec3f vertical;
+        Vec3f upper_left_corner;
+        float ratio;
+        float film_plane_width;
+        float film_plane_height;
+        Film* film;
 
     Camera()
         : position(Vec3f(0, 0, 5))
@@ -125,5 +126,4 @@ struct Camera {
     }
 
     Ray generate_ray(uint x, uint y);
-    void* address_of(const std::string& name);
 };

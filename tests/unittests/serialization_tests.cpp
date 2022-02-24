@@ -8,7 +8,7 @@
 
 using namespace std::string_literals;
 
-TEST_CASE("Member reflect", "[single-file") {
+TEST_CASE("Member reflect", "[single-file]") {
     Camera cam{};
 
     // Compile time for loop will unfold the whole loop and create a huge binary..
@@ -30,17 +30,18 @@ TEST_CASE("Member reflect", "[single-file") {
         }
     }));
 
-    /*
-    pugi::xml_document doc;
-    pugi::xml_parse_result ret = doc.load_file("../tests/unittests/camera_attributes.xml");
-    for (auto& node : doc) {
-        auto node_name = node.name();
-        std::cout << "node name : " << node_name << std::endl;
-        // Compile time computation only..
-        auto member = hana::at_key(cam, BOOST_HANA_STRING(node_name));
-        //std::cout << "member " << node.name() << " : " << member << std::endl;
-    }
-    */
+    // Conclusion:
+    // Can work but add a lot coding difficulties, and don't save a lot typing.
+    // And also not benefitting runtime efficiency. Leave the modification in
+    // this branch as a draft for now...
+
+    auto near_plane = reinterpret_cast<float*>(cam.address_of("near_plane"));
+    std::cout << "reflect address : " << near_plane << std::endl;
+
+    auto actual = &cam.near_plane;
+    std::cout << "actual address : " << actual << std::endl;
+    *near_plane = 2.f;
+    REQUIRE(*near_plane == 2.f);
 
     auto fov = hana::at_key(cam, BOOST_HANA_STRING("fov"));
     REQUIRE(fov == 60);
