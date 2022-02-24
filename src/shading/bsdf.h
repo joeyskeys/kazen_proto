@@ -49,6 +49,13 @@ enum ClosureID {
     NumClosureIDs
 };
 
+struct EmptyParams      {};
+struct DiffuseParams    { OSL::Vec3 N; };
+struct PhongParams {
+    OSL::Vec3 N;
+    float exponent;
+};
+
 class BSDF {
 public:
     BSDF() {}

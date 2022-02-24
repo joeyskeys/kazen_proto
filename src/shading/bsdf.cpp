@@ -11,9 +11,6 @@
 
 using OSL::TypeDesc;
 
-struct EmptyParams      {};
-struct DiffuseParams    { OSL::Vec3 N; };
-
 class Diffuse : public BSDF {
 public:
     static void register_closure(OSL::ShadingSystem& shadingsys) {
@@ -45,11 +42,6 @@ public:
 
 public:
     DiffuseParams params;
-};
-
-struct PhongParams {
-    OSL::Vec3 N;
-    float exponent;
 };
 
 class Phong : public BSDF {
