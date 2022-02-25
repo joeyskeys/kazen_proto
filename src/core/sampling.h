@@ -28,6 +28,19 @@ inline Vec3f sample_hemisphere() {
     return sample_hemisphere(random2f());
 }
 
+inline Vec3f sample_hemisphere_with_exponent(const Vec2f& u, const float exponent) {
+    float phi = u.x() * M_PI * 2.f;
+    float v_cos_theta = std::pow(u.y(), 1 / (exponent + 1));
+    float v_sin_theta2 = 1 - cos_theta * cos_theta;
+    float v_sin_theta = v_sin_theta2 > 0 ? sqrtf(v_sin_theta2) : 0;
+
+    return normalize(Vec3f{v_cos_theta * std::cos(phi), v_cos_theta, v_sin_theta * std::sin(phi)});
+}
+
+inline Vec3f sample_hemisphere_with_exponent(const float exponent) {
+    return sample_hemisphere_with_exponent(random2f(), exponent);
+}
+
 inline auto random3f() {
     return Vec3f{randomf(), randomf(), randomf()};
 }
