@@ -237,6 +237,9 @@ void KazenRenderServices::globals_from_hit(
     sg.N = isect.normal;
     sg.Ng = isect.normal;
 
+    sg.u = isect.uv[0];
+    sg.v = isect.uv[1];
+
     // TODO : setup dPdu dPdv correctly
     sg.dPdu = isect.tangent;
     sg.dPdv = isect.bitangent;

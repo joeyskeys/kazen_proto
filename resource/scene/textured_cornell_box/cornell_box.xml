@@ -33,7 +33,7 @@
         <ShaderGroupEnd />
         <ShaderGroupBegin name="textured_white_matte" />
             <Shader name="textured_matte" layer="layer6">
-                <Parameter filename="string ../resource/scene/textured_cornell_box/test.tif" />
+                <Parameter filename="ustring ../resource/scene/textured_cornell_box/test.tif" />
             </Shader>
         <ShaderGroupEnd />
         <ShaderGroupBegin name="white_emitter" />
