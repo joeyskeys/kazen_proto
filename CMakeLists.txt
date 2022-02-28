@@ -60,6 +60,7 @@ set(CORE_HEADERS
     src/core/film.h
     src/core/integrator.h
     src/core/light.h
+    src/core/light_path.h
     src/core/material.h
     src/core/ray.h
     src/core/scene.h
@@ -75,6 +76,7 @@ set(CORE_SOURCES
     src/core/film.cpp
     src/core/integrator.cpp
     src/core/light.cpp
+    src/core/light_path.cpp
     src/core/material.cpp
     src/core/ray.cpp
     src/core/scene.cpp

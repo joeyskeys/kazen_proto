@@ -33,8 +33,9 @@ public:
     std::unique_ptr<Accelerator> accelerator;
     std::vector<std::shared_ptr<Hitable>> objects;
     std::vector<std::unique_ptr<Light>> lights;
-    //std::unique_ptr<Integrator> integrator;
     IntegratorFactory integrator_fac;
+
+    RecordContext rec_ctx;
 
     // OSL related
     KazenRenderServices rend;

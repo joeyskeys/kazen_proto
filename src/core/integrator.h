@@ -10,6 +10,7 @@
 #include "core/camera.h"
 #include "core/film.h"
 #include "core/light.h"
+#include "core/light_path.h"
 #include "shading/renderservices.h"
 
 class Scene;
@@ -19,7 +20,7 @@ class Film;
 class Integrator {
 public:
     Integrator();
-    Integrator(Camera* cam_ptr, Film* flm_ptr);
+    Integrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec);
 
     virtual void setup(Scene* scene);
     virtual RGBSpectrum Li(const Ray& r) const = 0;
@@ -28,15 +29,17 @@ public:
     Camera*             camera_ptr;
     Film*               film_ptr;
     std::vector<std::unique_ptr<Light>>* lights;
+
+    Recorder*           recorder;
 };
 
 class NormalIntegrator : public Integrator {
 public:
     NormalIntegrator();
-    NormalIntegrator(Camera* cam_ptr, Film* flm_ptr);
+    NormalIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec);
 
-    static std::unique_ptr<Integrator> create(Camera* cam_ptr, Film* flm_ptr) {
-        return std::make_unique<NormalIntegrator>(cam_ptr, flm_ptr);
+    static std::unique_ptr<Integrator> create(Camera* cam_ptr, Film* flm_ptr, Recorder* rec) {
+        return std::make_unique<NormalIntegrator>(cam_ptr, flm_ptr, rec);
     }
 
     RGBSpectrum Li(const Ray& r) const override;
@@ -45,10 +48,10 @@ public:
 class AmbientOcclusionIntegrator : public Integrator {
 public:
     AmbientOcclusionIntegrator();
-    AmbientOcclusionIntegrator(Camera* cam_ptr, Film* flm_ptr);
+    AmbientOcclusionIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec);
 
-    static std::unique_ptr<Integrator> create(Camera* cam_ptr, Film* flm_ptr) {
-        return std::make_unique<AmbientOcclusionIntegrator>(cam_ptr, flm_ptr);
+    static std::unique_ptr<Integrator> create(Camera* cam_ptr, Film* flm_ptr, Recorder& rec) {
+        return std::make_unique<AmbientOcclusionIntegrator>(cam_ptr, flm_ptr, rec);
     }
 
     RGBSpectrum Li(const Ray& r) const override;
@@ -57,10 +60,10 @@ public:
 class PathIntegrator : public Integrator {
 public:
     PathIntegrator();
-    PathIntegrator(Camera* camera_ptr, Film* flm_ptr);
+    PathIntegrator(Camera* camera_ptr, Film* flm_ptr, Recorder* rec);
 
-    static std::unique_ptr<Integrator> create(Camera* cam_ptr, Film* flm_ptr) {
-        return std::make_unique<PathIntegrator>(cam_ptr, flm_ptr);
+    static std::unique_ptr<Integrator> create(Camera* cam_ptr, Film* flm_ptr, Recorder* rec) {
+        return std::make_unique<PathIntegrator>(cam_ptr, flm_ptr, rec);
     }
 
     void setup(Scene* scene) override;
@@ -75,8 +78,8 @@ public:
 
 class IntegratorFactory {
 public:
-    inline std::unique_ptr<Integrator> create(Camera* cam_ptr, Film* flm_ptr) {
-        return create_functor(cam_ptr, flm_ptr);
+    inline std::unique_ptr<Integrator> create(Camera* cam_ptr, Film* flm_ptr, Recorder* rec=nullptr) {
+        return create_functor(cam_ptr, flm_ptr, rec);
     }
 
     std::function<std::unique_ptr<Integrator>(Camera*, Film*)> create_functor;

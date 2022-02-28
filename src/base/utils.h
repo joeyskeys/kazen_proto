@@ -62,8 +62,8 @@ inline Vec3f tangent_to_world(const Vec3f& w, const Vec3f& n, const Vec3f& t, co
 }
 
 inline Vec3f tangent_to_world(const Vec3f& w, const Vec3f& n) {
-    t = (fabsf(w.x()) > .01f ? Vec3f(w.z(), 0, -w.x()) : Vec3f(0, -w.z(), w.y())).normalize();
-    b = cross(w, t);
+    auto t = (fabsf(w.x()) > .01f ? Vec3f(w.z(), 0, -w.x()) : Vec3f(0, -w.z(), w.y())).normalized();
+    auto b = cross(w, t);
     return tangent_to_world(w, n, t, b);
 }
 

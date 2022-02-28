@@ -25,14 +25,15 @@ void Integrator::setup(Scene* scene) {
 Integrator::Integrator(Camera* cam_ptr, Film* flm_ptr)
     : camera_ptr(cam_ptr)
     , film_ptr(flm_ptr)
+    , recorder(rec)
 {}
 
 NormalIntegrator::NormalIntegrator()
     : Integrator()
 {}
 
-NormalIntegrator::NormalIntegrator(Camera* cam_ptr, Film* flm_ptr)
-    : Integrator(cam_ptr, flm_ptr)
+NormalIntegrator::NormalIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
+    : Integrator(cam_ptr, flm_ptr, rec)
 {}
 
 RGBSpectrum NormalIntegrator::Li(const Ray& r) const {
@@ -50,8 +51,8 @@ AmbientOcclusionIntegrator::AmbientOcclusionIntegrator()
 {}
 
 AmbientOcclusionIntegrator::AmbientOcclusionIntegrator(Camera* cam_ptr,
-    Film* flm_ptr)
-    : Integrator(cam_ptr, flm_ptr)
+    Film* flm_ptr, Recorder* rec)
+    : Integrator(cam_ptr, flm_ptr, rec)
 {}
 
 RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r) const {
@@ -77,8 +78,8 @@ PathIntegrator::PathIntegrator()
     : Integrator()
 {}
 
-PathIntegrator::PathIntegrator(Camera* cam_ptr, Film* flm_ptr)
-    : Integrator(cam_ptr, flm_ptr)
+PathIntegrator::PathIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
+    : Integrator(cam_ptr, flm_ptr, rec)
 {}
 
 void PathIntegrator::setup(Scene* scene) {
@@ -143,9 +144,20 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
     constexpr int max_depth = 6;
     constexpr int min_depth = 3;
 
+    // Create light path and add start event
+    LightPath p;
+    LightPathEvent e_start;
+    e_start.type = EStart;
+    e_start.event_position = r.origin;
+    e_start.ray_direction = r.direction;
+    e_start.throughput = throughput;
+    e_start.Li = Li;
+    p.record(std::move(e_start));
+
     for (int depth = 0; depth < max_depth; ++depth) {
+        OSL::ShaderGlobals sg;
+
         if (accel_ptr->intersect(ray, isect)) {
-            OSL::ShaderGlobals sg;
             KazenRenderServices::globals_from_hit(sg, ray, isect);
             auto shader_ptr = (*shaders)[isect.shader_name];
             if (shader_ptr == nullptr)
@@ -171,8 +183,10 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
             // of this iteration.
             if (depth >= min_depth) {
                 auto prob = std::min(throughput.max_component() * eta * eta, 0.99f);
-                if (prob < random())
+                if (prob < random()) {
+                    p.record(ERouletteCut, sg, throughput, Li);
                     break;
+                }
                 throughput /= prob;
             }
 
@@ -228,12 +242,21 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
             ray.tmin = 0;
             ray.tmax = std::numeric_limits<float>::max();
             isect.ray_t = std::numeric_limits<float>::max();
+            
+            // LightPath event recording
+            if (isect.is_light)
+                p.record(EEmission, sg, throughput, Li);
+            else
+                p.record(EReflection, sg, throughput, Li);
         }
         else {
             // Hit background
+            p.record(EBackground, sg, throughput, Li);
             break;
         }
     }
+
+    //p.output(std::cout);
     
     return Li;
 }
