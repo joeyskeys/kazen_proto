@@ -34,5 +34,13 @@ void Recorder::record(LightPath&& p, const RecordContext& ctx) {
 }
 
 void Recorder::output(std::ostream& os) const {
-    
+    for (const auto& pack : database)
+        for (const auto& pathobj : pack)
+            for (const auto& e : pathobj.path) {
+                os << "Event Type : " << event_strings[e.type]
+                    << ", Event Position : " << e.event_position
+                    << ", Next Direction : " << e.ray_direction
+                    << ", throughput : " << e.throughput
+                    << ", Li : " << e.Li << std::endl;
+            }
 }
