@@ -35,7 +35,7 @@ public:
     std::vector<std::unique_ptr<Light>> lights;
     IntegratorFactory integrator_fac;
 
-    RecordContext rec_ctx;
+    Recorder recorder;
 
     // OSL related
     KazenRenderServices rend;

@@ -23,7 +23,7 @@ public:
     Integrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec);
 
     virtual void setup(Scene* scene);
-    virtual RGBSpectrum Li(const Ray& r) const = 0;
+    virtual RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const = 0;
 
     HitablePtr          accel_ptr;
     Camera*             camera_ptr;
@@ -42,7 +42,7 @@ public:
         return std::make_unique<NormalIntegrator>(cam_ptr, flm_ptr, rec);
     }
 
-    RGBSpectrum Li(const Ray& r) const override;
+    RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
 };
 
 class AmbientOcclusionIntegrator : public Integrator {
@@ -50,11 +50,11 @@ public:
     AmbientOcclusionIntegrator();
     AmbientOcclusionIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec);
 
-    static std::unique_ptr<Integrator> create(Camera* cam_ptr, Film* flm_ptr, Recorder& rec) {
+    static std::unique_ptr<Integrator> create(Camera* cam_ptr, Film* flm_ptr, Recorder* rec) {
         return std::make_unique<AmbientOcclusionIntegrator>(cam_ptr, flm_ptr, rec);
     }
 
-    RGBSpectrum Li(const Ray& r) const override;
+    RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
 };
 
 class PathIntegrator : public Integrator {
@@ -67,7 +67,7 @@ public:
     }
 
     void setup(Scene* scene) override;
-    RGBSpectrum Li(const Ray& r) const override;
+    RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
 
     OSL::ShadingSystem* shadingsys;
     //KazenRenderServices rend;
@@ -82,5 +82,5 @@ public:
         return create_functor(cam_ptr, flm_ptr, rec);
     }
 
-    std::function<std::unique_ptr<Integrator>(Camera*, Film*)> create_functor;
+    std::function<std::unique_ptr<Integrator>(Camera*, Film*, Recorder*)> create_functor;
 };

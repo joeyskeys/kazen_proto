@@ -28,9 +28,11 @@ void LightPath::record(const EventType t, const OSL::ShaderGlobals& sg,
     path.emplace_back(std::move(e));
 }
 
-void Recorder::record(LightPath&& p) {
-    if (ctx->should_record()) {
-        auto pack = pack_at(ctx->pixel_x, ctx->pixel_y);
-        pack.emplace_back(std::move(p));
-    }
+void Recorder::record(LightPath&& p, const RecordContext& ctx) {
+    auto pack = pack_at(ctx);
+    pack.emplace_back(std::move(p));
+}
+
+void Recorder::output(std::ostream& os) const {
+    
 }

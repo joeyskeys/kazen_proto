@@ -8,6 +8,13 @@ int main() {
     scene.parse_from_file("../resource/scene/textured_cornell_box/cornell_box.xml");
 
     constexpr static int sample_count = 5;
+            
+    RecordContext ctx;
+    ctx.designated_x_min = 390;
+    ctx.designated_x_max = 410;
+    ctx.designated_y_min = 290;
+    ctx.designated_y_max = 310;
+    scene.recorder.setup(ctx);
 
     auto render_start = get_time();
     bool hit = false;
@@ -29,8 +36,14 @@ int main() {
 
             auto tile_start = get_time();
             Tile& tile = scene.film->tiles[t];
-            auto integrator_ptr = scene.integrator_fac.create(scene.camera.get(), scene.film.get());
+            auto integrator_ptr = scene.integrator_fac.create(scene.camera.get(), scene.film.get(), &scene.recorder);
             integrator_ptr->setup(&scene);
+
+            RecordContext rctx;
+            rctx.designated_x_min = 390;
+            rctx.designated_x_max = 410;
+            rctx.designated_y_min = 290;
+            rctx.designated_y_max = 310;
 
             for (int j = 0; j < tile.height; j++) {
                 for (int i = 0; i < tile.width; i++) {
@@ -40,8 +53,11 @@ int main() {
                         uint x = tile.origin_x + i;
                         uint y = tile.origin_y + j;
 
+                        rctx.pixel_x = x;
+                        rctx.pixel_y = y;
+
                         auto ray = scene.camera->generate_ray(x, y);
-                        pixel_radiance += integrator_ptr->Li(ray);
+                        pixel_radiance += integrator_ptr->Li(ray, rctx);
                         if (!pixel_radiance.is_zero())
                             hit = true;
                     }
@@ -67,6 +83,7 @@ int main() {
     std::cout << "render duration : " << render_duration.count() << " ms\n";
 
     scene.film->write_tiles();
+    scene.recorder.output(std::cout);
 
     return 0;
 }

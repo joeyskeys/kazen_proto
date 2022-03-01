@@ -22,7 +22,7 @@ void Integrator::setup(Scene* scene) {
     lights = &scene->lights;
 }
 
-Integrator::Integrator(Camera* cam_ptr, Film* flm_ptr)
+Integrator::Integrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
     : camera_ptr(cam_ptr)
     , film_ptr(flm_ptr)
     , recorder(rec)
@@ -36,7 +36,7 @@ NormalIntegrator::NormalIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec
     : Integrator(cam_ptr, flm_ptr, rec)
 {}
 
-RGBSpectrum NormalIntegrator::Li(const Ray& r) const {
+RGBSpectrum NormalIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     Intersection isect;
     if (!accel_ptr->intersect(r, isect)) {
         return RGBSpectrum{0};
@@ -55,7 +55,7 @@ AmbientOcclusionIntegrator::AmbientOcclusionIntegrator(Camera* cam_ptr,
     : Integrator(cam_ptr, flm_ptr, rec)
 {}
 
-RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r) const {
+RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     Intersection isect;
     if (!accel_ptr->intersect(r, isect)) {
         return RGBSpectrum{0};
@@ -90,7 +90,7 @@ void PathIntegrator::setup(Scene* scene) {
     ctx = shadingsys->get_context(thread_info);
 }
 
-RGBSpectrum PathIntegrator::Li(const Ray& r) const {
+RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     /* *********************************************
      * The rendering equation is:
      *           /
@@ -257,6 +257,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r) const {
     }
 
     //p.output(std::cout);
+    if (rctx.should_record())
+        recorder->record(std::move(p), rctx);
     
     return Li;
 }
