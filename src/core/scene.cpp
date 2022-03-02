@@ -43,10 +43,12 @@ enum ETag {
     // lights
     ELights,
     EPointLight,
+    // Recorder
+    ERecorder,
     EInvalid
 };
 
-constexpr static frozen::unordered_map<frozen::string, ETag, 21> tags = {
+constexpr static frozen::unordered_map<frozen::string, ETag, 22> tags = {
     {"Scene", EScene},
     {"Film", EFilm},
     {"Camera", ECamera},
@@ -68,7 +70,8 @@ constexpr static frozen::unordered_map<frozen::string, ETag, 21> tags = {
     {"Parameter", EParameter},
     {"ConnectShaders", EConnectShaders},
     {"Lights", ELights},
-    {"PointLight", EPointLight}
+    {"PointLight", EPointLight},
+    {"Recorder", ERecorder}
 };
 
 enum EType {
@@ -193,7 +196,6 @@ OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
             // Never gonna happen
             break;
     }
-
 
     return ret;
 }
@@ -496,6 +498,11 @@ void Scene::parse_from_file(fs::path filepath) {
                 break;
             }
 
+            case ERecorder: {
+                parse_attributes(node, &recorder);
+                break;
+            }
+
             case EInvalid:
                 break;
 
@@ -518,6 +525,4 @@ void Scene::parse_from_file(fs::path filepath) {
     // Construct acceleration structure after all data is parsed
     camera->init();
     accelerator->build();
-    //integrator->accel_ptr = accelerator.get();
-    //integrator->lights = &lights;
 }

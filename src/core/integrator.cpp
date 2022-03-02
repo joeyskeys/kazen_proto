@@ -256,9 +256,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         }
     }
 
-    //p.output(std::cout);
-    if (rctx.should_record())
-        recorder->record(std::move(p), rctx);
+    recorder->record(p, rctx);
     
     return Li;
 }

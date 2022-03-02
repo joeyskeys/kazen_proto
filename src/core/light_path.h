@@ -8,6 +8,7 @@
 #include <tbb/concurrent_vector.h>
 
 #include "base/basic_types.h"
+#include "base/dictlike.h"
 #include "base/vec.h"
 #include "core/spectrum.h"
 
@@ -15,21 +16,7 @@ class RecordContext {
 public:
     uint pixel_x;
     uint pixel_y;
-    uint designated_x_min = 0;
-    uint designated_x_max = std::numeric_limits<uint>::max();
-    uint designated_y_min = 0;
-    uint designated_y_max = std::numeric_limits<uint>::max();
     uint depth;
-    uint designated_depth_min = 0;
-    uint designated_depth_max = std::numeric_limits<uint>::max();
-
-    inline bool should_record() const {
-        if (pixel_x >= designated_x_min && pixel_x < designated_x_max &&
-            pixel_y >= designated_y_min && pixel_y < designated_y_max &&
-            depth >= designated_depth_min && depth < designated_depth_max)
-            return true;
-        return false;
-    }
 };
 
 enum EventType {
@@ -87,13 +74,18 @@ public:
 };
 
 using LightPathPack = std::vector<LightPath>;
-//using RecorderDatabase = std::vector<LightPathPack>;
 using RecorderDatabase = tbb::concurrent_vector<LightPathPack>;
 
-class Recorder {
+class Recorder : public DictLike {
 public:
     uint x_resolution;
     uint y_resolution;
+    uint x_min = 0;
+    uint x_max = std::numeric_limits<uint>::max();
+    uint y_min = 0;
+    uint y_max = std::numeric_limits<uint>::max();
+    uint depth_min = 0;
+    uint depth_max = std::numeric_limits<uint>::max();
     uint total_size;
 
     RecorderDatabase database;
@@ -103,22 +95,14 @@ public:
         , y_resolution(h)
     {}
 
-    void setup(const RecordContext& ctx) {
-        total_size = (ctx.designated_x_max - ctx.designated_x_min) *
-            (ctx.designated_y_max - ctx.designated_y_min);
+    void setup() {
+        total_size = (x_max - x_min) *
+            (y_max - y_min);
         database.resize(total_size);
     }
 
-    inline auto& pack_at(const RecordContext& ctx) {
-        auto idx = (ctx.pixel_y - ctx.designated_y_min) *
-            (ctx.designated_x_max - ctx.designated_x_min) +
-            (ctx.pixel_x - ctx.designated_x_min);
-        //std::cout << "x : " << ctx.pixel_x << ", y : " << ctx.pixel_y << std::endl;
-        //std::cout << "database size : " << database.size() << ", idx : " << idx << std::endl;
-        assert(database.size() > idx);
-        return database.at(idx);
-    }
-
-    void record(LightPath&& p, const RecordContext& ctx);
+    void record(const LightPath& p, const RecordContext& ctx);
     void output(std::ostream& os) const;
+
+    void* address_of(const std::string& name) override;
 };

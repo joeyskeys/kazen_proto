@@ -9,12 +9,11 @@ int main() {
 
     constexpr static int sample_count = 5;
             
-    RecordContext ctx;
-    ctx.designated_x_min = 390;
-    ctx.designated_x_max = 410;
-    ctx.designated_y_min = 290;
-    ctx.designated_y_max = 310;
-    scene.recorder.setup(ctx);
+    scene.recorder.x_min = 398;
+    scene.recorder.x_max = 402;
+    scene.recorder.y_min = 298;
+    scene.recorder.y_max = 302;
+    scene.recorder.setup();
 
     auto render_start = get_time();
     bool hit = false;
@@ -40,10 +39,6 @@ int main() {
             integrator_ptr->setup(&scene);
 
             RecordContext rctx;
-            rctx.designated_x_min = 390;
-            rctx.designated_x_max = 410;
-            rctx.designated_y_min = 290;
-            rctx.designated_y_max = 310;
 
             for (int j = 0; j < tile.height; j++) {
                 for (int i = 0; i < tile.width; i++) {
