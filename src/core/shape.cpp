@@ -455,6 +455,11 @@ void Triangle::post_hit(Intersection& isect) const {
     isect.shader_name = shader_name;
     isect.geom_id = geom_id;
 
+    // Compute hit point with barycentric coordinate is more accurate
+    // But currently it will cause a weird problem..
+    Vec3f bary{1 - isect.uv[0] - isect.uv[1], isect.uv[0], isect.uv[1]};
+    isect.position = bary[0] * verts[0] + bary[1] * verts[1] + bary[2] * verts[2];
+
     if (is_light)
         isect.light_id = light->light_id;
 }

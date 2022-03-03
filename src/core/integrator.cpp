@@ -184,7 +184,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
             if (depth >= min_depth) {
                 auto prob = std::min(throughput.max_component() * eta * eta, 0.99f);
                 if (prob < random()) {
-                    p.record(ERouletteCut, sg, throughput, Li);
+                    p.record(ERouletteCut, isect, throughput, Li);
                     break;
                 }
                 throughput /= prob;
@@ -238,20 +238,20 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
 
             // Construct next ray
             ray.direction = isect.wi;
-            ray.origin = isect.position + ray.direction * epsilon<float>;
+            ray.origin = isect.position;
             ray.tmin = 0;
             ray.tmax = std::numeric_limits<float>::max();
             isect.ray_t = std::numeric_limits<float>::max();
             
             // LightPath event recording
             if (isect.is_light)
-                p.record(EEmission, sg, throughput, Li);
+                p.record(EEmission, isect, throughput, Li);
             else
-                p.record(EReflection, sg, throughput, Li);
+                p.record(EReflection, isect, throughput, Li);
         }
         else {
             // Hit background
-            p.record(EBackground, sg, throughput, Li);
+            p.record(EBackground, isect, throughput, Li);
             break;
         }
     }

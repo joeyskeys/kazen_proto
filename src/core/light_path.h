@@ -10,6 +10,7 @@
 #include "base/basic_types.h"
 #include "base/dictlike.h"
 #include "base/vec.h"
+#include "core/intersection.h"
 #include "core/spectrum.h"
 
 class RecordContext {
@@ -69,7 +70,7 @@ public:
     std::vector<LightPathEvent> path;
 
     void record(LightPathEvent&& e);
-    void record(const EventType t, const OSL::ShaderGlobals& sg, const RGBSpectrum& b, const RGBSpectrum& l);
+    void record(const EventType t, const Intersection& isect, const RGBSpectrum& b, const RGBSpectrum& l);
     void output(std::ostream& os) const;
 };
 

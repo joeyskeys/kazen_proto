@@ -17,12 +17,13 @@ void LightPath::record(LightPathEvent&& e) {
     path.emplace_back(std::move(e));
 }
 
-void LightPath::record(const EventType t, const OSL::ShaderGlobals& sg,
+void LightPath::record(const EventType t, const Intersection& isect,
     const RGBSpectrum& b, const RGBSpectrum& l) {
     LightPathEvent e;
     e.type = t;
-    e.event_position = sg.P;
-    e.ray_direction = sg.I;
+    e.event_position = isect.position;
+    e.ray_direction = isect.wi;
+    e.hit_geom_id = isect.geom_id;
     e.throughput = b;
     e.Li = l;
     path.emplace_back(e);
@@ -49,6 +50,7 @@ void Recorder::output(std::ostream& os) const {
                 os << "Event Type : " << event_strings[e.type]
                     << ", Event Position : " << e.event_position
                     << ", Next Direction : " << e.ray_direction
+                    << ", Geom ID : " << e.hit_geom_id
                     << ", throughput : " << e.throughput
                     << ", Li : " << e.Li << std::endl;
             }

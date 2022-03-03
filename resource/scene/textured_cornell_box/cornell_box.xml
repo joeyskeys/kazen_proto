@@ -57,8 +57,9 @@
         <Triangle verta="float3 -10 10 0" vertb="float3 -10 10 -20" vertc="float3 10 10 -20" shader_name="string white_matte" />
         <Triangle verta="float3 10 10 -20" vertb="float3 10 10 0" vertc="float3 -10 10 0" shader_name="string white_matte" />
         <!--Back-->
-        <Triangle verta="float3 -10 10 -20" vertb="float3 -10 -10 -20" vertc="float3 10 10 -20" shader_name="string white_matte" />
-        <Triangle verta="float3 10 10 -20" vertb="float3 -10 -10 -20" vertc="float3 10 -10 -20" shader_name="string white_matte" />
+        <!--Triangle verta="float3 -10 10 -20" vertb="float3 -10 -10 -20" vertc="float3 10 10 -20" shader_name="string white_matte" />
+        <Triangle verta="float3 10 10 -20" vertb="float3 -10 -10 -20" vertc="float3 10 -10 -20" shader_name="string white_matte" /-->
+        <Quad center="float3 0 0 -20" dir="float3 0 0 1" vertical_vec="float3 0 1 0" half_width="float 10" half_height="float 10" shader_name="string white_matte" />
         <!--Spheres-->
         <Sphere center_n_radius="float4 0 0 0 4" translate="func_translate -5 -6 -10" shader_name="string checkerboard_white_matte" />
         <Sphere center_n_radius="float4 0 0 0 2.5" translate="func_translate 5 -7.5 -8" shader_name="string textured_white_matte" />
