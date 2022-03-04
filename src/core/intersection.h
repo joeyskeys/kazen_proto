@@ -15,6 +15,7 @@ using ShapePtr = Shape*;
 
 struct Intersection {
     Vec3f position;
+    Vec3f refined_point;
     Vec3f normal;
     Vec3f shading_normal;
     Vec3f tangent;
@@ -31,4 +32,11 @@ struct Intersection {
     size_t geom_id;
     std::string shader_name;
     OSL::ShaderGroupRef shader;
+
+    void adaptive_offset_point(int64_t initial_mag);
 };
+
+inline void Intersection::adaptive_offset_point(int64_t inital_mag) {
+    // Checkout appleseed/renderer/kernel/intersection/refining.h
+    // And also http://vts.uni-ulm.de/docs/2008/6265/vts_6265_8393.pdf
+}

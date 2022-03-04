@@ -7,7 +7,7 @@ int main() {
     Scene scene;
     scene.parse_from_file("../resource/scene/textured_cornell_box/cornell_box.xml");
 
-    constexpr static int sample_count = 5;
+    constexpr static int sample_count = 2;
             
     scene.recorder.x_min = 398;
     scene.recorder.x_max = 402;
@@ -78,7 +78,7 @@ int main() {
     std::cout << "render duration : " << render_duration.count() << " ms\n";
 
     scene.film->write_tiles();
-    scene.recorder.output(std::cout);
+    //scene.recorder.output(std::cout);
 
     return 0;
 }
