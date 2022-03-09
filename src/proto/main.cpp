@@ -78,7 +78,7 @@ int main() {
     std::cout << "render duration : " << render_duration.count() << " ms\n";
 
     scene.film->write_tiles();
-    //scene.recorder.output(std::cout);
+    scene.recorder.output(std::cout);
 
     return 0;
 }

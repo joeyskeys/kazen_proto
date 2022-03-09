@@ -21,7 +21,7 @@ void LightPath::record(const EventType t, const Intersection& isect,
     const RGBSpectrum& b, const RGBSpectrum& l) {
     LightPathEvent e;
     e.type = t;
-    e.event_position = isect.position;
+    e.event_position = isect.refined_point;
     e.ray_direction = isect.wi;
     e.hit_geom_id = isect.geom_id;
     e.throughput = b;

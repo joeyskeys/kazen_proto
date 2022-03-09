@@ -56,26 +56,26 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     // Calculate in local space
     isect.ray_t = t;
     // small bias to avoid self intersection
-    isect.position = r_local.at(t) * 1.00001f;
-    isect.normal = (r_local.at(t) - center_n_radius.reduct<3>()) / center_n_radius.w();
+    isect.P = r_local.at(t) * 1.00001f;
+    isect.N = (r_local.at(t) - center_n_radius.reduct<3>()) / center_n_radius.w();
     if (isect.backface)
-        isect.normal = -isect.normal;
+        isect.N = -isect.N;
 
-    if (isect.normal == Vec3f(0.f, 1.f, 0.f))
-        isect.tangent = normalize(Vec3f{0.f, 0.f, -1.f}.cross(isect.normal));
+    if (isect.N == Vec3f(0.f, 1.f, 0.f))
+        isect.tangent = normalize(Vec3f{0.f, 0.f, -1.f}.cross(isect.N));
     else
-        isect.tangent = normalize(Vec3f{0.f, 1.f, 0.f}.cross(isect.normal));
+        isect.tangent = normalize(Vec3f{0.f, 1.f, 0.f}.cross(isect.N));
 
-    isect.bitangent = normalize(isect.tangent.cross(isect.normal));
+    isect.bitangent = normalize(isect.tangent.cross(isect.N));
     isect.is_light = is_light;
     isect.shape = const_cast<Sphere*>(this);
     isect.geom_id = geom_id;
 
-    float phi = std::atan2(isect.position.z(), isect.position.x());
+    float phi = std::atan2(isect.P.z(), isect.P.x());
     if (phi < 0)
         phi += boost::math::constants::two_pi<float>();
     isect.uv[0] = phi * boost::math::constants::one_div_two_pi<float>();
-    float theta = std::acos(std::clamp(isect.position.y() / center_n_radius.w(), -1.f, 1.f));
+    float theta = std::acos(std::clamp(isect.P.y() / center_n_radius.w(), -1.f, 1.f));
     isect.uv[1] = theta / boost::math::constants::pi<float>() + 0.5;
 
     // Transform back to world space
@@ -150,12 +150,12 @@ void Sphere::sample(Vec3f& p, Vec3f& n, float& pdf) const {
 void Sphere::post_hit(Intersection& isect) const {
     auto up_in_world = local_to_world.apply(Vec3f(0.f, 1.f, 0.f), true);
     auto forward_in_world = local_to_world.apply(Vec3f(0.f, 0.f, -1.f), true);
-    if (isect.normal == up_in_world)
-        isect.tangent = normalize(forward_in_world.cross(isect.normal));
+    if (isect.N == up_in_world)
+        isect.tangent = normalize(forward_in_world.cross(isect.N));
     else
-        isect.tangent = normalize(up_in_world.cross(isect.normal));
+        isect.tangent = normalize(up_in_world.cross(isect.N));
 
-    isect.bitangent = normalize(isect.tangent.cross(isect.normal));
+    isect.bitangent = normalize(isect.tangent.cross(isect.N));
 
     isect.is_light = is_light;
     isect.shader_name = shader_name;
@@ -163,7 +163,7 @@ void Sphere::post_hit(Intersection& isect) const {
 
     // Embree do not calculate parametric sphere uv
     // calculate it manually
-    auto local_pos = world_to_local.apply(isect.position);
+    auto local_pos = world_to_local.apply(isect.P);
     float phi = std::atan2(local_pos.z(), local_pos.x());
     if (phi < 0)
         phi += boost::math::constants::two_pi<float>();
@@ -223,14 +223,14 @@ bool Quad::intersect(const Ray& r, Intersection& isect) const {
         return false;
 
     isect.ray_t = t;
-    auto position_vec = isect.position - center;
+    auto position_vec = isect.P - center;
     float horizontal_distance = fabsf(dot(position_vec, horizontal_vec));
     float vertical_distance = fabsf(dot(position_vec, vertical_vec));
 
     if (horizontal_distance > half_width ||  vertical_distance > half_height)
         return false;
 
-    isect.normal = dir;
+    isect.N = dir;
     isect.tangent = horizontal_vec;
     isect.bitangent = vertical_vec;
     isect.backface = false;
@@ -303,6 +303,9 @@ void Quad::post_hit(Intersection& isect) const {
     isect.shader_name = shader_name;
     isect.geom_id = geom_id;
 
+    isect.P = center + horizontal_vec * half_width * (isect.uv[0] - 0.5f) +
+        vertical_vec * half_height * (isect.uv[1] - 0.5f);
+
     if (is_light)
         isect.light_id = light->light_id;
 }
@@ -354,11 +357,11 @@ static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, Intersec
     if (t < 0 || t > isect.ray_t)
         return false;
 
-    isect.position = r.at(t - 0.00001f);
-    isect.normal = cross(v1v0, v2v0).normalized();
+    isect.P = r.at(t - 0.00001f);
+    isect.N = cross(v1v0, v2v0).normalized();
     // TODO : calculate dpdu & dpdv.
     isect.tangent = v1v0.normalized();
-    isect.bitangent = cross(isect.tangent, isect.normal);
+    isect.bitangent = cross(isect.tangent, isect.N);
     isect.ray_t = t;
     isect.backface = t < 0.f ? true : false;
 
@@ -450,7 +453,7 @@ void Triangle::sample(Vec3f& p, Vec3f& n, float& pdf) const {
 void Triangle::post_hit(Intersection& isect) const {
     Vec3f v1v0 = verts[1] - verts[0];
     isect.tangent = local_to_world.apply(v1v0.normalized(), true);
-    isect.bitangent = cross(isect.tangent, isect.normal);
+    isect.bitangent = cross(isect.tangent, isect.N);
     isect.is_light = is_light;
     isect.shader_name = shader_name;
     isect.geom_id = geom_id;
@@ -458,7 +461,7 @@ void Triangle::post_hit(Intersection& isect) const {
     // Compute hit point with barycentric coordinate is more accurate
     // But currently it will cause a weird problem..
     Vec3f bary{1 - isect.uv[0] - isect.uv[1], isect.uv[0], isect.uv[1]};
-    isect.position = bary[0] * verts[0] + bary[1] * verts[1] + bary[2] * verts[2];
+    isect.P = bary[0] * verts[0] + bary[1] * verts[1] + bary[2] * verts[2];
 
     if (is_light)
         isect.light_id = light->light_id;

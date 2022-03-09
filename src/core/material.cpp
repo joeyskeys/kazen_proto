@@ -41,7 +41,7 @@ RGBSpectrum MetalBxDF::sample_f(const Vec3f& wo, Vec3f& wi, const Intersection& 
 }
 
 RGBSpectrum Material::calculate_response(Intersection& isect, Ray& ray) const {
-    Vec3f wo = world_to_tangent(-ray.direction, isect.normal, isect.tangent, isect.bitangent);
+    Vec3f wo = world_to_tangent(-ray.direction, isect.N, isect.tangent, isect.bitangent);
     Vec3f wi;
 
     Vec2f u = random2f();
@@ -55,7 +55,7 @@ RGBSpectrum Material::calculate_response(Intersection& isect, Ray& ray) const {
     auto spec = f / pdf;
 
     isect.wo = -ray.direction;
-    isect.wi = tangent_to_world(wi, isect.normal, isect.tangent, isect.bitangent);
+    isect.wi = tangent_to_world(wi, isect.N, isect.tangent, isect.bitangent);
 
     return spec;
 }

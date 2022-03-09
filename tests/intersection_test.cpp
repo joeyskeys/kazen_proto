@@ -18,7 +18,7 @@ int main() {
     LambertianBxDF lamb{RGBSpectrum{1.f, 1.f, 1.f}};
     MetalBxDF metal{RGBSpectrum{1.f, 1.f, 1.f}};
     Vec3f wi;
-    Vec3f local_wo = world_to_tangent(-r.direction, isect.normal, isect.tangent, isect.bitangent);
+    Vec3f local_wo = world_to_tangent(-r.direction, isect.N, isect.tangent, isect.bitangent);
     float p;
     //lamb.sample_f(local_wo, wi, isect, Vec2f{0.8f, 0.4f}, p);
     metal.sample_f(local_wo, wi, isect, Vec2f{0.1f, 0.1f}, p);
@@ -42,8 +42,8 @@ int main() {
     hit = tri.intersect(r2, isect);
 
     std::cout << "hit : " << hit << std::endl;
-    std::cout << "position : " << isect.position;
-    std::cout << "normal : " << isect.normal;
+    std::cout << "position : " << isect.P;
+    std::cout << "normal : " << isect.N;
     std::cout << "t : " << isect.ray_t << std::endl;
 
     std::vector<std::shared_ptr<Hitable>> hitables;

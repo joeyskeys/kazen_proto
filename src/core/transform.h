@@ -96,8 +96,8 @@ public:
 
     Intersection apply(const Intersection& isect) const {
         Intersection ret;
-        ret.position = apply(isect.position);
-        ret.normal = (mat_inv.transpose() * Vec4f(isect.normal, 0.f)).reduct<3>();
+        ret.P = apply(isect.P);
+        ret.N = (mat_inv.transpose() * Vec4f(isect.N, 0.f)).reduct<3>();
         ret.shading_normal = isect.shading_normal;
         ret.tangent = apply(isect.tangent, true);
         ret.bitangent = apply(isect.bitangent, true);

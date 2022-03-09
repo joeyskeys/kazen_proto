@@ -233,9 +233,9 @@ void KazenRenderServices::globals_from_hit(
     bool flip)
 {
     memset((char*)&sg, 0, sizeof(OSL::ShaderGlobals));
-    sg.P = isect.position;
-    sg.N = isect.normal;
-    sg.Ng = isect.normal;
+    sg.P = isect.P;
+    sg.N = isect.N;
+    sg.Ng = isect.N;
 
     sg.u = isect.uv[0];
     sg.v = isect.uv[1];

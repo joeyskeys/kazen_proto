@@ -42,7 +42,7 @@ RGBSpectrum NormalIntegrator::Li(const Ray& r, const RecordContext& rctx) const 
         return RGBSpectrum{0};
     }
 
-    auto ret = isect.normal.abs();
+    auto ret = isect.N.abs();
     return ret;
 }
 
@@ -62,8 +62,8 @@ RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r, const RecordContext& rc
     }
 
     auto sample = sample_hemisphere().normalized();
-    auto shadow_ray_dir = tangent_to_world(sample, isect.normal, isect.tangent, isect.bitangent);
-    auto shadow_ray = Ray(isect.position, shadow_ray_dir.normalized());
+    auto shadow_ray_dir = tangent_to_world(sample, isect.N, isect.tangent, isect.bitangent);
+    auto shadow_ray = Ray(isect.P, shadow_ray_dir.normalized());
 
     float t;
     if (!accel_ptr->intersect(shadow_ray, t)) {
@@ -212,7 +212,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
                 Vec3f light_dir;
                 auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
                 if (!Ls.is_zero()) {
-                    float cos_theta_v = dot(light_dir, isect.normal);
+                    float cos_theta_v = dot(light_dir, isect.N);
                     auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
                     direct_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
                     Li += throughput * Ls * f * cos_theta_v * direct_weight;
@@ -238,7 +238,9 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
 
             // Construct next ray
             ray.direction = isect.wi;
-            ray.origin = isect.position;
+            //isect.refined_point = isect.P + isect.offset_point1();
+            isect.refined_point = isect.P;
+            ray.origin = isect.refined_point;
             ray.tmin = 0;
             ray.tmax = std::numeric_limits<float>::max();
             isect.ray_t = std::numeric_limits<float>::max();
