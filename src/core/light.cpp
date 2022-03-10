@@ -40,7 +40,7 @@ RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, f
     if (scene->occluded(shadow_ray, geometry->geom_id))
         return RGBSpectrum{0.f, 0.f, 0.f};
     
-    return eval(isect, -shadow_ray.direction, n);
+    return eval(isect, -light_dir, n);
 }
 
 RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& n) const {

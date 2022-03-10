@@ -252,7 +252,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
             isect.refined_point = isect.P;
             ray.origin = isect.refined_point;
             //ray.tmin = 0;
-            ray.tmin = isect.offset_point2();
+            //ray.tmin = isect.offset_point2();
+            ray.tmin = epsilon<float>;
             ray.tmax = std::numeric_limits<float>::max();
             isect.ray_t = std::numeric_limits<float>::max();
             

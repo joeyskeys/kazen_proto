@@ -303,10 +303,8 @@ void Quad::post_hit(Intersection& isect) const {
     isect.shader_name = shader_name;
     isect.geom_id = geom_id;
 
-    /*
     isect.P = center + horizontal_vec * half_width * (isect.uv[0] - 0.5f) +
         vertical_vec * half_height * (isect.uv[1] - 0.5f);
-    */
 
     if (is_light)
         isect.light_id = light->light_id;
