@@ -7,12 +7,12 @@ int main() {
     Scene scene;
     scene.parse_from_file("../resource/scene/textured_cornell_box/cornell_box.xml");
 
-    constexpr static int sample_count = 2;
+    constexpr static int sample_count = 32;
             
-    scene.recorder.x_min = 398;
-    scene.recorder.x_max = 402;
-    scene.recorder.y_min = 298;
-    scene.recorder.y_max = 302;
+    scene.recorder.x_min = 580;
+    scene.recorder.x_max = 584;
+    scene.recorder.y_min = 330;
+    scene.recorder.y_max = 334;
     scene.recorder.setup();
 
     auto render_start = get_time();

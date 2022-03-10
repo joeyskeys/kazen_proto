@@ -153,11 +153,21 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     e_start.throughput = throughput;
     e_start.Li = Li;
     p.record(std::move(e_start));
+    size_t last_geom_id = -1;
 
     for (int depth = 0; depth < max_depth; ++depth) {
         OSL::ShaderGlobals sg;
 
         if (accel_ptr->intersect(ray, isect)) {
+            if (isect.geom_id == last_geom_id) {
+                // Bypass self-intersection
+                ray.tmin = isect.offset_point2();
+                ray.tmax = std::numeric_limits<float>::max();
+                isect.ray_t = std::numeric_limits<float>::max();
+                continue;
+            }
+            last_geom_id = isect.geom_id;
+
             KazenRenderServices::globals_from_hit(sg, ray, isect);
             auto shader_ptr = (*shaders)[isect.shader_name];
             if (shader_ptr == nullptr)
@@ -241,7 +251,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
             //isect.refined_point = isect.P + isect.offset_point1();
             isect.refined_point = isect.P;
             ray.origin = isect.refined_point;
-            ray.tmin = 0;
+            //ray.tmin = 0;
+            ray.tmin = isect.offset_point2();
             ray.tmax = std::numeric_limits<float>::max();
             isect.ray_t = std::numeric_limits<float>::max();
             
