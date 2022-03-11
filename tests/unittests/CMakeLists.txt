@@ -16,4 +16,7 @@ add_executable(variant_tests variant_tests.cpp)
 target_link_libraries(variant_tests PRIVATE Catch2::Catch2WithMain)
 
 add_executable(integrator_tests integrator_tests.cpp)
-target_link_libraries(integrator_tests PRIVATE kazen_proto_lib)
+target_link_libraries(integrator_tests
+    PRIVATE
+        kazen_proto_lib
+        ${OIIO_LIBRARIES})

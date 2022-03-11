@@ -37,6 +37,8 @@ RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, f
 
     // Visibility test
     auto shadow_ray = Ray(isect.P, light_dir);
+    // self-intersection also possible here
+    shadow_ray.tmin = epsilon<float>;
     if (scene->occluded(shadow_ray, geometry->geom_id))
         return RGBSpectrum{0.f, 0.f, 0.f};
     
