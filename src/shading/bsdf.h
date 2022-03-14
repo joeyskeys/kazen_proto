@@ -103,14 +103,17 @@ public:
         , byte_count(0)
     {}
 
-    template <typename Type, typename Params>
-    bool add_bsdf(const RGBSpectrum& w, const Params& params) {
+    template <typename Params>
+    bool add_bsdf(const ClosureID& id, const RGBSpectrum& w, const Params* params) {
         if (bsdf_count >= max_closure)
             return false;
-        if (byte_count + sizeof(Type) > max_size) return false;
+        if (byte_count + sizeof(Params) > max_size) return false;
 
         weights[bsdf_count] = w;
-        bsdfs[bsdf_count] = new (pool.data() + byte_count) Type(params);
+        //bsdfs[bsdf_count] = new (pool.data() + byte_count) Type(params);
+        bsdf_ids[bsdf_count] = id;
+        bsdf_params[bsdf_count] = params;
+
         bsdf_count++;
         byte_count += sizeof(Type);
         return true;
@@ -120,7 +123,8 @@ public:
         float w = 1.f / beta.sum();
         float weight_sum = 0;
         for (int i = 0; i < bsdf_count; i++) {
-            pdfs[i] = dot(weights[i], beta) * bsdfs[i]->albedo(sg) * w;
+            //pdfs[i] = dot(weights[i], beta) * bsdfs[i]->albedo(sg) * w;
+            pdfs[i] = dot(weights[i], beta) * w;
             weight_sum += pdfs[i];
         }
 
@@ -141,7 +145,9 @@ public:
 
 private:
     uint bsdf_count, byte_count;
-    std::array<BSDF*, max_closure> bsdfs;
+    //std::array<BSDF*, max_closure> bsdfs;
+    std::array<ClosureID, max_closure> bsdf_ids;
+    std::array<void*, max_closure> bsdf_params;
     std::array<float, max_closure> pdfs;
     std::array<RGBSpectrum, max_closure> weights;
     std::array<char, max_size> pool;

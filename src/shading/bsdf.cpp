@@ -5,9 +5,10 @@
 #include <boost/math/constants/constants.hpp>
 #include <OSL/genclosure.h>
 
-#include "bsdf.h"
 #include "base/utils.h"
 #include "core/sampling.h"
+#include "shaidng/bsdf.h"
+#include "shading/bsdfs.h"
 
 using OSL::TypeDesc;
 
@@ -127,14 +128,20 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, const Vec3f& 
 
     // An extra 0.9999999 to ensure sampled index don't overflow
     uint idx = sample[0] * 0.9999999f * bsdf_count;
-    ret = weights[idx] * (bsdfs[idx]->sample(sg, sample, wi, pdf) / pdfs[idx]);
+    auto id = bsdf_ids[idx];
+    if (sample_functions[id] == nullptr)
+        return ret;
+
+    ret = weights[idx] * sample_functions[id](bsdf_params[idx], sg,
+        sample, wi, pdf) / pdfs[idx];
     pdf *= pdfs[idx];
 
     // Add up contributions from other bsdfs
     for (int i = 0; i < bsdf_count; i++) {
         if (i == idx) continue;
         float bsdf_pdf = 0;
-        RGBSpectrum bsdf_weight = weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
+        RGBSpectrum bsdf_weight = weights[i] * eval_functions[id](
+            bsdf_params[idx], sg, wi, bsdf_pdf);
         power_heuristic(&ret, &pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
     }
 
@@ -146,7 +153,9 @@ RGBSpectrum CompositeClosure::eval(const OSL::ShaderGlobals& sg, const Vec3f& wi
     pdf = 0;
     for (int i = 0; i < bsdf_count; i++) {
         float bsdf_pdf = 0;
-        RGBSpectrum bsdf_weight = weights[i] * bsdfs[i]->eval(sg, wi, bsdf_pdf);
+        auto id = bsdf_ids[i];
+        RGBSpectrum bsdf_weight = weights[i] * eval_functions[id](
+            bsdf_params[i], sg, wi, bsdf_pdf);
         power_heuristic(&ret, &pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
     }
 
@@ -194,10 +203,10 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
             if (!light_only) {
                 bool status = false;
                 switch (comp->id) {
-                    case DiffuseID:        status = ret.surface.add_bsdf<Diffuse, DiffuseParams>(cw, *comp->as<DiffuseParams>());
+                    case DiffuseID:        status = ret.surface.add_bsdf<DiffuseParams>(cw, comp->as<DiffuseParams>());
                         break;
 
-                    case EmissionID:       status = ret.surface.add_bsdf<Emission, EmptyParams>(cw, *comp->as<EmptyParams>());
+                    case EmissionID:       status = ret.surface.add_bsdf<EmptyParams>(cw, comp->as<EmptyParams>());
                         break;
                 }
                 OSL_ASSERT(status && "Invalid closure invoked");
