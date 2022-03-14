@@ -12,6 +12,7 @@
  */
 
 float Diffuse::eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) {
+    auto params = reinterpret_cast<DiffuseParams*>(data);
     pdf = std::max(dot(wi, static_cast<Vec3f>(params.N)), 0.f) * boost::math::constants::one_div_pi<float>();
     return 1.f;
 }
