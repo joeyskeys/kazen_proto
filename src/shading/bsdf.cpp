@@ -129,10 +129,10 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, const Vec3f& 
     // An extra 0.9999999 to ensure sampled index don't overflow
     uint idx = sample[0] * 0.9999999f * bsdf_count;
     auto id = bsdf_ids[idx];
-    if (sample_functions[id] == nullptr)
+    if (get_sample_func(id) == nullptr)
         return ret;
 
-    ret = weights[idx] * sample_functions[id](bsdf_params[idx], sg,
+    ret = weights[idx] * get_sample_func(id)(bsdf_params[idx], sg,
         sample, wi, pdf) / pdfs[idx];
     pdf *= pdfs[idx];
 
@@ -140,7 +140,8 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, const Vec3f& 
     for (int i = 0; i < bsdf_count; i++) {
         if (i == idx) continue;
         float bsdf_pdf = 0;
-        RGBSpectrum bsdf_weight = weights[i] * eval_functions[id](
+        auto other_id = bsdf_ids[i];
+        RGBSpectrum bsdf_weight = weights[i] * get_eval_func(other_id)(
             bsdf_params[idx], sg, wi, bsdf_pdf);
         power_heuristic(&ret, &pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
     }
@@ -154,7 +155,7 @@ RGBSpectrum CompositeClosure::eval(const OSL::ShaderGlobals& sg, const Vec3f& wi
     for (int i = 0; i < bsdf_count; i++) {
         float bsdf_pdf = 0;
         auto id = bsdf_ids[i];
-        RGBSpectrum bsdf_weight = weights[i] * eval_functions[id](
+        RGBSpectrum bsdf_weight = weights[i] * get_eval_func(id)(
             bsdf_params[i], sg, wi, bsdf_pdf);
         power_heuristic(&ret, &pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
     }

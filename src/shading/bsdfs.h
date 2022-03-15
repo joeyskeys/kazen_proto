@@ -3,6 +3,8 @@
 #include <array>
 #include <functional>
 
+#include <OSL/genclosure.h>
+
 #include "shading/bsdf.h"
 
 using OSL::TypeDesc;
@@ -53,38 +55,44 @@ using sample_func = std::function<float(const void*, const OSL::ShaderGlobals&,
 
 // cpp 17 inlined constexpr variables will have external linkage will
 // have only one copy among all included files
-inline constexpr eval_func eval_functions[15] {
-    Diffuse::eval,
-    Phong::eval,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    Emission::eval, // emission
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
+inline eval_func get_eval_func(ClosureID id) {
+    static std::array<eval_func, 15> eval_functions {
+        Diffuse::eval,
+        Phong::eval,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        Emission::eval, // emission
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    };
+    return eval_functions[id];
 };
 
-inline constexpr std::array<sample_func, 15> sample_functions {
-    Diffuse::sample,
-    Phong::sample,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    Emission::sample, // emission
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
+inline sample_func get_sample_func(ClosureID id) {
+    static std::array<sample_func, 15> sample_functions {
+        Diffuse::sample,
+        Phong::sample,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        Emission::sample, // emission
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    };
+    return sample_functions[id];
 };

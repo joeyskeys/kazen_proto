@@ -68,6 +68,7 @@ set(CORE_HEADERS
     src/core/spectrum.h
     src/core/transform.h
     src/shading/bsdf.h
+    src/shading/bsdfs.h
     src/shading/renderservices.h)
 
 set(CORE_SOURCES
@@ -82,6 +83,7 @@ set(CORE_SOURCES
     src/core/scene.cpp
     src/core/shape.cpp
     src/shading/bsdf.cpp
+    src/shading/bsdfs.cpp
     src/shading/renderservices.cpp)
 
 add_library(kazen_proto_lib

@@ -114,7 +114,7 @@ public:
         bsdf_ids[bsdf_count] = id;
         bsdf_params[bsdf_count] = new (pool.data() + byte_count) Params{};
         //bsdf_params[bsdf_count] = params;
-        memcpy(&bsdf_params[bsdf_count], params, sizeof(Params));
+        memcpy(bsdf_params[bsdf_count], params, sizeof(Params));
 
         bsdf_count++;
         byte_count += sizeof(Params);
