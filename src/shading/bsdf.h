@@ -112,6 +112,7 @@ public:
         weights[bsdf_count] = w;
         //bsdfs[bsdf_count] = new (pool.data() + byte_count) Type(params);
         bsdf_ids[bsdf_count] = id;
+        bsdf_params[bsdf_count] = new (pool.data() + byte_count) Type{};
         bsdf_params[bsdf_count] = params;
 
         bsdf_count++;
