@@ -7,11 +7,12 @@
 
 #include "base/utils.h"
 #include "core/sampling.h"
-#include "shaidng/bsdf.h"
+#include "shading/bsdf.h"
 #include "shading/bsdfs.h"
 
 using OSL::TypeDesc;
 
+/*
 class Diffuse : public BSDF {
 public:
     static void register_closure(OSL::ShadingSystem& shadingsys) {
@@ -76,7 +77,6 @@ public:
     }
 };
 
-/*
 class Glossy : public BSDF {
 public:
     struct Params {
@@ -203,10 +203,10 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
             if (!light_only) {
                 bool status = false;
                 switch (comp->id) {
-                    case DiffuseID:        status = ret.surface.add_bsdf<DiffuseParams>(cw, comp->as<DiffuseParams>());
+                    case DiffuseID:        status = ret.surface.add_bsdf<DiffuseParams>(DiffuseID, cw, comp->as<DiffuseParams>());
                         break;
 
-                    case EmissionID:       status = ret.surface.add_bsdf<EmptyParams>(cw, comp->as<EmptyParams>());
+                    case EmissionID:       status = ret.surface.add_bsdf<EmptyParams>(EmissionID, cw, comp->as<EmptyParams>());
                         break;
                 }
                 OSL_ASSERT(status && "Invalid closure invoked");

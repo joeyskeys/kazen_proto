@@ -3,21 +3,47 @@
 #include <array>
 #include <functional>
 
-#include <bsdf.h>
+#include "shading/bsdf.h"
+
+using OSL::TypeDesc;
 
 struct Diffuse {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(DiffuseParams, N),
+            CLOSURE_FINISH_PARAM(DiffuseParams)
+        };
+
+        shadingsys.register_closure("diffuse", DiffuseID, params, nullptr, nullptr);
+    }
 };
 
 struct Phong {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(PhongParams, N),
+            CLOSURE_VECTOR_PARAM(PhongParams, exponent),
+            CLOSURE_FINISH_PARAM(PhongParams)
+        };
+
+        shadingsys.register_closure("phong", PhongID, params, nullptr, nullptr);
+    }
 };
 
 struct Emission {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_FINISH_PARAM(EmptyParams)
+        };
+
+        shadingsys.register_closure("emission", EmissionID, params, nullptr, nullptr);
+    }
 };
 
 using eval_func = std::function<float(const void*, const OSL::ShaderGlobals&,
@@ -27,7 +53,7 @@ using sample_func = std::function<float(const void*, const OSL::ShaderGlobals&,
 
 // cpp 17 inlined constexpr variables will have external linkage will
 // have only one copy among all included files
-inline constexpr std::array<eval_func, 15> eval_functions {
+inline constexpr eval_func eval_functions[15] {
     Diffuse::eval,
     Phong::eval,
     nullptr,

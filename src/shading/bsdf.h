@@ -112,11 +112,12 @@ public:
         weights[bsdf_count] = w;
         //bsdfs[bsdf_count] = new (pool.data() + byte_count) Type(params);
         bsdf_ids[bsdf_count] = id;
-        bsdf_params[bsdf_count] = new (pool.data() + byte_count) Type{};
-        bsdf_params[bsdf_count] = params;
+        bsdf_params[bsdf_count] = new (pool.data() + byte_count) Params{};
+        //bsdf_params[bsdf_count] = params;
+        memcpy(&bsdf_params[bsdf_count], params, sizeof(Params));
 
         bsdf_count++;
-        byte_count += sizeof(Type);
+        byte_count += sizeof(Params);
         return true;
     }
 
