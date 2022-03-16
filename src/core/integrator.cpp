@@ -240,6 +240,9 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
             else
                 f = ret.surface.sample(sg, random3f(), isect.wi, bsdf_pdf);
 
+            // Update indirect weight
+            indirect_weight = power_heuristic(1, bsdf_pdf, 1, light_pdf);
+
             // Add mis weight into throughput?
             throughput *= f;
 
@@ -383,7 +386,7 @@ RGBSpectrum OldPathIntegrator::Li (const Ray& r, const RecordContext& rctx) cons
             break;
         
         if (isect.is_light) {
-            light_pdf = isect.shape->light->pdf();
+            light_pdf = isect.shape->light->pdf(isect);
             indirect_weight = power_heuristic(1, bsdf_pdf, 1, light_pdf);
         }
     }

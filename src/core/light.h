@@ -60,6 +60,7 @@ public:
     {}
 
     RGBSpectrum sample(const Intersection& isect, Vec3f& light_dir, float& pdf, const HitablePtr scene) const override;
+    float       pdf(const Intersection& isect) const override;
     RGBSpectrum eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& n) const override;
 
 public:
