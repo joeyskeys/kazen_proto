@@ -2,11 +2,12 @@
 
 #include <limits>
 
+#include "base/basic_types.h"
 #include "base/vec.h"
 
 class Ray {
 public:
-    Ray(Vec3f o, Vec3f d, const float time=0.f, const float tmin=0.f, const float tmax=std::numeric_limits<float>::max())
+    Ray(Vec3f o, Vec3f d, const float time=0.f, const float tmin=epsilon<float>, const float tmax=std::numeric_limits<float>::max())
     //Ray(Dual2V3f o, Dual2V3f d, const float time=0.f, const float tmin=0.f, const float tmax=std::numeric_limits<float>::Max())
         : origin(o)
         , direction(d.normalized())

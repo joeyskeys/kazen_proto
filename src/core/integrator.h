@@ -76,6 +76,24 @@ public:
     OSL::ShadingContext* ctx;
 };
 
+class OldPathIntegrator : public Integrator {
+public:
+    OldPathIntegrator();
+    OldPathIntegrator(Camera* camera_ptr, Film* flm_ptr, Recorder* rec);
+
+    static std::unique_ptr<Integrator> create(Camera* cam_ptr, Film* flm_ptr, Recorder* rec) {
+        return std::make_unique<OldPathIntegrator>(cam_ptr, flm_ptr, rec);
+    }
+
+    void setup(Scene* scene) override;
+    RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
+
+    OSL::ShadingSystem* shadingsys;
+    std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
+    OSL::PerThreadInfo* thread_info;
+    OSL::ShadingContext* ctx;
+};
+
 class IntegratorFactory {
 public:
     inline std::unique_ptr<Integrator> create(Camera* cam_ptr, Film* flm_ptr, Recorder* rec=nullptr) {

@@ -193,7 +193,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
             // of this iteration.
             if (depth >= min_depth) {
                 auto prob = std::min(throughput.max_component() * eta * eta, 0.99f);
-                if (prob < random()) {
+                if (prob < randomf()) {
                     p.record(ERouletteCut, isect, throughput, Li);
                     break;
                 }
@@ -221,6 +221,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
                 auto light_ptr = lights->at(sampled_light_idx).get();
                 Vec3f light_dir;
                 auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
+                if (isect.is_light)
+                    isect.wi = light_dir;
                 if (!Ls.is_zero()) {
                     float cos_theta_v = dot(light_dir, isect.N);
                     auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
@@ -273,4 +275,116 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     recorder->record(p, rctx);
     
     return Li;
+}
+
+OldPathIntegrator::OldPathIntegrator()
+    : Integrator()
+{}
+
+OldPathIntegrator::OldPathIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
+    : Integrator(cam_ptr, flm_ptr, rec)
+{}
+
+void OldPathIntegrator::setup(Scene* scene) {
+    Integrator::setup(scene);
+    shadingsys = scene->shadingsys.get();
+    shaders = &scene->shaders;
+    thread_info = shadingsys->create_thread_info();
+    ctx = shadingsys->get_context(thread_info);
+}
+
+RGBSpectrum OldPathIntegrator::Li (const Ray& r, const RecordContext& rctx) const {
+    Ray(r);
+    Intersection isect;
+
+    RGBSpectrum Li{0}, throughput{1};
+    float eta = 1.f;
+    float indirect_weight = 1.f;
+    float light_pdf, bsdf_pdf;
+
+    constexpr int min_depth = 3;
+
+    if (!accel_ptr->intersect(ray, isect))
+        return Li;
+
+    int depth = 1;
+    while (true) {
+        KazenRenderServices::globals_from_hit(sg, ray, isect);
+        auto shader_ptr = (*shaders)[isect.shader_name];
+        if (shader_ptr == nullptr)
+            throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", isect.shader_name));
+        shadingsys->execute(*ctx, *shader_ptr, sg);
+        ShadingResult ret;
+        bool last_bounce = depth == false;
+        process_closure(ret, sg.Ci, RGBSpectrum{1}, last_bounce);
+
+        // Intersection with lights
+        if (isect.is_light)
+            Li += throughput * indirect_weight * ret.Le;
+
+        // Russian roulette
+        if (depth >= min_depth) {
+            auto prob = std::min(throughput.max_component() * eta * eta, 0.95f);
+            if (prob <= randomf())
+                break;
+            throughput /= prob;
+        }
+
+        // Direct lighting by sampling light
+        ret.surface.compute_pdfs(sg, throughput, false);
+        int light_sample_range = light->size();
+
+        // Avoid sampling itself if we've hit a geometry light
+        if (isect.is_light)
+            --light_sample_range;
+
+        if (light_sample_range > 0) {
+            int sampled_light_idx = randomf() * 0.99999 * light_sample_range;
+
+            // Shift the index if we happen to sampled itself
+            if (isect.is_light && sampled_light_idx >= isect.light_id)
+                ++sampled_light_idx;
+
+            auto light_ptr = lights->at(sampled_light_idx).get();
+            Vec3f light_dir;
+            auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
+            if (isect.is_light)
+                isect.wi = light_dir;
+            if (!Ls.is_zero()) {
+                float cos_theta_v = dot(light_dir, isect.N);
+                auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
+                direct_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
+                Li += throughput * Ls * f * cos_theta_v * direct_weight;
+            }
+        }
+
+        // Indirect light by sampling bsdf
+        RGBSpectrum f{0};
+        if (isect.is_light)
+            f = ret.surface.eval(sg, isect.wi, bsdf_pdf);
+        else
+            f = ret.surface.sample(sg, random3f(), isect.wi, bsdf_pdf);
+
+        throughput *= f;
+
+        if (throughput.is_zero())
+            return Li;
+        eta *= 0.95f;
+
+        // Construct next ray
+        ray.direction = isect.wi;
+        isect.refined_point = isect.P;
+        ray.origin = isect.refined_point;
+        ray.tmin = epsilon<float>;
+        ray.tmax = std::numeric_limits<float>::max();
+        isect.ray_t = std::numeric_limits<float>::max();
+
+        if (!accel_ptr->intersect(ray, isect))
+            break;
+        
+        if (isect.is_light) {
+            light_pdf = isect.shape->light->pdf();
+            indirect_weight = power_heuristic(1, bsdf_pdf, 1, light_pdf);
+        }
+    }
 }
