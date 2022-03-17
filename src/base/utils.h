@@ -1,18 +1,26 @@
 #pragma once
 
-#include <cmath>
 #include <algorithm>
+
+#include <boost/math/constants/constants.hpp>
 
 #include "vec.h"
 
+namespace constants = boost::math::constants;
+
 template <typename T>
 T to_radian(const T degree) {
-    return static_cast<T>(degree / 180. * M_PI);
+    return static_cast<T>(degree / 180. * constants::pi<float>());
 }
 
 template <typename T>
 T to_degree(const T radian) {
-    return static_cast<T>(radian / M_PI * 180.);
+    return static_cast<T>(radian / constants::pi<float>() * 180.);
+}
+
+template <typename T>
+inline T square(const T& a) {
+    return a * a;
 }
 
 /* Shading related utilities.
