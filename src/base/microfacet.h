@@ -13,7 +13,6 @@ inline float stretch_roughness(
     const float     ax,
     const float     ay)
 {
-    // a.k.a p22 function
     if (ax == ay || sin_theta_v == 0.f)
         return 1.f / square(ax);
 
@@ -39,4 +38,24 @@ float beckmann_ndf(
     const float A = stretch_roughness(m, sin_theta_v, ax, ay);
 
     return std::exp(-tan_theta_2 * A) / (constants::pi<float>() * ax * ay * cos_theta_4);
+}
+
+float GGX_ndf(
+    const Vec3f&    m,
+    const float     ax,
+    const float     ay)
+{
+    const float cos_theta_v = m.y();
+    if (cos_theta_v == 0.f)
+        return square(ax) * constants::one_div_pi<float>();
+
+    const float cos_theta_2 = square(cos_theta_v);
+    const float sin_theta_v = std::sqrt(std::max(0.f, 1.f - cos_theta_2));
+    const float cos_theta_4 = square(cos_theta_2);
+    const float tan_theta_2 = (1.f - cos_theta_2) / cos_theta_2;
+
+    const float A = stretch_roughness(m, sin_theta_v, ax, ay);
+
+    const float tmp = 1.f + tan_theta_2 * A;
+    return 1.f / (constants::pi<float>() * ax * ay * cos_theta_4 * square(tmp));
 }
