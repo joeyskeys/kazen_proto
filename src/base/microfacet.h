@@ -13,7 +13,7 @@ inline float stretch_roughness(
     const float     ax,
     const float     ay)
 {
-    // Appleseed's impl, seems different with formula
+    // a.k.a p22 function
     if (ax == ay || sin_theta_v == 0.f)
         return 1.f / square(ax);
 
@@ -36,7 +36,7 @@ float beckmann_ndf(
     const float cos_theta_4 = square(cos_theta_2);
     const float tan_theta_2 = (1.f - cos_theta_2) / cos_theta_2;
 
-    const float A = ;
+    const float A = stretch_roughness(m, sin_theta_v, ax, ay);
 
     return std::exp(-tan_theta_2 * A) / (constants::pi<float>() * ax * ay * cos_theta_4);
 }
