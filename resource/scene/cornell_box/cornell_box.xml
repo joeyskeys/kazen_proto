@@ -6,12 +6,12 @@
     <Materials>
         <ShaderGroupBegin name="red_matte" />
             <Shader name="matte" layer="layer1">
-                <Parameter Cs="float3 0.9 0.1 0.1" />
+                <Parameter Cs="float3 0.7 0.1 0.1" />
             </Shader>
         <ShaderGroupEnd />
         <ShaderGroupBegin name="green_matte" />
             <Shader name="matte" layer="layer2">
-                <Parameter Cs="float3 0.1 0.9 0.1" />
+                <Parameter Cs="float3 0.1 0.7 0.1" />
             </Shader>
         <ShaderGroupEnd />
         <ShaderGroupBegin name="white_matte" />

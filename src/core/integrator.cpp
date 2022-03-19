@@ -135,13 +135,13 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     RGBSpectrum Li{0}, throughput{1};
     float direct_weight;
     float indirect_weight = 1.f;
-    float eta = 1.f;
+    float eta = 0.95f;
     float emission_pdf, light_pdf, bsdf_pdf;
 
     Intersection isect;
     Ray ray(r);
 
-    constexpr int max_depth = 6;
+    constexpr int max_depth = 8;
     constexpr int min_depth = 3;
 
     // Create light path and add start event
@@ -227,7 +227,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
                     float cos_theta_v = dot(light_dir, isect.N);
                     auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
                     direct_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
-                    Li += throughput * Ls * f * cos_theta_v * direct_weight;
+                    Li += throughput * Ls * f * cos_theta_v * direct_weight * indirect_weight;
                 }
             }
 
@@ -241,7 +241,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
                 f = ret.surface.sample(sg, random3f(), isect.wi, bsdf_pdf);
 
             // Update indirect weight
-            indirect_weight = power_heuristic(1, bsdf_pdf, 1, light_pdf);
+            indirect_weight *= power_heuristic(1, bsdf_pdf, 1, light_pdf);
 
             // Add mis weight into throughput?
             throughput *= f;
@@ -249,14 +249,13 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
             if (throughput.is_zero())
                 return Li;
             // TODO : add the real eta calculation
-            eta *= 0.95f;
+            //eta *= 0.95f;
 
             // Construct next ray
             ray.direction = isect.wi;
             //isect.refined_point = isect.P + isect.offset_point1();
             isect.refined_point = isect.P;
             ray.origin = isect.refined_point;
-            //ray.tmin = 0;
             //ray.tmin = isect.offset_point2();
             ray.tmin = epsilon<float>;
             ray.tmax = std::numeric_limits<float>::max();
@@ -297,11 +296,12 @@ void OldPathIntegrator::setup(Scene* scene) {
 }
 
 RGBSpectrum OldPathIntegrator::Li (const Ray& r, const RecordContext& rctx) const {
-    Ray(r);
+    Ray ray(r);
     Intersection isect;
 
     RGBSpectrum Li{0}, throughput{1};
     float eta = 1.f;
+    float direct_weight;
     float indirect_weight = 1.f;
     float light_pdf, bsdf_pdf;
 
@@ -312,6 +312,7 @@ RGBSpectrum OldPathIntegrator::Li (const Ray& r, const RecordContext& rctx) cons
 
     int depth = 1;
     while (true) {
+        OSL::ShaderGlobals sg;
         KazenRenderServices::globals_from_hit(sg, ray, isect);
         auto shader_ptr = (*shaders)[isect.shader_name];
         if (shader_ptr == nullptr)
@@ -335,7 +336,7 @@ RGBSpectrum OldPathIntegrator::Li (const Ray& r, const RecordContext& rctx) cons
 
         // Direct lighting by sampling light
         ret.surface.compute_pdfs(sg, throughput, false);
-        int light_sample_range = light->size();
+        int light_sample_range = lights->size();
 
         // Avoid sampling itself if we've hit a geometry light
         if (isect.is_light)
@@ -390,4 +391,6 @@ RGBSpectrum OldPathIntegrator::Li (const Ray& r, const RecordContext& rctx) cons
             indirect_weight = power_heuristic(1, bsdf_pdf, 1, light_pdf);
         }
     }
+
+    return Li;
 }

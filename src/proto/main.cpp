@@ -7,7 +7,7 @@ int main() {
     Scene scene;
     scene.parse_from_file("../resource/scene/textured_cornell_box/cornell_box.xml");
 
-    constexpr static int sample_count = 32;
+    constexpr static int sample_count = 5;
             
     scene.recorder.x_min = 580;
     scene.recorder.x_max = 584;

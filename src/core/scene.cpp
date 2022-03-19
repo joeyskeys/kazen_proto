@@ -28,6 +28,7 @@ enum ETag {
     ENormalIntegrator,
     EAmbientOcclusionIntegrator,
     EPathIntegrator,
+    EOldPathIntegrator,
     // objects
     EObjects,
     ESphere,
@@ -48,7 +49,7 @@ enum ETag {
     EInvalid
 };
 
-constexpr static frozen::unordered_map<frozen::string, ETag, 22> tags = {
+constexpr static frozen::unordered_map<frozen::string, ETag, 23> tags = {
     {"Scene", EScene},
     {"Film", EFilm},
     {"Camera", ECamera},
@@ -59,6 +60,7 @@ constexpr static frozen::unordered_map<frozen::string, ETag, 22> tags = {
     {"NormalIntegrator", ENormalIntegrator},
     {"AmbientOcclusionIntegrator", EAmbientOcclusionIntegrator},
     {"PathIntegrator", EPathIntegrator},
+    {"OldPathIntegrator", EOldPathIntegrator},
     {"Objects", EObjects},
     {"Sphere", ESphere},
     {"Triangle", ETriangle},
@@ -369,23 +371,22 @@ void Scene::parse_from_file(fs::path filepath) {
             */
 
             case ENormalIntegrator: {
-                //integrator = std::make_unique<NormalIntegrator>(camera.get(),
-                    //film.get());
                 integrator_fac.create_functor = &NormalIntegrator::create;
                 break;
             }
 
             case EAmbientOcclusionIntegrator: {
-                //integrator = std::make_unique<AmbientOcclusionIntegrator>(camera.get(),
-                    //film.get());
                 integrator_fac.create_functor = &AmbientOcclusionIntegrator::create;
                 break;
             }
 
             case EPathIntegrator: {
-                //integrator = std::make_unique<PathIntegrator>(camera.get(), film.get());
                 integrator_fac.create_functor = &PathIntegrator::create;
                 break;
+            }
+
+            case EOldPathIntegrator: {
+                integrator_fac.create_functor = &OldPathIntegrator::create;
             }
 
             case EObjects:

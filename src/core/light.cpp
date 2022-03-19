@@ -45,6 +45,10 @@ RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, f
     return eval(isect, -light_dir, n);
 }
 
+float GeometryLight::pdf(const Intersection& isect) const {
+    return 0.1f;
+}
+
 RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& n) const {
     auto cos_theta = dot(light_dir, n);
     return cos_theta > 0.f ? radiance : 0.f;
