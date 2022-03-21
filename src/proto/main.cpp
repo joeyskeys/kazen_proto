@@ -9,10 +9,10 @@ int main() {
 
     constexpr static int sample_count = 5;
             
-    scene.recorder.x_min = 580;
-    scene.recorder.x_max = 584;
-    scene.recorder.y_min = 330;
-    scene.recorder.y_max = 334;
+    scene.recorder.x_min = 480;
+    scene.recorder.x_max = 482;
+    scene.recorder.y_min = 300;
+    scene.recorder.y_max = 302;
     scene.recorder.setup();
 
     auto render_start = get_time();

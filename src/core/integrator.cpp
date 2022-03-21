@@ -74,6 +74,86 @@ RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r, const RecordContext& rc
     return RGBSpectrum{0};
 }
 
+WhittedIntegrator::WhittedIntegrator()
+    : Integrator()
+{}
+
+WhittedIntegrator::WhittedIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
+    : Integrator(cam_ptr, flm_ptr, rec)
+{}
+
+void WhittedIntegrator::setup(Scene* scene) {
+    Integrator::setup(scene);
+    shadingsys = scene->shadingsys.get();
+    shaders = &scene->shaders;
+    thread_info = shadingsys->create_thread_info();
+    ctx = shadingsys->get_context(thread_info);
+}
+
+RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
+    RGBSpectrum Li{0};
+    Intersection isect;
+    Ray ray(r);
+    OSL::ShaderGlobals sg;
+
+    LightPath p;
+    LightPathEvent e_start;
+    e_start.type = EStart;
+    e_start.event_position = r.origin;
+    e_start.ray_direction = r.direction;
+    e_start.Li = Li;
+    p.record(std::move(e_start));
+
+    if (!accel_ptr->intersect(ray, isect)) {
+        p.record(EBackground, isect, RGBSpectrum{0}, Li);
+        return Li;
+    }
+
+    isect.refined_point = isect.P;
+
+    KazenRenderServices::globals_from_hit(sg, ray, isect);
+    auto shader_ptr = (*shaders)[isect.shader_name];
+    if (shader_ptr == nullptr)
+        throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", isect.shader_name));
+    shadingsys->execute(*ctx, *shader_ptr, sg);
+    ShadingResult ret;
+    process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
+    ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
+
+    if (isect.is_light)
+        Li += ret.Le;
+
+    // We don't have specular material for now
+    int light_sample_range = lights->size();
+
+    if (isect.is_light)
+        --light_sample_range;
+
+    if (light_sample_range > 0) {
+        int sampled_light_idx = randomf() * 0.99999 * light_sample_range;
+        if (isect.is_light && sampled_light_idx >= isect.light_id)
+            ++sampled_light_idx;
+
+        auto light_ptr = lights->at(sampled_light_idx).get();
+        Vec3f light_dir;
+        float light_pdf, bsdf_pdf;
+        auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
+
+        if (!Ls.is_zero()) {
+            float cos_theta_v = dot(light_dir, isect.N);
+            auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
+            recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}", cos_theta_v, f, Ls));
+            Li += (f * Ls * cos_theta_v) / light_pdf;
+        }
+
+        p.record(EReflection, isect, RGBSpectrum{0}, Li);
+    }
+
+    recorder->record(p, rctx);
+
+    return Li;
+}
+
 PathIntegrator::PathIntegrator()
     : Integrator()
 {}

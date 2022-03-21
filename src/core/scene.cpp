@@ -27,6 +27,7 @@ enum ETag {
     //EIntegrator,
     ENormalIntegrator,
     EAmbientOcclusionIntegrator,
+    EWhittedIntegrator,
     EPathIntegrator,
     EOldPathIntegrator,
     // objects
@@ -49,7 +50,7 @@ enum ETag {
     EInvalid
 };
 
-constexpr static frozen::unordered_map<frozen::string, ETag, 23> tags = {
+constexpr static frozen::unordered_map<frozen::string, ETag, 24> tags = {
     {"Scene", EScene},
     {"Film", EFilm},
     {"Camera", ECamera},
@@ -59,6 +60,7 @@ constexpr static frozen::unordered_map<frozen::string, ETag, 23> tags = {
     //{"Integrator", EIntegrator},
     {"NormalIntegrator", ENormalIntegrator},
     {"AmbientOcclusionIntegrator", EAmbientOcclusionIntegrator},
+    {"WhittedIntegrator", EWhittedIntegrator},
     {"PathIntegrator", EPathIntegrator},
     {"OldPathIntegrator", EOldPathIntegrator},
     {"Objects", EObjects},
@@ -377,6 +379,11 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case EAmbientOcclusionIntegrator: {
                 integrator_fac.create_functor = &AmbientOcclusionIntegrator::create;
+                break;
+            }
+
+            case EWhittedIntegrator: {
+                integrator_fac.create_functor = &WhittedIntegrator::create;
                 break;
             }
 
