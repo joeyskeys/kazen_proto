@@ -17,8 +17,9 @@ RGBSpectrum PointLight::sample(const Intersection& isect, Vec3f& light_dir, floa
     return radiance / length_sqr;
 }
 
-RGBSpectrum PointLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& n) const {
+RGBSpectrum PointLight::eval(const Intersection& isect, const Vec3f& light_dir, float& pdf, const HitablePtr scene) const {
     auto length_sqr = (position - isect.P).length_squared();
+    pdf = 1.f;
     return radiance / length_sqr;
 }
 
@@ -35,21 +36,24 @@ RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, f
     geometry->sample(p, n, pdf);
     light_dir = (p - isect.P).normalized();
 
-    // Visibility test
-    auto shadow_ray = Ray(isect.P, light_dir);
+    // Visibility test (Done in eval)
+    //auto shadow_ray = Ray(isect.P, light_dir);
     // self-intersection also possible here
-    shadow_ray.tmin = epsilon<float>;
-    if (scene->occluded(shadow_ray, geometry->geom_id))
-        return RGBSpectrum{0.f, 0.f, 0.f};
+    //shadow_ray.tmin = epsilon<float>;
+    //if (scene->occluded(shadow_ray, geometry->geom_id))
+        //return RGBSpectrum{0.f, 0.f, 0.f};
     
-    return eval(isect, -light_dir, n);
+    return eval(isect, -light_dir, pdf, scene);
 }
 
-float GeometryLight::pdf(const Intersection& isect) const {
-    return 0.1f;
-}
+RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, float& pdf, const HitablePtr scene) const {
+    Intersection tmpsect;
+    if (!scene->intersect(Ray(isect.P, light_dir), tmpsect) || tmpsect.geom_id != geometry->geom_id)
+        return 0.f;
 
-RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& n) const {
-    auto cos_theta = dot(light_dir, n);
-    return cos_theta > 0.f ? radiance : 0.f;
+    if (dot(tmpsect.N, isect.wi) >= 0)
+        return 0.f;
+
+    pdf = 1.f / geometry->area();
+    return radiance;
 }

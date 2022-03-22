@@ -177,38 +177,11 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
      * Lo = Le + | f * Li * cos dw             (1)
      *           /hemisphere
      * 
-     * Here with MIS and NEE, the equation is
-     * rewrite as:
-     * 
-     * Lo = Le + mis_weight_1 * L_direct       (2)
-     *      + mis_weight_2 * L_indirect
-     * 
-     * In the context of path tracing, the equation
-     * is:
-     * 
-     * Lo = Le1 + w_1_d * L_1_d + w_1_i * f1 * (3)
-     *      (Le2 + w_2_d * L_2_d + f2 *
-     *      (Le3 + ...))
-     * 
-     * In each iteration, we follow the equation 2
-     * by seperating the procedural into 3 parts:
-     * 
-     * 1. Le calculation if we hit emissive object
-     *    (delta light cannot be hit but can be
-     *    sampled);
-     * 2. L_direct calculation by sampling a light
-     *    (or all) and get its contribution;
-     * 3. L_indirect calculation by sampling material,
-     *    update throughtput and forward to next
-     *    iteration.
-     * 
-     * And:
-     * 
-     * 1. L_direct and L_indirect could be clipped off
-     *    in deeper iterations by Russian Roulette;
-     * 2. throughtput is used to represent the accumulated
-     *    effect of each hit event a.k.a "f" in the equations
-     *    with initial value 1.
+     * For one shading point, the radiance is sampled
+     * with MIS for one direction, hence generating
+     * the ray path. There were methods generating ray
+     * trees which is just not more efficient than the
+     * current way.
      * 
      * *********************************************/
 
@@ -234,6 +207,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     e_start.Li = Li;
     p.record(std::move(e_start));
     size_t last_geom_id = -1;
+    bool specular_bounce = false;
 
     for (int depth = 0; depth < max_depth; ++depth) {
         OSL::ShaderGlobals sg;
@@ -259,18 +233,68 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
 
             /* *********************************************
              * 1. Le calculation
+             * We try out pbrt's impl, add emitted contribution
+             * at only first hit and specular bounce coz further
+             * emission is counted in the direction light sampling
+             * part
              * *********************************************/
+            //if (isect.is_light)
+            if (depth == 0 || specular_bounce)
+                Li += throughput * ret.Le;
+
+
+            ret.surface.compute_pdfs(sg, throughput, depth >= min_depth);
+
+            int light_sample_range = lights->size();
+
+            // Avoid sampling itself if we've hit a geometry light
             if (isect.is_light)
-                Li += throughput * indirect_weight * ret.Le;
+                --light_sample_range;
+
+            Vec3f next_ray_dir;
+            float bsdf_sampled_pdf;
+            auto sampled_f = ret.surface.sample(sg, random3f(), next_ray_dir, bsdf_sampled_pdf);
+
+            if (light_sample_range > 0) {
+                int sampled_light_idx = randomf() * 0.99999 * light_sample_range;
+
+                // Shift the index if we happen to sampled itself
+                if (isect.is_light && sampled_light_idx >= isect.light_id)
+                    ++sampled_light_idx;
+
+                /* *********************************************
+                * 2. Sampling light to get direct light contribution
+                * *********************************************/
+                auto light_ptr = lights->at(sampled_light_idx).get();
+                Vec3f light_dir;
+                auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
+                if (!Ls.is_zero()) {
+                    float cos_theta_v = dot(light_dir, isect.N);
+                    auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
+                    direct_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
+                    Li += throughput * Ls * f * cos_theta_v * direct_weight / light_pdf;
+                }
+
+                /* *********************************************
+                * 3. Sampling material to get next direction
+                * *********************************************/
+                float cos_theta_v = dot(next_ray_dir, isect.N);
+                Ls = light_ptr->eval(isect, next_ray_dir, light_pdf, accel_ptr);
+                indirect_weight = power_heuristic(1, bsdf_sampled_pdf, 1, light_pdf);
+                Li += throughput * Ls * sampled_f * cos_theta_v * indirect_weight / bsdf_sampled_pdf;
+            }
+
+            throughput *= sampled_f;
+            if (throughput.is_zero())
+                return Li;
+            // TODO : add the real eta calculation
+            //eta *= 0.95f;
 
             // Russian Roulette
             // The time of doing the Russian Roulette will determine
             // which part will be discarded.
             // Here we follow the implementation in mitsuba and will
             // discard the L_direct & L_indirect on condition.
-            // The implementation in pbrt-v3 do it in the final step
-            // of the iteration which will discard the indirect contribution
-            // of this iteration.
             if (depth >= min_depth) {
                 auto prob = std::min(throughput.max_component() * eta * eta, 0.99f);
                 if (prob < randomf()) {
@@ -280,59 +304,9 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
                 throughput /= prob;
             }
 
-            /* *********************************************
-             * 2. L_direct calculation by sampling light
-             * *********************************************/
-            ret.surface.compute_pdfs(sg, throughput, depth >= min_depth);
-
-            int light_sample_range = lights->size();
-
-            // Avoid sampling itself if we've hit a geometry light
-            if (isect.is_light)
-                --light_sample_range;
-
-            if (light_sample_range > 0) {
-                int sampled_light_idx = randomf() * 0.99999 * light_sample_range;
-
-                // Shift the index if we happen to sampled itself
-                if (isect.is_light && sampled_light_idx >= isect.light_id)
-                    ++sampled_light_idx;
-
-                auto light_ptr = lights->at(sampled_light_idx).get();
-                Vec3f light_dir;
-                auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
-                if (isect.is_light)
-                    isect.wi = light_dir;
-                if (!Ls.is_zero()) {
-                    float cos_theta_v = dot(light_dir, isect.N);
-                    auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
-                    direct_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
-                    Li += throughput * Ls * f * cos_theta_v * direct_weight * indirect_weight;
-                }
-            }
-
-            /* *********************************************
-             * 3. L_indirect calculation by sampling material
-             * *********************************************/
-            RGBSpectrum f{0};
-            if (isect.is_light)
-                f = ret.surface.eval(sg, isect.wi, bsdf_pdf);
-            else
-                f = ret.surface.sample(sg, random3f(), isect.wi, bsdf_pdf);
-
-            // Update indirect weight
-            indirect_weight *= power_heuristic(1, bsdf_pdf, 1, light_pdf);
-
-            // Add mis weight into throughput?
-            throughput *= f;
-
-            if (throughput.is_zero())
-                return Li;
-            // TODO : add the real eta calculation
-            //eta *= 0.95f;
-
             // Construct next ray
-            ray.direction = isect.wi;
+            //ray.direction = isect.wi;
+            ray.direction = next_ray_dir;
             //isect.refined_point = isect.P + isect.offset_point1();
             isect.refined_point = isect.P;
             ray.origin = isect.refined_point;

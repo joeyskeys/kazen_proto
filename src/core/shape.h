@@ -31,6 +31,7 @@ public:
     // This function is added to handle tangent & bitangent calculation
     // in embree intersection
     virtual void post_hit(Intersection& isect) const = 0;
+    virtual float area() const = 0;
     void print_bound() const override;
 
 public:
@@ -60,6 +61,7 @@ public:
     void* address_of(const std::string& name) override;
     void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
     void post_hit(Intersection& isect) const override;
+    float area() const override;
     void print_info() const override;
 
     void get_world_position(Vec4f* cnr) const;
@@ -102,6 +104,7 @@ public:
     void* address_of(const std::string& name) override;
     void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
     void post_hit(Intersection& isect) const override;
+    float area() const override;
     void print_info() const override;
 
     void get_verts(void* verts) const;
@@ -142,6 +145,7 @@ public:
     void* address_of(const std::string& name) override;
     void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
     void post_hit(Intersection& isect) const override;
+    float area() const override;
     void print_info() const override;
 
     Vec3f verts[3];
@@ -163,6 +167,7 @@ public:
     //void* address_of(const std::string& name) override
     void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
     void post_hit(Intersection& isect) const override;
+    float area() const override;
     void print_info() const override;
 
     std::vector<Vec3f> verts;

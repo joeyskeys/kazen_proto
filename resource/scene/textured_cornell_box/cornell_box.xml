@@ -83,7 +83,7 @@
     </Lights>
 
     <EmbreeAccelerator type="bvh" />
-    <!--PathIntegrator type="pt" /-->
-    <WhittedIntegrator type="whitted" />
+    <PathIntegrator type="pt" />
+    <!--WhittedIntegrator type="whitted" /-->
 
 </Scene>

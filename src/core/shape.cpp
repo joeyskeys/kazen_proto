@@ -15,6 +15,7 @@
 #include "core/transform.h"
 
 namespace fs = boost::filesystem;
+namespace constants = boost::math::constants;
 
 static inline AABBf bbox_of_triangle(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) {
     return bound_union(AABBf{vec_min(v0, v1), vec_max(v0, v1)}, v2);
@@ -74,9 +75,9 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     float phi = std::atan2(isect.P.z(), isect.P.x());
     if (phi < 0)
         phi += boost::math::constants::two_pi<float>();
-    isect.uv[0] = phi * boost::math::constants::one_div_two_pi<float>();
+    isect.uv[0] = phi * constants::one_div_two_pi<float>();
     float theta = std::acos(std::clamp(isect.P.y() / center_n_radius.w(), -1.f, 1.f));
-    isect.uv[1] = theta / boost::math::constants::pi<float>() + 0.5;
+    isect.uv[1] = theta / constants::pi<float>() + 0.5;
 
     // Transform back to world space
     isect = local_to_world.apply(isect);
@@ -166,13 +167,17 @@ void Sphere::post_hit(Intersection& isect) const {
     auto local_pos = world_to_local.apply(isect.P);
     float phi = std::atan2(local_pos.z(), local_pos.x());
     if (phi < 0)
-        phi += boost::math::constants::two_pi<float>();
-    isect.uv[0] = phi * boost::math::constants::one_div_two_pi<float>();
+        phi += constants::two_pi<float>();
+    isect.uv[0] = phi * constants::one_div_two_pi<float>();
     float theta = std::acos(std::clamp(local_pos.y() / center_n_radius.w(), -1.f, 1.f));
-    isect.uv[1] = theta / boost::math::constants::pi<float>() + 0.5;
+    isect.uv[1] = theta / constants::pi<float>() + 0.5;
 
     if (is_light)
         isect.light_id = light->light_id;
+}
+
+float Sphere::area() const {
+    return 4.f * constants::pi<float>() * square(center_n_radius.w());
 }
 
 void Sphere::print_info() const {
@@ -308,6 +313,10 @@ void Quad::post_hit(Intersection& isect) const {
 
     if (is_light)
         isect.light_id = light->light_id;
+}
+
+float Quad::area() const {
+    return half_width * half_height * 4.f;
 }
 
 void Quad::print_info() const {
@@ -467,6 +476,10 @@ void Triangle::post_hit(Intersection& isect) const {
         isect.light_id = light->light_id;
 }
 
+float Triangle::area() const {
+    return cross(verts[1] - verts[0], verts[2] - verts[0]).length() * 0.5f;
+}
+
 void Triangle::print_info() const {
     std::cout << fmt::format("shape Triangle : verts {} {} {}", verts[0], verts[1], verts[2])
         << std::endl;
@@ -549,6 +562,11 @@ void TriangleMesh::sample(Vec3f& p, Vec3f& n, float& pdf) const {
 
 void TriangleMesh::post_hit(Intersection& isect) const {
 
+}
+
+float TriangleMesh::area() const {
+    // Need some pre-calculation;
+    return 1.f;
 }
 
 void TriangleMesh::print_info() const {
