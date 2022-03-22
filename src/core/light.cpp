@@ -43,15 +43,19 @@ RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, f
     //if (scene->occluded(shadow_ray, geometry->geom_id))
         //return RGBSpectrum{0.f, 0.f, 0.f};
     
-    return eval(isect, -light_dir, pdf, scene);
+    return eval(isect, light_dir, pdf, scene);
 }
 
 RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, float& pdf, const HitablePtr scene) const {
-    Intersection tmpsect;
-    if (!scene->intersect(Ray(isect.P, light_dir), tmpsect) || tmpsect.geom_id != geometry->geom_id)
+    //if (!scene->intersect(Ray(isect.P, light_dir), tmpsect) || tmpsect.geom_id != geometry->geom_id)
+        //return 0.f;
+
+    auto shadow_ray = Ray(isect.P, light_dir);
+    Vec3f n;
+    if (scene->occluded(shadow_ray, geometry->geom_id, n))
         return 0.f;
 
-    if (dot(tmpsect.N, isect.wi) >= 0)
+    if (dot(light_dir, n) >= 0)
         return 0.f;
 
     pdf = 1.f / geometry->area();

@@ -275,6 +275,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
                     Li += throughput * Ls * f * cos_theta_v * direct_weight / light_pdf;
                 }
 
+                recorder->print(rctx, fmt::format("Ls sampling light : {}", Ls));
+
                 /* *********************************************
                 * 3. Sampling material to get next direction
                 * *********************************************/
@@ -282,6 +284,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
                 Ls = light_ptr->eval(isect, next_ray_dir, light_pdf, accel_ptr);
                 indirect_weight = power_heuristic(1, bsdf_sampled_pdf, 1, light_pdf);
                 Li += throughput * Ls * sampled_f * cos_theta_v * indirect_weight / bsdf_sampled_pdf;
+
+                recorder->print(rctx, fmt::format("Ls sampling bsdf : {}", Ls));
             }
 
             throughput *= sampled_f;
