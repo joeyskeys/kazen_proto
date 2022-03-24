@@ -8,3 +8,17 @@
 - [x] configurable light path record for debugging and visualization (Update : not configurable now with hard coded structure, can provide convinience for some basic debug. Add other plans on this topic later on)
 - [ ] Complete closures and fill up with details of the various microfacet models
 - [ ] look into path integrator to quantify the errors between ground truth
+
+### Kazen Con 2022.3.1 Briefing
+
+  1. Current development status of kazen proto and related background knowledge(OIIO, OSL).
+  2. Design and ideas of some module of the renderer:
+      1. Scene description and parsing;
+      2. Kernel seperation of OSL for future integration of GPU;
+      3. Debugging tools;
+      4. Testing, benchmarking and documenting.
+  3. Problems occurred in development of kazen proto and related topics that need further investigation:
+      1. floating point and self intersection;
+      2. cpp self introspection;
+      3. partial derivatives and dual number.
+  4. Discussion and quick revisit of light path transport, importance sampling, MIS etc..

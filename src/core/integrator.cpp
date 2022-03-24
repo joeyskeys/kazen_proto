@@ -381,7 +381,8 @@ RGBSpectrum OldPathIntegrator::Li (const Ray& r, const RecordContext& rctx) cons
             process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
 
             if (isect.is_light && depth > 0) {
-                light_pdf = 1.f / isect.shape->area();
+                //light_pdf = 1.f / isect.shape->area();
+                light_pdf = 1.f;
                 indirect_weight = power_heuristic(1, bsdf_pdf, 1, light_pdf);
                 auto cos_theta_v = dot(-ray.direction, isect.N);
                 Li += throughput * ret.Le * f * cos_theta_v * indirect_weight / bsdf_pdf;
