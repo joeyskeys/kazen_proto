@@ -142,7 +142,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
         if (!Ls.is_zero()) {
             float cos_theta_v = dot(light_dir, isect.N);
             auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
-            recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}", cos_theta_v, f, Ls));
+            recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
             Li += (f * Ls * cos_theta_v) / light_pdf;
         }
 
@@ -229,7 +229,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
             shadingsys->execute(*ctx, *shader_ptr, sg);
             ShadingResult ret;
             bool last_bounce = depth == max_depth;
-            process_closure(ret, sg.Ci, RGBSpectrum{1}, last_bounce);
+            process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
 
             /* *********************************************
              * 1. Le calculation
@@ -281,9 +281,12 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
                 * 3. Sampling material to get next direction
                 * *********************************************/
                 float cos_theta_v = dot(next_ray_dir, isect.N);
-                Ls = light_ptr->eval(isect, next_ray_dir, light_pdf, accel_ptr);
-                indirect_weight = power_heuristic(1, bsdf_sampled_pdf, 1, light_pdf);
-                Li += throughput * Ls * sampled_f * cos_theta_v * indirect_weight / bsdf_sampled_pdf;
+                Intersection tmpsect;
+                if (accel_ptr->intersect(Ray(isect.P, next_ray_dir), tmpsect) && tmpsect.is_light) {
+                    Ls = light_ptr->eval(isect, next_ray_dir, tmpsect.P, light_pdf, tmpsect.N);
+                    indirect_weight = power_heuristic(1, bsdf_sampled_pdf, 1, light_pdf);
+                    Li += throughput * Ls * sampled_f * cos_theta_v * indirect_weight / bsdf_sampled_pdf;
+                }
 
                 recorder->print(rctx, fmt::format("Ls sampling bsdf : {}", Ls));
             }

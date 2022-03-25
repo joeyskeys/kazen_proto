@@ -49,25 +49,6 @@ enum ClosureID {
     NumClosureIDs
 };
 
-struct EmptyParams      {};
-struct DiffuseParams    { OSL::Vec3 N; };
-struct PhongParams {
-    OSL::Vec3 N;
-    float exponent;
-};
-
-class BSDF {
-public:
-    BSDF() {}
-
-    virtual float albedo(const OSL::ShaderGlobals& sg) const {
-        return 1;
-    }
-
-    virtual float eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const = 0;
-    virtual float sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const = 0;
-};
-
 static constexpr uint max_closure = 8;
 static constexpr uint max_size = 256 * sizeof(float);
 

@@ -9,6 +9,17 @@
 
 using OSL::TypeDesc;
 
+struct EmptyParams      {};
+struct DiffuseParams {
+    OSL::Vec3 R;
+    OSL::Vec3 N;
+};
+struct PhongParams {
+    OSL::Vec3 R;
+    OSL::Vec3 N;
+    float exponent;
+};
+
 struct Diffuse {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf);

@@ -5,6 +5,8 @@
 #include "base/vec.h"
 #include "core/sampling.h"
 
+namespace constants = boost::math::constants;
+
 /*
  * The design of seperating actual closure function and the OSL closure interface
  * have the following CONS:
@@ -17,16 +19,16 @@
 
 float Diffuse::eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) {
     auto params = reinterpret_cast<const DiffuseParams*>(data);
-    pdf = std::max(dot(wi, static_cast<Vec3f>(params->N)), 0.f) * boost::math::constants::one_div_pi<float>();
-    return 1.f;
+    pdf = std::max(dot(wi, static_cast<Vec3f>(params->N)), 0.f) * constants::one_div_pi<float>();
+    return constants::one_div_pi<float>();
 }
 
 float Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) {
     auto params = reinterpret_cast<const DiffuseParams*>(data);
     wi = sample_hemisphere();
     wi = tangent_to_world(wi, sg.N, sg.dPdu, sg.dPdv);
-    pdf = std::max(dot(wi, params->N), 0.f) * boost::math::constants::one_div_pi<float>();
-    return 1.f;
+    pdf = std::max(dot(wi, params->N), 0.f) * constants::one_div_pi<float>();
+    return constants::one_div_pi<float>();
 }
 
 float Phong::eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) {
@@ -37,7 +39,7 @@ float Phong::eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& w
         Vec3f R = (2 * cos_no) * params->N + sg.I;
         float cos_ri = dot(R, wi);
         if (cos_ri > 0) {
-            pdf = (params->exponent + 1) * boost::math::constants::one_div_two_pi<float>()
+            pdf = (params->exponent + 1) * constants::one_div_two_pi<float>()
                 * std::pow(cos_ri, params->exponent);
             return cos_ni * (params->exponent + 2) / (params->exponent + 1);
         }
@@ -56,7 +58,7 @@ float Phong::sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f&
         wi = tangent_to_world(wi, R);
         float cos_ni = dot(static_cast<Vec3f>(params->N), wi);
         if (cos_ni > 0) {
-            pdf = (params->exponent + 1) * boost::math::constants::one_div_two_pi<float>()
+            pdf = (params->exponent + 1) * constants::one_div_two_pi<float>()
                 * std::pow(v_cos_theta, params->exponent);
             return cos_ni * (params->exponent + 2) / (params->exponent + 1);
         }
@@ -66,13 +68,13 @@ float Phong::sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f&
 }
 
 float Emission::eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) {
-    pdf = std::max(dot(wi, sg.N), 0.f) * boost::math::constants::one_div_pi<float>();
+    pdf = std::max(dot(wi, sg.N), 0.f) * constants::one_div_pi<float>();
     return 1.f;
 }
 
 float Emission::sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) {
     wi = sample_hemisphere();
     wi = tangent_to_world(wi, sg.N, sg.dPdu, sg.dPdv);
-    pdf = std::max(dot(wi, sg.N), 0.f) * boost::math::constants::one_div_pi<float>();
+    pdf = std::max(dot(wi, sg.N), 0.f) * constants::one_div_pi<float>();
     return 1.f;
 }

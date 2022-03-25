@@ -17,7 +17,8 @@ RGBSpectrum PointLight::sample(const Intersection& isect, Vec3f& light_dir, floa
     return radiance / length_sqr;
 }
 
-RGBSpectrum PointLight::eval(const Intersection& isect, const Vec3f& light_dir, float& pdf, const HitablePtr scene) const {
+RGBSpectrum PointLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample,
+    float& pdf, const Vec3f& n) const {
     auto length_sqr = (position - isect.P).length_squared();
     pdf = 1.f;
     return radiance / length_sqr;
@@ -36,28 +37,26 @@ RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, f
     geometry->sample(p, n, pdf);
     light_dir = (p - isect.P).normalized();
 
-    // Visibility test (Done in eval)
-    //auto shadow_ray = Ray(isect.P, light_dir);
+    // Visibility test
+    auto shadow_ray = Ray(isect.P, light_dir);
     // self-intersection also possible here
-    //shadow_ray.tmin = epsilon<float>;
-    //if (scene->occluded(shadow_ray, geometry->geom_id))
-        //return RGBSpectrum{0.f, 0.f, 0.f};
+    shadow_ray.tmin = epsilon<float>;
+    if (scene->occluded(shadow_ray, geometry->geom_id, n))
+        return RGBSpectrum{0.f, 0.f, 0.f};
     
-    return eval(isect, light_dir, pdf, scene);
+    return eval(isect, -light_dir, p, pdf, n);
 }
 
-RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, float& pdf, const HitablePtr scene) const {
-    //if (!scene->intersect(Ray(isect.P, light_dir), tmpsect) || tmpsect.geom_id != geometry->geom_id)
-        //return 0.f;
-
-    auto shadow_ray = Ray(isect.P, light_dir);
-    Vec3f n;
-    if (scene->occluded(shadow_ray, geometry->geom_id, n))
+RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample,
+    float& pdf, const Vec3f& n) const {
+    auto cos_theta_v = dot(light_dir, n);
+    if (cos_theta_v <= 0)
         return 0.f;
 
-    if (dot(light_dir, n) >= 0)
-        return 0.f;
-
-    pdf = 1.f / geometry->area();
+    // PDF must unified in unit, solid angle or area
+    // Since we're using solid angle for bsdf, convert light pdf to
+    // solid angle measured too
+    // The result is still not correct..
+    pdf = (isect.P - pt_sample).length_squared() * 0.05f / geometry->area() / cos_theta_v;
     return radiance;
 }
