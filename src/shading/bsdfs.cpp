@@ -20,7 +20,7 @@ namespace constants = boost::math::constants;
 float Diffuse::eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) {
     auto params = reinterpret_cast<const DiffuseParams*>(data);
     pdf = std::max(dot(wi, static_cast<Vec3f>(params->N)), 0.f) * constants::one_div_pi<float>();
-    return constants::one_div_pi<float>();
+    return 1.f;
 }
 
 float Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) {
@@ -28,7 +28,7 @@ float Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3
     wi = sample_hemisphere();
     wi = tangent_to_world(wi, sg.N, sg.dPdu, sg.dPdv);
     pdf = std::max(dot(wi, params->N), 0.f) * constants::one_div_pi<float>();
-    return constants::one_div_pi<float>();
+    return 1.f;
 }
 
 float Phong::eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) {

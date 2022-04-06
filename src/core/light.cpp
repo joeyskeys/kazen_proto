@@ -44,19 +44,20 @@ RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, f
     if (scene->occluded(shadow_ray, geometry->geom_id, n))
         return RGBSpectrum{0.f, 0.f, 0.f};
     
-    return eval(isect, -light_dir, p, pdf, n);
-}
-
-RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample,
-    float& pdf, const Vec3f& n) const {
-    auto cos_theta_v = dot(light_dir, n);
-    if (cos_theta_v <= 0)
-        return 0.f;
-
     // PDF must unified in unit, solid angle or area
     // Since we're using solid angle for bsdf, convert light pdf to
     // solid angle measured too
     // The result is still not correct..
-    pdf = (isect.P - pt_sample).length_squared() * 0.05f / geometry->area() / cos_theta_v;
-    return radiance;
+    auto cos_theta_v = dot(-light_dir, n);
+    if (cos_theta_v <= 0.f)
+        return 0.f;
+    auto length_sqr = (isect.P - p).length_squared();
+    pdf = pdf * length_sqr / cos_theta_v;
+
+    return eval(isect, -light_dir, p, pdf, n) / pdf;
+}
+
+RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample,
+    float& pdf, const Vec3f& n) const {
+    return radiance * intensity;
 }

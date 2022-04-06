@@ -143,7 +143,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             float cos_theta_v = dot(light_dir, isect.N);
             auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
             recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
-            Li += (f * Ls * cos_theta_v) / light_pdf;
+            Li += (f * Ls * cos_theta_v) * lights->size();
         }
 
         p.record(EReflection, isect, RGBSpectrum{0}, Li);
@@ -272,7 +272,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
                     float cos_theta_v = dot(light_dir, isect.N);
                     auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
                     direct_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
-                    Li += throughput * Ls * f * cos_theta_v * direct_weight / light_pdf;
+                    Li += throughput * Ls * f * cos_theta_v * direct_weight * lights->size();
                 }
 
                 recorder->print(rctx, fmt::format("Ls sampling light : {}", Ls));

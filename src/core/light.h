@@ -11,6 +11,7 @@ public:
     Light(uint id, RGBSpectrum l=RGBSpectrum(1.f, 1.f, 1.f), bool d=true)
         : light_id(id)
         , radiance(l)
+        , intensity(5.f)
         , is_delta(d)
     {}
 
@@ -23,6 +24,7 @@ public:
 
     // members
     RGBSpectrum radiance;
+    float intensity;
     bool is_delta;
     uint light_id;
 };

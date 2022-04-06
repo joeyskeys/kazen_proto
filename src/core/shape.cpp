@@ -145,7 +145,7 @@ void Sphere::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     p = center_n_radius.reduct<3>() + n * center_n_radius.w();
     p = local_to_world.apply(p);
 
-    pdf = 1;
+    pdf = 1.f / area();
 }
 
 void Sphere::post_hit(Intersection& isect) const {
@@ -298,7 +298,7 @@ void Quad::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     n = dir;
     n = local_to_world.apply_normal(n);
 
-    pdf = 1;
+    pdf = 1.f / area();
 }
 
 void Quad::post_hit(Intersection& isect) const {
@@ -456,7 +456,7 @@ void Triangle::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     p = local_to_world.apply(p);
     n = local_to_world.apply_normal(normal);
 
-    pdf = 1;
+    pdf = 1.f / area();
 }
 
 void Triangle::post_hit(Intersection& isect) const {
@@ -477,7 +477,7 @@ void Triangle::post_hit(Intersection& isect) const {
 }
 
 float Triangle::area() const {
-    return cross(verts[1] - verts[0], verts[2] - verts[0]).length() * 0.5f;
+    return cross(verts[1] - verts[0], verts[2] - verts[0]).length_squared() * 0.5f;
 }
 
 void Triangle::print_info() const {
