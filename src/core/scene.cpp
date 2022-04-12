@@ -299,7 +299,13 @@ void Scene::parse_from_file(fs::path filepath) {
             RGBSpectrum radiance{};
             // Treated as Vec3f
             parse_attribute(radiance_attr, &radiance);
-            auto light = std::make_unique<GeometryLight>(lights.size(), radiance, shape_shared_ptr);
+
+            float intensity = 5.f;
+            auto intensity_attr = node.attribute("intensity");
+            if (intensity_attr)
+                parse_attribute(intensity_attr, &intensity);
+
+            auto light = std::make_unique<GeometryLight>(lights.size(), radiance, intensity, shape_shared_ptr);
             shape_shared_ptr->light = light.get();
             lights.emplace_back(std::move(light));
         }
