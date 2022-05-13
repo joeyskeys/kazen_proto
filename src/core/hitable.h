@@ -61,6 +61,11 @@ public:
         world_to_local.translate(-t);
     }
 
+    void scale(const Vec3f& s) {
+        local_to_world.scale(s);
+        world_to_local.scale(1. / s);
+    }
+
 public:
     Transform local_to_world, world_to_local;
     AABBf bound;

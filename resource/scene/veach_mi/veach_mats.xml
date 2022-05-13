@@ -1,0 +1,83 @@
+<Scene>
+    <Film width="int 768" height="int 512"/>
+
+    <Camera position="float3 0 6 27.5" lookat="float3 0 -1.5 2.5" up="float3 0 1 0" fov="float 25"/>
+
+    <Materials>
+        <ShaderGroupBegin name="light1" />
+            <Shader name="emitter1" layer="layer1">
+                <Parameter Cs="float3 100 100 100" />
+                <Parameter albedo="float3 0 0 0" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="light2" />
+            <Shader name="emitter" layer="layer2">
+                <Parameter Cs="float3 901.803 901.803 901.803" />
+                <Parameter albedo="float3 0 0 0" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="light3" />
+            <Shader name="emitter" layer="layer3">
+                <Parameter Cs="float3 11.11 11.11 11.11" />
+                <Parameter albedo="float3 0 0 0" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="light4" />
+            <Shader name="emitter" layer="layer4">
+                <Parameter Cs="float3 1.23457 1.23457 1.23457" />
+                <Parameter albedo="float3 0 0 0" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="light5" />
+            <Shader name="emitter" layer="layer5">
+                <Parameter Cs="float3 100 100 100" />
+                <Parameter albedo="float3 0 0 0" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="rough1" />
+            <Shader name="rough" layer="layer6">
+                <Parameter kd="float3 0.0175 0.0225 0.0325" />
+                <Parameter alpha="float 0.005" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="rough2" />
+            <Shader name="rough" layer="layer7">
+                <Parameter kd="float3 0.0175 0.0225 0.0325" />
+                <Parameter alpha="float 0.02" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="rough3" />
+            <Shader name="rough" layer="layer8">
+                <Parameter kd="float3 0.0175 0.0225 0.0325" />
+                <Parameter alpha="float 0.05" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="rough4" />
+            <Shader name="rough" layer="layer9">
+                <Parameter kd="float3 0.0175 0.0225 0.0325" />
+                <Parameter alpha="float 0.1" />
+            </Shader>
+        <ShaderGroupEnd />
+        <ShaderGroupBegin name="diffuse1" />
+            <Shader name="diffuse" layer="layer10">
+                <Parameter albedo="float3 0.1 0.1 0.1" />
+            </Shader>
+        <ShaderGroupEnd />
+    </Materials>
+
+    <Objects>
+        <Mesh filename="string meshes/sphere.obj" translate="func_translate -1.25 0 0" scale="func_scale 0.1 0.1 0.1" shader_name="light1" />
+        <Mesh filename="string meshes/sphere.obj" translate="func_translate -3.75 0 0" scale="func_scale 0.03333 0.03333 0.03333" shader_name="light2" />
+        <Mesh filename="string meshes/sphere.obj" translate="func_translate 1.25 0 0" scale="func_scale 0.3 0.3 0.3" shader_name="light3" />
+        <Mesh filename="string meshes/sphere.obj" translate="func_translate 3.75 0 0" scale="func_scale 0.9 0.9 0.9" shader_name="light4" />
+        <Mesh filename="string meshes/sphere.obj" translate="func_translate 0 4 3" shader_name="light5" />
+        <Mesh filename="string meshes/plate1.obj" shader_name="rough1" />
+        <Mesh filename="string meshes/plate2.obj" shader_name="rough2" />
+        <Mesh filename="string meshes/plate3.obj" shader_name="rough3" />
+        <Mesh filename="string meshes/plate4.obj" shader_name="rough4" />
+        <Mesh filename="string meshes/floor.obj" shader_name="diffuse1" />
+    </Objects>
+
+    <EmbreeAccelerator />
+    <PathIntegrator />
+</Scene>

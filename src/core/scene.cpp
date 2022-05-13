@@ -35,6 +35,7 @@ enum ETag {
     ESphere,
     ETriangle,
     EQuad,
+    EMesh,
     // materials
     EMaterials,
     EShaderGroupBegin,
@@ -50,7 +51,7 @@ enum ETag {
     EInvalid
 };
 
-constexpr static frozen::unordered_map<frozen::string, ETag, 24> tags = {
+constexpr static frozen::unordered_map<frozen::string, ETag, 25> tags = {
     {"Scene", EScene},
     {"Film", EFilm},
     {"Camera", ECamera},
@@ -67,6 +68,7 @@ constexpr static frozen::unordered_map<frozen::string, ETag, 24> tags = {
     {"Sphere", ESphere},
     {"Triangle", ETriangle},
     {"Quad", EQuad},
+    {"Mesh", EMesh},
     {"Materials", EMaterials},
     {"ShaderGroupBegin", EShaderGroupBegin},
     {"ShaderGroupEnd", EShaderGroupEnd},
@@ -86,10 +88,11 @@ enum EType {
     EVec4f,
     EStr,
     EUStr,
-    EFuncTrans
+    EFuncTrans,
+    EFuncScale
 };
 
-constexpr static frozen::unordered_map<frozen::string, EType, 8> types = {
+constexpr static frozen::unordered_map<frozen::string, EType, 9> types = {
     {"bool", EBool},
     {"float", EFloat},
     {"int", EInt},
@@ -97,7 +100,8 @@ constexpr static frozen::unordered_map<frozen::string, EType, 8> types = {
     {"float4", EVec4f},
     {"string", EStr},
     {"ustring", EUStr},
-    {"func_translate", EFuncTrans}
+    {"func_translate", EFuncTrans},
+    {"func_scale", EFuncScale}
 };
 
 template <typename T>
@@ -193,6 +197,15 @@ OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
                 trans[i] = string_to<float>(comps[i + 1]);
             auto hitable = reinterpret_cast<HitablePtr>(dst);
             hitable->translate(trans);
+            break;
+        }
+
+        case EFuncScale: {
+            Vec3f scale{};
+            for (int i = 0; i < Vec3f::dimension; ++i)
+                scale[i] = string_to<float>(comps[i + 1]);
+            auto hitable = reinterpret_cast<HitablePtr>(dst);
+            hitable->scale(scale);
             break;
         }
 
@@ -432,6 +445,12 @@ void Scene::parse_from_file(fs::path filepath) {
                 setup_shape(node, obj_ptr);
                 accelerator->add_quad(obj_ptr);
                 break;
+            }
+
+            case EMesh: {
+                auto obj_ptr = std::make_shared<Mesh>(objects.size());
+                setup_shape(node, obj_ptr);
+                accelerator->add_trianglemesh(obj_ptr);
             }
 
             case EMaterials:
