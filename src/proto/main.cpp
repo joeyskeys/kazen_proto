@@ -5,7 +5,7 @@
 
 int main() {
     Scene scene;
-    scene.parse_from_file("../resource/scene/textured_cornell_box/cornell_box.xml");
+    scene.parse_from_file("../resource/scene/veach_mi/veach_mats.xml");
 
     constexpr static int sample_count = 5;
             

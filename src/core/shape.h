@@ -154,8 +154,12 @@ public:
 
 class TriangleMesh : public Shape {
 public:
+    TriangleMesh(size_t id)
+        : Shape(id)
+    {}
+
     TriangleMesh(const Transform& l2w, std::vector<Vec3f>&& vs, std::vector<Vec3i>&& idx, const std::string m="", bool is_l=false)
-        : Shape(l2w, m, is_l, 2)
+        : Shape(l2w, m, is_l, 0)
         , verts(vs)
         , indice(idx)
     {}
@@ -174,4 +178,4 @@ public:
     std::vector<Vec3i> indice;
 };
 
-std::vector<std::shared_ptr<Hitable>> load_triangle_mesh(const std::string& file_path, const std::string& m="");
+std::vector<std::shared_ptr<TriangleMesh>> load_triangle_mesh(const std::string& file_path, const size_t start_id, const std::string& m="");

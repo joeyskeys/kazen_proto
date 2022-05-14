@@ -12,7 +12,7 @@ int main() {
     std::cout << "sphere bbox : " << s.bbox();
     std::cout << "intersect test : " << s.bbox().intersect(r) << std::endl;
 
-    auto triangle_meshes = load_triangle_mesh("../resource/obj/cube.obj");
+    auto triangle_meshes = load_triangle_mesh("../resource/obj/cube.obj", 0);
     auto triangle_mesh = triangle_meshes[0];
 
     Ray r2{Vec3f{0.5f, 0.5f, 5.f}, Vec3f{0.f, 0.f, -1.f}};

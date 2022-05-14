@@ -257,6 +257,7 @@ void Scene::parse_from_file(fs::path filepath) {
 
     pugi::xml_document doc;
     pugi::xml_parse_result ret = doc.load_file(filepath.c_str());
+    auto work_dir = filepath.parent_path();
 
     /* Helper function: map a position offset in bytes to a more readable line/column value */
     auto offset = [&filepath](ptrdiff_t pos) -> std::string {
@@ -299,9 +300,7 @@ void Scene::parse_from_file(fs::path filepath) {
         return tag;
     };
 
-    auto setup_shape = [&](const pugi::xml_node& node, auto shape_shared_ptr) {
-        parse_attributes(node, shape_shared_ptr.get());
-        //objects.push_back(shape_shared_ptr);
+    auto setup_light_attrib = [&](const pugi::xml_node& node, auto shape_shared_ptr) {
         if (shape_shared_ptr->is_light) {
             // If the geometry is a light, an extra radiance attribute
             // must be added.
@@ -420,7 +419,8 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case ESphere: {
                 auto obj_ptr = std::make_shared<Sphere>(objects.size());
-                setup_shape(node, obj_ptr);
+                parse_attributes(node, obj_ptr.get());
+                setup_light_attrib(node, obj_ptr);
 
                 // Here we let the accelerator do the job which requires
                 // accelerator constructed before object parsed. It means
@@ -435,22 +435,51 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case ETriangle: {
                 auto obj_ptr = std::make_shared<Triangle>(objects.size());
-                setup_shape(node, obj_ptr);
+                parse_attributes(node, obj_ptr.get());
+                setup_light_attrib(node, obj_ptr);
                 accelerator->add_triangle(obj_ptr);
                 break;
             }
 
             case EQuad: {
                 auto obj_ptr = std::make_shared<Quad>(objects.size());
-                setup_shape(node, obj_ptr);
+                parse_attributes(node, obj_ptr.get());
+                setup_light_attrib(node, obj_ptr);
                 accelerator->add_quad(obj_ptr);
                 break;
             }
 
             case EMesh: {
-                auto obj_ptr = std::make_shared<Mesh>(objects.size());
-                setup_shape(node, obj_ptr);
-                accelerator->add_trianglemesh(obj_ptr);
+                // TriangleMesh is different cause multiple mesh may contained
+                // in one file
+                auto filename_attr = node.attribute("filename");
+                if (!filename_attr)
+                    throw std::runtime_error(fmt::format("No filename specified for TriangleMesh \
+                        {} at {}", node.name(), offset(node.offset_debug())));
+                auto shader_name_attr = node.attribute("shader_name");
+                if (!shader_name_attr)
+                    throw std::runtime_error(fmt::format("No shader name specified for TriangleMesh \
+                        {} at {}", node.name(), offset(node.offset_debug())));
+                std::string filename_str;
+                parse_attribute(filename_attr, &filename_str);
+                auto meshes = load_triangle_mesh(work_dir / filename_str, objects.size(), shader_name_attr.value());
+
+                auto t = Vec3f(0.f);
+                auto trans_attr = node.attribute("translate");
+                if (trans_attr)
+                    parse_attribute(trans_attr, &t);
+
+                auto s = Vec3f(0.f);
+                auto scale_attr = node.attribute("scale");
+                if (scale_attr)
+                    parse_attribute(scale_attr, &s);
+                
+                for (auto &mesh : meshes) {
+                    setup_light_attrib(node, mesh);
+                    mesh->translate(t);
+                    mesh->scale(s);
+                    accelerator->add_trianglemesh(mesh);
+                }
             }
 
             case EMaterials:

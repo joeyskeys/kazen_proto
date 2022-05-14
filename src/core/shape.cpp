@@ -592,7 +592,7 @@ static std::shared_ptr<TriangleMesh> process_mesh(aiMesh* mesh, const aiScene* s
     return std::make_shared<TriangleMesh>(Transform{}, std::move(vs), std::move(idx), m);
 }
 
-static void process_node(aiNode* node, const aiScene* scene, std::vector<std::shared_ptr<Hitable>>& meshes, const std::string& m) {
+static void process_node(aiNode* node, const aiScene* scene, std::vector<std::shared_ptr<TriangleMesh>>& meshes, const std::string& m) {
     for (uint i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         meshes.emplace_back(process_mesh(mesh, scene, m));
@@ -603,8 +603,8 @@ static void process_node(aiNode* node, const aiScene* scene, std::vector<std::sh
     }
 }
 
-std::vector<std::shared_ptr<Hitable>> load_triangle_mesh(const std::string& file_path, const std::string& m) {
-    std::vector<std::shared_ptr<Hitable>> meshes;
+std::vector<std::shared_ptr<TriangleMesh>> load_triangle_mesh(const std::string& file_path, const size_t start_id, const std::string& m) {
+    std::vector<std::shared_ptr<TriangleMesh>> meshes;
 
     if (!fs::exists(fs::absolute(file_path))) {
         std::cout << "file : " << file_path << " does not exist" << std::endl;
@@ -619,6 +619,11 @@ std::vector<std::shared_ptr<Hitable>> load_triangle_mesh(const std::string& file
     }
 
     process_node(scene->mRootNode, scene, meshes, m);
+    for (int i = start_id; auto &mesh : meshes) {
+        // Fix me: more safe way to do this
+        mesh->geom_id = start_id;
+        i += 1;
+    }
 
     return meshes;
 }
