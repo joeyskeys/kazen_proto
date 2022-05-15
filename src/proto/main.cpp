@@ -1,11 +1,37 @@
+
 #include <tbb/tbb.h>
+#include <OpenImageIO/argparse.h>
 
 #include "core/scene.h"
 #include "core/state.h"
 
-int main() {
+int main(int argc, const char **argv) {
+    std::string filename;
+    OIIO::ArgParse ap;
+    int nthreads;
+
+    ap.intro("Kazen Render")
+        .usage("kazen [options] filename")
+        .print_defaults(true);
+
+    ap.arg("filename")
+        .hidden()
+        .action([&](OIIO::cspan<const char*> argv) { filename = argv[0]; });
+
+    ap.separator("Options:");
+    ap.arg("-t", &nthreads)
+        .help("number of threads")
+        .defaultval(0);
+
+    if (ap.parse(argc, argv) < 0 || filename.size() == 0) {
+        std::cerr << ap.geterror() << std::endl;
+        ap.print_help();
+        return 0;
+    }
+
     Scene scene;
-    scene.parse_from_file("../resource/scene/veach_mi/veach_mats.xml");
+    //scene.parse_from_file("../resource/scene/veach_mi/veach_mats.xml");
+    scene.parse_from_file(filename);
 
     constexpr static int sample_count = 5;
             
@@ -21,6 +47,7 @@ int main() {
 #define WITH_TBB
 
 #ifdef WITH_TBB
+    tbb::task_scheduler_init init(nthreads);
     tbb::parallel_for (tbb::blocked_range<size_t>(0, scene.film->tiles.size()),
         [&](const tbb::blocked_range<size_t>& r) {
 #else
