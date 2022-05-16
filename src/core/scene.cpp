@@ -247,8 +247,7 @@ bool Scene::process_shader_node(const pugi::xml_node& node, OSL::ShaderGroupRef 
     const char* type = type_attr ? type_attr.value() : "surface";
     if (!name_attr || !layer_attr)
         return false;
-    shadingsys->Shader(*shader_group, type, name_attr.value(), layer_attr.value());
-    return true;
+    return shadingsys->Shader(*shader_group, type, name_attr.value(), layer_attr.value());
 }
 
 void Scene::parse_from_file(fs::path filepath) {

@@ -12,6 +12,7 @@
 
 #include "basic_types.h"
 
+
 template <typename T, uint N>
 class Vec {
 public:
@@ -48,12 +49,14 @@ public:
 
     Vec(const OSL::Vec2& v) {
         static_assert(N == 2);
+
         for (int i = 0; i < N; i++)
             arr[i] = v[i];
     }
 
     Vec(const OSL::Vec3& v) {
         static_assert(N >= 3);
+
         for (int i = 0; i < N; i++)
             arr[i] = v[i];
 
@@ -107,6 +110,7 @@ public:
         Vec<T, M> tmp;
         for (int i = 0; i < M; i++)
             tmp[i] = arr[i];
+
         return tmp;
     }
 
@@ -114,6 +118,7 @@ public:
         Vec tmp;
         for (int i = 0; i < N; i++)
             tmp.arr[i] = arr[i] + rhs.arr[i];
+
         return tmp;
     }
 

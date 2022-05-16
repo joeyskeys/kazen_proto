@@ -5,7 +5,7 @@
 
     <Materials>
         <ShaderGroupBegin name="light1" />
-            <Shader name="emitter1" layer="layer1">
+            <Shader name="emitter" layer="layer1">
                 <Parameter Cs="float3 100 100 100" />
                 <Parameter albedo="float3 0 0 0" />
             </Shader>
@@ -60,7 +60,7 @@
         <ShaderGroupEnd />
         <ShaderGroupBegin name="diffuse1" />
             <Shader name="diffuse" layer="layer10">
-                <Parameter albedo="float3 0.1 0.1 0.1" />
+                <Parameter Cs="float3 0.1 0.1 0.1" />
             </Shader>
         <ShaderGroupEnd />
     </Materials>

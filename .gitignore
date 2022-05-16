@@ -31,6 +31,9 @@
 *.out
 *.app
 
+# OSL built files
+*.oso
+
 build/
 .vscode
 .DS_Store
