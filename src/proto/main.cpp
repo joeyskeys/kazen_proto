@@ -8,7 +8,7 @@
 int main(int argc, const char **argv) {
     std::string filename;
     OIIO::ArgParse ap;
-    int nthreads;
+    int nthreads = 0;
 
     ap.intro("Kazen Render")
         .usage("kazen [options] filename")
@@ -47,7 +47,8 @@ int main(int argc, const char **argv) {
 #define WITH_TBB
 
 #ifdef WITH_TBB
-    tbb::task_scheduler_init init(nthreads);
+    if (nthreads > 0)
+        tbb::task_scheduler_init init(nthreads);
     tbb::parallel_for (tbb::blocked_range<size_t>(0, scene.film->tiles.size()),
         [&](const tbb::blocked_range<size_t>& r) {
 #else

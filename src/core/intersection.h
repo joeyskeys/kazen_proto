@@ -32,6 +32,7 @@ struct Intersection {
     uint  light_id;
     ShapePtr shape;
     size_t geom_id;
+    size_t prim_id;
     std::string shader_name;
     OSL::ShaderGroupRef shader;
 

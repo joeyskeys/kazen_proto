@@ -57,7 +57,20 @@ public:
     RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
 };
 
-class WhittedIntegrator : public Integrator {
+class OSLBasedIntegrator : public Integrator {
+public:
+    OSLBasedIntegrator() {}
+    OSLBasedIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
+        : Integrator(cam_ptr, flm_ptr, rec)
+    {}
+
+    OSL::ShadingSystem* shadingsys;
+    std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
+    OSL::PerThreadInfo* thread_info;
+    OSL::ShadingContext* ctx;
+};
+
+class WhittedIntegrator : public OSLBasedIntegrator {
 public:
     WhittedIntegrator();
     WhittedIntegrator(Camera* camera_ptr, Film* flm_ptr, Recorder* rec);
@@ -68,14 +81,9 @@ public:
 
     void setup(Scene* scene) override;
     RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
-
-    OSL::ShadingSystem* shadingsys;
-    std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
-    OSL::PerThreadInfo* thread_info;
-    OSL::ShadingContext* ctx;
 };
 
-class PathIntegrator : public Integrator {
+class PathIntegrator : public OSLBasedIntegrator {
 public:
     PathIntegrator();
     PathIntegrator(Camera* camera_ptr, Film* flm_ptr, Recorder* rec);
@@ -86,15 +94,9 @@ public:
 
     void setup(Scene* scene) override;
     RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
-
-    OSL::ShadingSystem* shadingsys;
-    //KazenRenderServices rend;
-    std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
-    OSL::PerThreadInfo* thread_info;
-    OSL::ShadingContext* ctx;
 };
 
-class OldPathIntegrator : public Integrator {
+class OldPathIntegrator : public OSLBasedIntegrator {
 public:
     OldPathIntegrator();
     OldPathIntegrator(Camera* camera_ptr, Film* flm_ptr, Recorder* rec);
@@ -105,11 +107,6 @@ public:
 
     void setup(Scene* scene) override;
     RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
-
-    OSL::ShadingSystem* shadingsys;
-    std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
-    OSL::PerThreadInfo* thread_info;
-    OSL::ShadingContext* ctx;
 };
 
 class IntegratorFactory {

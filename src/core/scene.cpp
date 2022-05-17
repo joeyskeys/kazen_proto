@@ -256,7 +256,8 @@ void Scene::parse_from_file(fs::path filepath) {
 
     pugi::xml_document doc;
     pugi::xml_parse_result ret = doc.load_file(filepath.c_str());
-    auto work_dir = filepath.parent_path();
+    working_dir = filepath.parent_path();
+    shadingsys->attribute("searchpath:shader", working_dir.c_str());
 
     /* Helper function: map a position offset in bytes to a more readable line/column value */
     auto offset = [&filepath](ptrdiff_t pos) -> std::string {
@@ -461,7 +462,7 @@ void Scene::parse_from_file(fs::path filepath) {
                         {} at {}", node.name(), offset(node.offset_debug())));
                 std::string filename_str;
                 parse_attribute(filename_attr, &filename_str);
-                auto meshes = load_triangle_mesh(work_dir / filename_str, objects.size(), shader_name_attr.value());
+                auto meshes = load_triangle_mesh(working_dir / filename_str, objects.size(), shader_name_attr.value());
 
                 auto t = Vec3f(0.f);
                 auto trans_attr = node.attribute("translate");

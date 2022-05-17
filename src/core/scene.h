@@ -34,6 +34,7 @@ public:
     std::vector<std::shared_ptr<Hitable>> objects;
     std::vector<std::unique_ptr<Light>> lights;
     IntegratorFactory integrator_fac;
+    fs::path working_dir;
 
     Recorder recorder;
 

@@ -1,0 +1,55 @@
+<Scene>
+    <Film width="int 800" height="int 600"/>
+
+    <Camera position="float3 0 0.919769 5.41159" lookat="float3 0 0.893051 4.41198" up="float3 0 1 0" fov="float 27.7856"/>
+
+    <Materials>
+        <ShaderGroupBegin name="diffuse1"/>
+            <Shader name="diffuse" layer="layer1">
+                <Parameter Cs="float3 0.725 0.71 0.68"/>
+            </Shader>
+        <ShaderGroupEnd/>
+
+        <ShaderGroupBegin name="diffuse2"/>
+            <Shader name="diffuse" layer="layer2">
+                <Parameter Cs="float3 0.161 0.133 0.427"/>
+            </Shader>
+        <ShaderGroupEnd/>
+
+        <ShaderGroupBegin name="diffuse3"/>
+            <Shader name="diffuse" layer="layer3">
+                <Parameter Cs="float3 0.63 0.065 0.05"/>
+            </Shader>
+        <ShaderGroupEnd/>
+
+        <ShaderGroupBegin name="mirror"/>
+            <Shader name="diffuse" layer="layer4">
+                <Parameter Cs="float3 0.5 0.1 0.1" />
+            </Shader>
+        <ShaderGroupEnd/>
+
+        <ShaderGroupBegin name="dielectric"/>
+            <Shader name="diffuse" layer="layer5">
+                <Parameter Cs="float3 0.1 0.5 0.1"/>
+            </Shader>
+        <ShaderGroupEnd/>
+
+        <ShaderGroupBegin name="emitter"/>
+            <Shader name="emitter" layer="layer6">
+                <Parameter Cs="float3 40 40 40"/>
+            </Shader>
+        <ShaderGroupEnd/>
+    </Materials>
+
+    <Objects>
+        <Mesh filename="string meshes/walls.obj" shader_name="diffuse1"/>
+        <Mesh filename="string meshes/rightwall.obj" shader_name="diffuse2"/>
+        <Mesh filename="string meshes/leftwall.obj" shader_name="diffuse3"/>
+        <Mesh filename="string meshes/sphere1.obj" shader_name="mirror"/>
+        <Mesh filename="string meshes/sphere2.obj" shader_name="dielectric"/>
+        <Mesh filename="string meshes/light.obj" shader_name="emitter"/>
+    </Objects>
+
+    <EmbreeAccelerator/>
+    <PathIntegrator/>
+</Scene>

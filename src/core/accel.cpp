@@ -292,6 +292,7 @@ bool EmbreeAccel::intersect(const Ray& r, Intersection& isect) const {
         isect.N = Vec3f(rayhit.hit.Ng_x, rayhit.hit.Ng_y, rayhit.hit.Ng_z).normalized();
         isect.uv = Vec2f(rayhit.hit.u, rayhit.hit.v);
         isect.geom_id = rayhit.hit.geomID;
+        isect.prim_id = rayhit.hit.primID;
         isect.shape = reinterpret_cast<Shape*>(hitables->at(rayhit.hit.geomID).get());
         isect.shape->post_hit(isect);
     

@@ -75,11 +75,11 @@ RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r, const RecordContext& rc
 }
 
 WhittedIntegrator::WhittedIntegrator()
-    : Integrator()
+    : OSLBasedIntegrator()
 {}
 
 WhittedIntegrator::WhittedIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
-    : Integrator(cam_ptr, flm_ptr, rec)
+    : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
 {}
 
 void WhittedIntegrator::setup(Scene* scene) {
@@ -155,11 +155,11 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
 }
 
 PathIntegrator::PathIntegrator()
-    : Integrator()
+    : OSLBasedIntegrator()
 {}
 
 PathIntegrator::PathIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
-    : Integrator(cam_ptr, flm_ptr, rec)
+    : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
 {}
 
 void PathIntegrator::setup(Scene* scene) {
@@ -341,11 +341,11 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
 }
 
 OldPathIntegrator::OldPathIntegrator()
-    : Integrator()
+    : OSLBasedIntegrator()
 {}
 
 OldPathIntegrator::OldPathIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
-    : Integrator(cam_ptr, flm_ptr, rec)
+    : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
 {}
 
 void OldPathIntegrator::setup(Scene* scene) {

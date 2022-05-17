@@ -1,0 +1,10 @@
+surface diffuse
+    [[ string description = "Diffuse material" ]]
+(
+    color Cs = 0.5
+        [[  string description = "Base color",
+            float UImin = 0, float UImax = 1 ]]
+)
+{
+    Ci = Cs * diffuse(N);
+}

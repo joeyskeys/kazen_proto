@@ -561,7 +561,18 @@ void TriangleMesh::sample(Vec3f& p, Vec3f& n, float& pdf) const {
 }
 
 void TriangleMesh::post_hit(Intersection& isect) const {
-
+    auto idx = indice[isect.prim_id];
+    auto v1 = verts[idx.x()], v2 = verts[idx.y()], v3 = verts[idx.z()];
+    isect.tangent = local_to_world.apply((v2 - v1).normalized(), true);
+    isect.bitangent = cross(isect.tangent, isect.N);
+    isect.is_light = is_light;
+    isect.shader_name = shader_name;
+    isect.geom_id = geom_id;
+    isect.P = (1. - isect.uv[0] - isect.uv[1]) * v1 + isect.uv[0] * v2 +
+        isect.uv[1] * v3;
+    
+    if (is_light)
+        isect.light_id = light->light_id;
 }
 
 float TriangleMesh::area() const {

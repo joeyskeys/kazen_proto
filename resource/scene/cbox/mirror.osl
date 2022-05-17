@@ -1,0 +1,6 @@
+surface mirror
+    [[ string description = "Mirror surface" ]]
+()
+{
+    Ci = reflection(N, 1.5);
+}
