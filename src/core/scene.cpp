@@ -464,6 +464,11 @@ void Scene::parse_from_file(fs::path filepath) {
                 parse_attribute(filename_attr, &filename_str);
                 auto meshes = load_triangle_mesh(working_dir / filename_str, objects.size(), shader_name_attr.value());
 
+                bool is_light = false;
+                auto is_light_attr = node.attribute("is_light");
+                if (is_light_attr)
+                    is_light = parse_attribute(is_light_attr, &is_light);
+
                 auto t = Vec3f(0.f);
                 auto trans_attr = node.attribute("translate");
                 if (trans_attr)
@@ -475,6 +480,7 @@ void Scene::parse_from_file(fs::path filepath) {
                     parse_attribute(scale_attr, &s);
                 
                 for (auto &mesh : meshes) {
+                    mesh->is_light = is_light;
                     setup_light_attrib(node, mesh);
                     mesh->translate(t);
                     mesh->scale(s);

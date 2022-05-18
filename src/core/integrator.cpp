@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <limits>
 
@@ -62,7 +61,8 @@ RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r, const RecordContext& rc
     }
 
     auto sample = sample_hemisphere().normalized();
-    auto shadow_ray_dir = tangent_to_world(sample, isect.N, isect.tangent, isect.bitangent);
+    //auto shadow_ray_dir = tangent_to_world(sample, isect.N, isect.tangent, isect.bitangent);
+    auto shadow_ray_dir = tangent_to_world(sample, isect.N);
     auto shadow_ray = Ray(isect.P, shadow_ray_dir.normalized());
 
     float t;
@@ -124,30 +124,24 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
         Li += ret.Le;
 
     // We don't have specular material for now
-    int light_sample_range = lights->size();
+    auto light_cnt = lights->size();
+    if (light_cnt == 0)
+        return RGBSpectrum(0.f);
+    int sampled_light_idx = std::min(static_cast<size_t>(randomf() * light_cnt), light_cnt - 1);
 
-    if (isect.is_light)
-        --light_sample_range;
+    auto light_ptr = lights->at(sampled_light_idx).get();
+    Vec3f light_dir;
+    float light_pdf, bsdf_pdf;
+    auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
 
-    if (light_sample_range > 0) {
-        int sampled_light_idx = randomf() * 0.99999 * light_sample_range;
-        if (isect.is_light && sampled_light_idx >= isect.light_id)
-            ++sampled_light_idx;
-
-        auto light_ptr = lights->at(sampled_light_idx).get();
-        Vec3f light_dir;
-        float light_pdf, bsdf_pdf;
-        auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
-
-        if (!Ls.is_zero()) {
-            float cos_theta_v = dot(light_dir, isect.N);
-            auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
-            recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
-            Li += (f * Ls * cos_theta_v) * lights->size();
-        }
-
-        p.record(EReflection, isect, RGBSpectrum{0}, Li);
+    if (!Ls.is_zero()) {
+        float cos_theta_v = dot(light_dir, isect.N);
+        auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
+        recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
+        Li += (f * Ls * cos_theta_v) * lights->size();
     }
+
+    p.record(EReflection, isect, RGBSpectrum{0}, Li);
 
     recorder->record(p, rctx);
 

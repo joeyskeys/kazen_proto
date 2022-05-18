@@ -160,7 +160,6 @@ void Sphere::post_hit(Intersection& isect) const {
 
     isect.is_light = is_light;
     isect.shader_name = shader_name;
-    isect.geom_id = geom_id;
 
     // Embree do not calculate parametric sphere uv
     // calculate it manually
@@ -306,7 +305,6 @@ void Quad::post_hit(Intersection& isect) const {
     isect.bitangent = local_to_world.apply(vertical_vec, true);
     isect.is_light = is_light;
     isect.shader_name = shader_name;
-    isect.geom_id = geom_id;
 
     isect.P = center + horizontal_vec * half_width * (isect.uv[0] - 0.5f) +
         vertical_vec * half_height * (isect.uv[1] - 0.5f);
@@ -465,7 +463,6 @@ void Triangle::post_hit(Intersection& isect) const {
     isect.bitangent = cross(isect.tangent, isect.N);
     isect.is_light = is_light;
     isect.shader_name = shader_name;
-    isect.geom_id = geom_id;
 
     // Compute hit point with barycentric coordinate is more accurate
     // But currently it will cause a weird problem..
@@ -567,7 +564,6 @@ void TriangleMesh::post_hit(Intersection& isect) const {
     isect.bitangent = cross(isect.tangent, isect.N);
     isect.is_light = is_light;
     isect.shader_name = shader_name;
-    isect.geom_id = geom_id;
     isect.P = (1. - isect.uv[0] - isect.uv[1]) * v1 + isect.uv[0] * v2 +
         isect.uv[1] * v3;
     

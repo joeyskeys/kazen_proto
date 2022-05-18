@@ -3,7 +3,11 @@
 #include <cmath>
 #include <random>
 
+#include <boost/math/constants/constants.hpp>
+
 #include "base/vec.h"
+
+namespace constants = boost::math::constants;
 
 inline float randomf() {
     static std::uniform_real_distribution<double> dist(0.f, 1.f);
@@ -54,4 +58,52 @@ inline int randomi(int range) {
 inline float power_heuristic(int nf, float f_pdf, int ng, float g_pdf) {
     float f = nf * f_pdf, g = ng * g_pdf;
     return (f * f) / (f * f + g * g);
+}
+
+inline Vec2f to_uniform_disk(const Vec2f& sample) {
+    auto theta = sample.x() * constants::two_pi<float>();
+    auto r = std::sqrt(sample.y());
+    return Vec2f(r * std::cos(theta), r * std::sin(theta));
+}
+
+inline float to_uniform_disk_pdf(const Vec2f& sample) {
+    auto r = Vec2f(sample.x(), sample.y()).length();
+    if (r > 1)
+        return 0;
+    else
+        return constants::one_div_pi<float>();
+}
+
+inline Vec3f to_uniform_sphere(const Vec2f& sample) {
+    auto phi = sample.x() * constants::two_pi<float>();
+    auto theta = std::acos(1. - sample.y());
+    auto sin_theta_val = std::sin(theta);
+    return Vec3f(sin_theta_val * std::cos(phi), sin_theta_val * std::sin(phi), std::cos(theta));
+}
+
+inline float to_uniform_sphere_pdf(const Vec3f& v) {
+    return 0.25 * constants::one_div_pi<float>();
+}
+
+inline Vec3f to_uniform_hemisphere(const Vec2f& sample) {
+    float phi = sample.x() * constants::two_pi<float>();
+    float theta = std::acos(1. - sample.y());
+    auto sin_theta_val = std::sin(theta);
+    return Vec3f(sin_theta_val * std::cos(phi), sin_theta_val * std::sin(phi), std::cos(theta));
+}
+
+inline float to_uniform_hemisphere(const Vec3f& v) {
+    return v.z() > 0 ? constants::half_pi<float>() : 0;
+}
+
+inline Vec3f to_cosine_hemisphere(const Vec2f& sample) {
+    auto pt = to_uniform_disk(sample);
+    float z = std::sqrt(1. - pt.length_squared());
+    if (z == 0)
+        z = 1e-10f;
+    return Vec3f(pt.x(), pt.y(), z);
+}
+
+inline float to_cosine_hemisphere_pdf(const Vec3f& v) {
+    return v.z() * constants::one_div_pi<float>();
 }
