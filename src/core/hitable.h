@@ -24,10 +24,11 @@ public:
 
     inline bool occluded(const Ray& r, size_t& dest_geom_id, Vec3f& light_normal) const {
         Intersection isect;
-        if (!intersect(r, isect) || isect.geom_id != dest_geom_id)
+        //if (!intersect(r, isect) || isect.geom_id != dest_geom_id)
+        if (intersect(r, isect) && isect.geom_id != dest_geom_id)
             return true;
         
-        light_normal = isect.N;
+        //light_normal = isect.N;
         return false;
     }
 

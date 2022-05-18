@@ -543,17 +543,17 @@ AABBf TriangleMesh::bbox() const {
 
 void TriangleMesh::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     uint idx = randomf() * indice.size();
-    Vec3f verts[3];
+    Vec3f vs[3];
     auto vert_indices = indice[idx];
-    verts[0] = verts[vert_indices[0]];
-    verts[1] = verts[vert_indices[1]];
-    verts[2] = verts[vert_indices[2]];
+    vs[0] = verts[vert_indices[0]];
+    vs[1] = verts[vert_indices[1]];
+    vs[2] = verts[vert_indices[2]];
 
     auto sample = random2f();
     float alpha = 1 - sample.x();
     float beta = alpha * sample.y();
-    p = verts[0] + alpha * (verts[1] - verts[0]) + beta * (verts[2] - verts[0]);
-    n = cross(verts[1] - verts[0], verts[2] - verts[0]).normalized();
+    p = vs[0] + alpha * (vs[1] - vs[0]) + beta * (vs[2] - vs[0]);
+    n = cross(vs[1] - vs[0], vs[2] - vs[0]).normalized();
     pdf = 1;
 }
 
@@ -628,7 +628,7 @@ std::vector<std::shared_ptr<TriangleMesh>> load_triangle_mesh(const std::string&
     process_node(scene->mRootNode, scene, meshes, m);
     for (int i = start_id; auto &mesh : meshes) {
         // Fix me: more safe way to do this
-        mesh->geom_id = start_id;
+        mesh->geom_id = i;
         i += 1;
     }
 

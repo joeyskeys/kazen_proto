@@ -35,12 +35,14 @@ void* PointLight::address_of(const std::string& name) {
 RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, float& pdf, const HitablePtr scene) const {
     Vec3f p, n;
     geometry->sample(p, n, pdf);
-    light_dir = (p - isect.P).normalized();
+    auto light_vec = p - isect.P;
+    light_dir = light_vec.normalized();
 
     // Visibility test
     auto shadow_ray = Ray(isect.P, light_dir);
     // self-intersection also possible here
     shadow_ray.tmin = epsilon<float>;
+    shadow_ray.tmax = light_vec.length() - epsilon<float>;
     if (scene->occluded(shadow_ray, geometry->geom_id, n))
         return RGBSpectrum{0.f, 0.f, 0.f};
     
