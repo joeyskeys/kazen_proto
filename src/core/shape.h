@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "base/dictlike.h"
+#include "base/dpdf.h"
 #include "core/transform.h"
 #include "core/hitable.h"
 #include "core/material.h"
@@ -174,8 +175,12 @@ public:
     float area() const override;
     void print_info() const override;
 
+    float surface_area(uint32_t i) const;
+    void setup_dpdf();
+
     std::vector<Vec3f> verts;
     std::vector<Vec3i> indice;
+    DiscrectPDF m_dpdf;
 };
 
 std::vector<std::shared_ptr<TriangleMesh>> load_triangle_mesh(const std::string& file_path, const size_t start_id, const std::string& m="");

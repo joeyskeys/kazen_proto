@@ -484,6 +484,7 @@ void Scene::parse_from_file(fs::path filepath) {
                     setup_light_attrib(node, mesh);
                     mesh->translate(t);
                     mesh->scale(s);
+                    mesh->setup_dpdf();
                     accelerator->add_trianglemesh(mesh);
                 }
             }

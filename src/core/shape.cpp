@@ -542,17 +542,21 @@ AABBf TriangleMesh::bbox() const {
 }
 
 void TriangleMesh::sample(Vec3f& p, Vec3f& n, float& pdf) const {
-    uint idx = randomf() * indice.size();
+    //uint idx = randomf() * indice.size();
+    auto idx = m_dpdf.sample(randomf());
+    
     Vec3f vs[3];
     auto vert_indices = indice[idx];
     vs[0] = verts[vert_indices[0]];
     vs[1] = verts[vert_indices[1]];
     vs[2] = verts[vert_indices[2]];
 
-    auto sample = random2f();
-    float alpha = 1 - sample.x();
-    float beta = alpha * sample.y();
-    p = vs[0] + alpha * (vs[1] - vs[0]) + beta * (vs[2] - vs[0]);
+    auto sp = random2f();
+    float su0 = std::sqrt(sp.x());
+    float u = 1. - su0;
+    float v = sp.y() * su0;
+    //p = vs[0] + u * (vs[1] - vs[0]) + v * (vs[2] - vs[0]);
+    p = u * vs[0] + v * vs[1] + (1 - u - v) * vs[2];
     n = cross(vs[1] - vs[0], vs[2] - vs[0]).normalized();
     pdf = 1;
 }
@@ -578,6 +582,23 @@ float TriangleMesh::area() const {
 
 void TriangleMesh::print_info() const {
     std::cout << "shape TriangleMesh" << std::endl;
+}
+
+float TriangleMesh::surface_area(uint32_t i) const {
+    auto idxes = indice[i];
+    const auto &p0 = verts[idxes[0]], &p1 = verts[idxes[1]], &p2 = verts[idxes[2]];
+    return 0.5f * cross(p1 - p0, p2 - p0).length();
+}
+
+void TriangleMesh::setup_dpdf() {
+    if (is_light) {
+        m_dpdf.reserve(indice.size());
+        for (int i = 0; i < indice.size(); ++i) {
+            auto area = surface_area(i);
+            m_dpdf.append(area);
+        }
+        m_dpdf.normalize();
+    }
 }
 
 static std::shared_ptr<TriangleMesh> process_mesh(aiMesh* mesh, const aiScene* scene, const std::string& m) {
