@@ -44,7 +44,8 @@ enum ClosureID {
     /************
      * Kazen specific
      ************/
-    //GlossyID,
+    MirrorID,
+    DielectricID,
 
     NumClosureIDs
 };

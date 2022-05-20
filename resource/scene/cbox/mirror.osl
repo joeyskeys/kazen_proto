@@ -1,6 +1,14 @@
 surface mirror
     [[ string description = "Mirror surface" ]]
-()
+(
+    color Cs = 1
+        [[  string description = "Base color",
+            float UImin = 0, float UImax = 1 ]],
+    float eta = 1.5
+        [[ string description = "index of refraction",
+            float UImin = 0, float UImax = 2 ]]
+)
 {
-    Ci = reflection(N, 1.5);
+    //Ci = Cs * mirror();
+    Ci = Cs * reflection(N, eta);
 }

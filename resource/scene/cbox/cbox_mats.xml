@@ -23,7 +23,7 @@
         <ShaderGroupEnd/>
 
         <ShaderGroupBegin name="mirror"/>
-            <Shader name="diffuse" layer="layer4">
+            <Shader name="mirror" layer="layer4">
                 <Parameter Cs="float3 0.5 0.1 0.1" />
             </Shader>
         <ShaderGroupEnd/>

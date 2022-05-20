@@ -71,7 +71,10 @@ namespace
 
 void register_closures(OSL::ShadingSystem *shadingsys) {
     register_closure<Diffuse>(*shadingsys);
+    register_closure<Reflection>(*shadingsys);
     register_closure<Emission>(*shadingsys);
+    register_closure<Mirror>(*shadingsys);
+    register_closure<Dielectric>(*shadingsys);
 }
 
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only) {
@@ -102,10 +105,19 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
             if (!light_only) {
                 bool status = false;
                 switch (comp->id) {
-                    case DiffuseID:        status = ret.surface.add_bsdf<DiffuseParams>(DiffuseID, cw, comp->as<DiffuseParams>());
+                    case DiffuseID:         status = ret.surface.add_bsdf<DiffuseParams>(DiffuseID, cw, comp->as<DiffuseParams>());
                         break;
 
-                    case EmissionID:       status = ret.surface.add_bsdf<EmptyParams>(EmissionID, cw, comp->as<EmptyParams>());
+                    case ReflectionID:      status = ret.surface.add_bsdf<ReflectionParams>(ReflectionID, cw, comp->as<ReflectionParams>());
+                        break;
+
+                    case EmissionID:        status = ret.surface.add_bsdf<EmptyParams>(EmissionID, cw, comp->as<EmptyParams>());
+                        break;
+
+                    case MirrorID:          status = ret.surface.add_bsdf<EmptyParams>(MirrorID, cw, comp->as<EmptyParams>());
+                        break;
+
+                    case DielectricID:      status = ret.surface.add_bsdf<DielectricParams>(DielectricID, cw, comp->as<DielectricParams>());
                         break;
                 }
                 OSL_ASSERT(status && "Invalid closure invoked");

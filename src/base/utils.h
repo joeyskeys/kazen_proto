@@ -123,19 +123,49 @@ inline float sin_2_phi(const Vec3f& w) {
     return v_sin_phi * v_sin_phi;
 }
 
-inline Vec3f reflect(const Vec3f& wo, const Vec3f& n) {
-    return -wo + 2 * dot(wo, n) * n;
+inline Vec3f reflect(const Vec3f& wi) {
+    return Vec3f(-wi.x(), wi.y(), -wi.z());
 }
 
-inline bool refract(const Vec3f& wi, const Vec3f& n, const float eta, Vec3f& wt) {
-    float v_cos_theta_i = dot(n, wi);
-    float v_sin_2_theta_i = std::max(0.f, 1.f - v_cos_theta_i * v_cos_theta_i);
-    float v_sin_2_theta_t = eta * eta * v_sin_2_theta_i;
+inline Vec3f reflect(const Vec3f& wi, const Vec3f& n) {
+    return -wi + 2 * dot(wi, n) * n;
+}
 
-    if (v_sin_2_theta_t >= 1.f) return false;
-    float v_cos_theta_t = std::sqrt(1.f - v_sin_2_theta_t);
-    wt = eta * -wi + (eta * v_cos_theta_i - v_cos_theta_t) * n;
-    return true;
+inline Vec3f refract(const Vec3f& wi, const Vec3f& n, float eta) {
+    float cos_theta_i = dot(n, wi);
+    if (cos_theta_i < 0)
+        eta = 1.f / eta;
+    auto cos_theta_o2 = 1 - (1 - cos_theta_i * cos_theta_i) * (eta * eta);
+    if (cos_theta_o2 <= 0.f)
+        return Vec3f(0.f);
+    auto sign = cos_theta_i >= 0.f ? 1.f : -1.f;
+    return n * (-cos_theta_i * eta + sign * sqrt(cos_theta_o2)) + wi * eta;
+}
+
+inline float fresnel(float cos_theta_i, float ext_ior, float int_ior) {
+    float etai = ext_ior, etat = int_ior;
+
+    if (ext_ior == int_ior)
+        return 0.f;
+
+    if (cos_theta_i < 0.f) {
+        std::swap(etai, etat);
+        cos_theta_i = -cos_theta_i;
+    }
+
+    float eta = etai / etat,
+        sin_theta_t2 = eta * eta * (1. - cos_theta_i * cos_theta_i);
+
+    if (sin_theta_t2 > 1.f)
+        return 1.f;
+
+    float cos_theta_t = std::sqrt(1.f - sin_theta_t2);
+    float Rs = (etai * cos_theta_i - etat * cos_theta_t)
+        / (etai * cos_theta_i + etat * cos_theta_t);
+    float Rp = (etat * cos_theta_i - etai * cos_theta_t)
+        / (etat * cos_theta_i + etai * cos_theta_t);
+
+    return (Rs * Rs + Rp * Rp) / 2.f;
 }
 
 inline bool same_hemisphere(const Vec3f& w, const Vec3f& n) {
