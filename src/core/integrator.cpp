@@ -95,6 +95,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
     Intersection isect;
     Ray ray(r);
     OSL::ShaderGlobals sg;
+    RGBSpectrum throughput{1};
 
     LightPath p;
     LightPathEvent e_start;
@@ -104,45 +105,58 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
     e_start.Li = Li;
     p.record(std::move(e_start));
 
-    if (!accel_ptr->intersect(ray, isect)) {
-        p.record(EBackground, isect, RGBSpectrum{0}, Li);
-        return Li;
-    }
+    while (true) {
+        if (!accel_ptr->intersect(ray, isect)) {
+            p.record(EBackground, isect, RGBSpectrum{0}, Li);
+            return Li;
+        }
 
-    isect.refined_point = isect.P;
+        isect.refined_point = isect.P;
 
-    KazenRenderServices::globals_from_hit(sg, ray, isect);
-    auto shader_ptr = (*shaders)[isect.shader_name];
-    if (shader_ptr == nullptr)
-        throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", isect.shader_name));
-    shadingsys->execute(*ctx, *shader_ptr, sg);
-    ShadingResult ret;
-    process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
-    ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
+        KazenRenderServices::globals_from_hit(sg, ray, isect);
+        auto shader_ptr = (*shaders)[isect.shader_name];
+        if (shader_ptr == nullptr)
+            throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", isect.shader_name));
+        shadingsys->execute(*ctx, *shader_ptr, sg);
+        ShadingResult ret;
+        process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
+        ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
 
-    if (isect.is_light)
-        Li += ret.Le;
+        if (isect.is_light)
+            Li += throughput * ret.Le;
 
-    // We don't have specular material for now
-    auto light_cnt = lights->size();
-    if (light_cnt == 0)
-        return RGBSpectrum(0.f);
-    int sampled_light_idx = std::min(static_cast<size_t>(randomf() * light_cnt), light_cnt - 1);
+        BSDFSample sample;
+        auto sampled_f = ret.surface.sample(sg, sample);
+        if (sample.mode != ScatteringMode::Specular) {
+            auto light_cnt = lights->size();
+            if (light_cnt == 0)
+                return RGBSpectrum(0.f);
+            int sampled_light_idx = std::min(static_cast<size_t>(randomf() * light_cnt), light_cnt - 1);
 
-    auto light_ptr = lights->at(sampled_light_idx).get();
-    Vec3f light_dir;
-    float light_pdf, bsdf_pdf;
-    auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
+            auto light_ptr = lights->at(sampled_light_idx).get();
+            Vec3f light_dir;
+            float light_pdf, bsdf_pdf;
+            auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
 
-    if (!Ls.is_zero()) {
-        float cos_theta_v = dot(light_dir, isect.N);
-        auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
-        recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
-        Li += (f * Ls * cos_theta_v) * lights->size();
+            if (!Ls.is_zero()) {
+                float cos_theta_v = dot(light_dir, isect.N);
+                auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
+                recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
+                Li += throughtput * (f * Ls * cos_theta_v) * lights->size();
+                break;
+            }
+        }
+        else {
+            if (randomf() < 0.95f) {
+                throughput *= sampled_f;
+                ray = Ray(isect.P, sample.wo);
+            }
+            else
+                break;
+        }
     }
 
     p.record(EReflection, isect, RGBSpectrum{0}, Li);
-
     recorder->record(p, rctx);
 
     return Li;

@@ -53,6 +53,31 @@ enum ClosureID {
 static constexpr uint max_closure = 8;
 static constexpr uint max_size = 256 * sizeof(float);
 
+class ScatteringMode {
+public:
+    enum Mode {
+        None        = 0,
+        Diffuse     = 1 << 0,
+        Specular    = 1 << 1,
+        All         = Diffuse | Specular
+    };
+
+    static bool has_diffuse(const int modes) {
+        return (modes & Diffuse) != 0;
+    }
+
+    static bool has_specular(const int modes) {
+        return (modes & Specular) != 0;
+    }
+};
+
+struct BSDFSample {
+    // A BSDF sampling parameter pack
+    Vec3f wo;
+    float pdf;
+    ScatteringMode::Mode mode;
+};
+
 static inline void power_heuristic(RGBSpectrum* w, float* pdf, RGBSpectrum ow, float opdf, float b) {
     // Code copied from OpenShadingLanguage sample
     assert(*pdf >= 0);
@@ -124,8 +149,8 @@ public:
         }
     }
 
-    virtual RGBSpectrum sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const;
-    virtual RGBSpectrum eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const;
+    virtual RGBSpectrum sample(const OSL::ShaderGlobals& sg, BSDFSample& sample) const;
+    virtual RGBSpectrum eval(const OSL::ShaderGlobals& sg, BSDFSample& sample) const;
 
 private:
     uint bsdf_count, byte_count;

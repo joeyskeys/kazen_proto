@@ -12,7 +12,7 @@
 
 using OSL::TypeDesc;
 
-RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wi, float& pdf) const {
+RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, BSDFSample& sample) const {
     float acc = 0;
     RGBSpectrum ret;
 
@@ -25,14 +25,15 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, const Vec3f& 
         */
 
     // An extra 0.9999999 to ensure sampled index don't overflow
-    uint idx = sample[0] * 0.9999999f * bsdf_count;
+    auto sp = random3f();
+    uint idx = sp[0] * 0.9999999f * bsdf_count;
     auto id = bsdf_ids[idx];
     if (get_sample_func(id) == nullptr)
         return ret;
 
     ret = weights[idx] * get_sample_func(id)(bsdf_params[idx], sg,
-        sample, wi, pdf) / pdfs[idx];
-    pdf *= pdfs[idx];
+        sample) / pdfs[idx];
+    sample.pdf *= pdfs[idx];
 
     // Add up contributions from other bsdfs
     for (int i = 0; i < bsdf_count; i++) {
@@ -40,22 +41,22 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, const Vec3f& 
         float bsdf_pdf = 0;
         auto other_id = bsdf_ids[i];
         RGBSpectrum bsdf_weight = weights[i] * get_eval_func(other_id)(
-            bsdf_params[idx], sg, wi, bsdf_pdf);
-        power_heuristic(&ret, &pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
+            bsdf_params[idx], sg, sample);
+        power_heuristic(&ret, &sample.pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
     }
 
     return ret;
 };
 
-RGBSpectrum CompositeClosure::eval(const OSL::ShaderGlobals& sg, const Vec3f& wi, float& pdf) const {
+RGBSpectrum CompositeClosure::eval(const OSL::ShaderGlobals& sg, BSDFSample& sample) const {
     RGBSpectrum ret;
-    pdf = 0;
+    sample.pdf = 0;
     for (int i = 0; i < bsdf_count; i++) {
         float bsdf_pdf = 0;
         auto id = bsdf_ids[i];
         RGBSpectrum bsdf_weight = weights[i] * get_eval_func(id)(
-            bsdf_params[i], sg, wi, bsdf_pdf);
-        power_heuristic(&ret, &pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
+            bsdf_params[i], sg, sample);
+        power_heuristic(&ret, &sample.pdf, bsdf_weight, bsdf_pdf, pdfs[i]);
     }
 
     return ret;

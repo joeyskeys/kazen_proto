@@ -33,8 +33,8 @@ struct DielectricParams {
 };
 
 struct Diffuse {
-    static float eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wo, float& pdf);
-    static float sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wo, float& pdf);
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(DiffuseParams, N),
@@ -46,8 +46,8 @@ struct Diffuse {
 };
 
 struct Phong {
-    static float eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wo, float& pdf);
-    static float sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wo, float& pdf);
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(PhongParams, N),
@@ -60,8 +60,8 @@ struct Phong {
 };
 
 struct Reflection {
-    static float eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wo, float& pdf);
-    static float sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wo, float& pdf);
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(ReflectionParams, N),
@@ -74,8 +74,8 @@ struct Reflection {
 };
 
 struct Emission {
-    static float eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wo, float& pdf);
-    static float sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wo, float& pdf);
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_FINISH_PARAM(EmptyParams)
@@ -86,8 +86,8 @@ struct Emission {
 };
 
 struct Mirror {
-    static float eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wo, float& pdf);
-    static float sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wo, float& pdf);
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_FINISH_PARAM(EmptyParams)
@@ -98,8 +98,8 @@ struct Mirror {
 };
 
 struct Dielectric {
-    static float eval(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& wo, float& pdf);
-    static float sample(const void* data, const OSL::ShaderGlobals& sg, const Vec3f& sample, Vec3f& wo, float& pdf);
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_FLOAT_PARAM(DielectricParams, int_ior),
@@ -112,9 +112,9 @@ struct Dielectric {
 };
 
 using eval_func = std::function<float(const void*, const OSL::ShaderGlobals&,
-    const Vec3f&, float&)>;
+    BSDFSample&)>;
 using sample_func = std::function<float(const void*, const OSL::ShaderGlobals&,
-    const Vec3f&, Vec3f&, float&)>;
+    BSDFSample&)>;
 
 // cpp 17 inlined constexpr variables will have external linkage will
 // have only one copy among all included files
