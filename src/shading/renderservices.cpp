@@ -234,7 +234,7 @@ void KazenRenderServices::globals_from_hit(
 {
     memset((char*)&sg, 0, sizeof(OSL::ShaderGlobals));
     sg.P = isect.P;
-    sg.N = isect.N;
+    sg.N = isect.shading_normal;
     sg.Ng = isect.N;
 
     sg.u = isect.uv[0];

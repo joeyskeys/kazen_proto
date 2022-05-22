@@ -160,6 +160,7 @@ void Sphere::post_hit(Intersection& isect) const {
 
     isect.is_light = is_light;
     isect.shader_name = shader_name;
+    isect.shading_normal = isect.N;
 
     // Embree do not calculate parametric sphere uv
     // calculate it manually
@@ -305,6 +306,7 @@ void Quad::post_hit(Intersection& isect) const {
     isect.bitangent = local_to_world.apply(vertical_vec, true);
     isect.is_light = is_light;
     isect.shader_name = shader_name;
+    isect.shading_normal = isect.N;
 
     isect.P = center + horizontal_vec * half_width * (isect.uv[0] - 0.5f) +
         vertical_vec * half_height * (isect.uv[1] - 0.5f);
@@ -463,6 +465,7 @@ void Triangle::post_hit(Intersection& isect) const {
     isect.bitangent = cross(isect.tangent, isect.N);
     isect.is_light = is_light;
     isect.shader_name = shader_name;
+    isect.shading_normal = isect.N;
 
     // Compute hit point with barycentric coordinate is more accurate
     // But currently it will cause a weird problem..
@@ -568,8 +571,15 @@ void TriangleMesh::post_hit(Intersection& isect) const {
     isect.bitangent = cross(isect.tangent, isect.N);
     isect.is_light = is_light;
     isect.shader_name = shader_name;
-    isect.P = (1. - isect.uv[0] - isect.uv[1]) * v1 + isect.uv[0] * v2 +
-        isect.uv[1] * v3;
+    auto bary_x = 1. - isect.uv[0] - isect.uv[1];
+    isect.P = bary_x * v1 + isect.uv[0] * v2 + isect.uv[1] * v3;
+
+    if (norms.size() > 0) {
+        isect.shading_normal = (bary_x * norms[idx[0]] + isect.uv[0] * norms[idx[1]]
+            + isect.uv[1] * norms[idx[2]]).normalized();
+    }
+    else
+        isect.shading_normal = isect.N;
     
     if (is_light)
         isect.light_id = light->light_id;
@@ -611,13 +621,26 @@ static std::shared_ptr<TriangleMesh> process_mesh(aiMesh* mesh, const aiScene* s
         vs[i][2] = mesh->mVertices[i].z;
     }
 
+    std::vector<Vec3f> ns;
+    if (mesh->HasNormals()) {
+        ns.reserve(mesh->mNumVertices);
+        for (uint i = 0; i < mesh->mNumVertices; ++i) {
+            /*
+            ns[i][0] = mesh->mNormals[i].x;
+            ns[i][1] = mesh->mNormals[i].y;
+            ns[i][2] = mesh->mNormals[i].z;
+            */
+            ns.emplace_back(Vec3f(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z));
+        }
+    }
+
     for (uint i = 0; i < mesh->mNumFaces; i++) {
         idx[i][0] = mesh->mFaces[i].mIndices[0];
         idx[i][1] = mesh->mFaces[i].mIndices[1];
         idx[i][2] = mesh->mFaces[i].mIndices[2];
     }
 
-    return std::make_shared<TriangleMesh>(Transform{}, std::move(vs), std::move(idx), m);
+    return std::make_shared<TriangleMesh>(Transform{}, std::move(vs), std::move(ns), std::move(idx), m);
 }
 
 static void process_node(aiNode* node, const aiScene* scene, std::vector<std::shared_ptr<TriangleMesh>>& meshes, const std::string& m) {

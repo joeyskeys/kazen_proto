@@ -82,7 +82,7 @@ float Reflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
     auto params = reinterpret_cast<const ReflectionParams*>(data);
     auto cos_theta_i = -dot(Vec3f(sg.N), Vec3f(sg.I));
     if (cos_theta_i > 0) {
-        sample.wo = reflect(sg.I, sg.N);
+        sample.wo = reflect(-sg.I, sg.N);
         sample.pdf = 1.f;
         return fresnel(cos_theta_i, 1.f, params->eta);
     }

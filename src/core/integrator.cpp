@@ -41,7 +41,8 @@ RGBSpectrum NormalIntegrator::Li(const Ray& r, const RecordContext& rctx) const 
         return RGBSpectrum{0};
     }
 
-    auto ret = isect.N.abs();
+    //auto ret = isect.N.abs();
+    auto ret = isect.shading_normal.abs();
     return ret;
 }
 
@@ -62,7 +63,8 @@ RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r, const RecordContext& rc
 
     auto sample = sample_hemisphere().normalized();
     //auto shadow_ray_dir = tangent_to_world(sample, isect.N, isect.tangent, isect.bitangent);
-    auto shadow_ray_dir = tangent_to_world(sample, isect.N);
+    //auto shadow_ray_dir = tangent_to_world(sample, isect.N);
+    auto shadow_ray_dir = tangent_to_world(sample, isect.shading_normal);
     auto shadow_ray = Ray(isect.P, shadow_ray_dir.normalized());
 
     float t;
@@ -139,12 +141,15 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
 
             if (!Ls.is_zero()) {
-                float cos_theta_v = dot(light_dir, isect.N);
-                auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
+                //float cos_theta_v = dot(light_dir, isect.N);
+                float cos_theta_v = dot(light_dir, isect.shading_normal);
+                sample.wo = light_dir;
+                auto f = ret.surface.eval(sg, sample);
                 recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
-                Li += throughtput * (f * Ls * cos_theta_v) * lights->size();
-                break;
+                Li += throughput * (f * Ls * cos_theta_v) * lights->size();
             }
+
+            break;
         }
         else {
             if (randomf() < 0.95f) {
@@ -259,9 +264,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
             if (isect.is_light)
                 --light_sample_range;
 
-            Vec3f next_ray_dir;
-            float bsdf_sampled_pdf;
-            auto sampled_f = ret.surface.sample(sg, random3f(), next_ray_dir, bsdf_sampled_pdf);
+            BSDFSample bsdf_sample;
+            auto sampled_f = ret.surface.sample(sg, bsdf_sample);
 
             if (light_sample_range > 0) {
                 int sampled_light_idx = randomf() * 0.99999 * light_sample_range;
@@ -277,9 +281,12 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
                 Vec3f light_dir;
                 auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
                 if (!Ls.is_zero()) {
-                    float cos_theta_v = dot(light_dir, isect.N);
-                    auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
-                    direct_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
+                    //float cos_theta_v = dot(light_dir, isect.N);
+                    float cos_theta_v = dot(light_dir, isect.shading_normal);
+                    BSDFSample tmp_sample;
+                    tmp_sample.wo = light_dir;
+                    auto f = ret.surface.eval(sg, tmp_sample);
+                    direct_weight = power_heuristic(1, light_pdf, 1, tmp_sample.pdf);
                     Li += throughput * Ls * f * cos_theta_v * direct_weight * lights->size();
                 }
 
@@ -288,12 +295,13 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
                 /* *********************************************
                 * 3. Sampling material to get next direction
                 * *********************************************/
-                float cos_theta_v = dot(next_ray_dir, isect.N);
+                //float cos_theta_v = dot(bsdf_sample.wo, isect.N);
+                float cos_theta_v = dot(bsdf_sample.wo, isect.shading_normal);
                 Intersection tmpsect;
-                if (accel_ptr->intersect(Ray(isect.P, next_ray_dir), tmpsect) && tmpsect.is_light) {
-                    Ls = light_ptr->eval(isect, next_ray_dir, tmpsect.P, light_pdf, tmpsect.N);
-                    indirect_weight = power_heuristic(1, bsdf_sampled_pdf, 1, light_pdf);
-                    Li += throughput * Ls * sampled_f * cos_theta_v * indirect_weight / bsdf_sampled_pdf;
+                if (accel_ptr->intersect(Ray(isect.P, bsdf_sample.wo), tmpsect) && tmpsect.is_light) {
+                    Ls = light_ptr->eval(isect, bsdf_sample.wo, tmpsect.P, light_pdf, tmpsect.N);
+                    indirect_weight = power_heuristic(1, bsdf_sample.pdf, 1, light_pdf);
+                    Li += throughput * Ls * sampled_f * cos_theta_v * indirect_weight / bsdf_sample.pdf;
                 }
 
                 recorder->print(rctx, fmt::format("Ls sampling bsdf : {}", Ls));
@@ -321,7 +329,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
 
             // Construct next ray
             //ray.direction = isect.wi;
-            ray.direction = next_ray_dir;
+            //ray.direction = next_ray_dir;
+            ray.direction = bsdf_sample.wo;
             //isect.refined_point = isect.P + isect.offset_point1();
             isect.refined_point = isect.P;
             ray.origin = isect.refined_point;
@@ -380,6 +389,7 @@ RGBSpectrum OldPathIntegrator::Li (const Ray& r, const RecordContext& rctx) cons
 
     for (int depth = 0; depth <= max_depth; ++depth) {
         OSL::ShaderGlobals sg;
+        BSDFSample bsdf_sample;
 
         if (accel_ptr->intersect(ray, isect)) {
             KazenRenderServices::globals_from_hit(sg, ray, isect);
@@ -395,7 +405,8 @@ RGBSpectrum OldPathIntegrator::Li (const Ray& r, const RecordContext& rctx) cons
                 //light_pdf = 1.f / isect.shape->area();
                 light_pdf = 1.f;
                 indirect_weight = power_heuristic(1, bsdf_pdf, 1, light_pdf);
-                auto cos_theta_v = dot(-ray.direction, isect.N);
+                //auto cos_theta_v = dot(-ray.direction, isect.N);
+                auto cos_theta_v = dot(-ray.direction, isect.shading_normal);
                 Li += throughput * ret.Le * f * cos_theta_v * indirect_weight / bsdf_pdf;
             }
 
@@ -437,18 +448,21 @@ RGBSpectrum OldPathIntegrator::Li (const Ray& r, const RecordContext& rctx) cons
                 if (isect.is_light)
                     isect.wi = light_dir;
                 if (!Ls.is_zero()) {
-                    float cos_theta_v = dot(light_dir, isect.N);
-                    auto f = ret.surface.eval(sg, light_dir, bsdf_pdf);
-                    direct_weight = power_heuristic(1, light_pdf, 1, bsdf_pdf);
+                    //float cos_theta_v = dot(light_dir, isect.N);
+                    float cos_theta_v = dot(light_dir, isect.shading_normal);
+                    BSDFSample tmp_sample;
+                    tmp_sample.wo = light_dir;
+                    auto f = ret.surface.eval(sg, tmp_sample);
+                    direct_weight = power_heuristic(1, light_pdf, 1, tmp_sample.pdf);
                     Li += throughput * Ls * f * cos_theta_v * direct_weight / light_pdf;
                 }
             }
 
             // Sampling bsdf to get next direction
-            f = ret.surface.sample(sg, random3f(), isect.wi, bsdf_pdf);
+            f = ret.surface.sample(sg, bsdf_sample);
 
             // Construct next ray
-            ray.direction = isect.wi;
+            ray.direction = bsdf_sample.wo;
             isect.refined_point = isect.P;
             ray.origin = isect.refined_point;
             ray.tmin = epsilon<float>;
