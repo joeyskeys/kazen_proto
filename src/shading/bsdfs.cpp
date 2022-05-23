@@ -84,7 +84,8 @@ float Reflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
     if (cos_theta_i > 0) {
         sample.wo = reflect(-sg.I, sg.N);
         sample.pdf = 1.f;
-        return fresnel(cos_theta_i, 1.f, params->eta);
+        //return fresnel(cos_theta_i, params->eta, 1.f);
+        return 1.f;
     }
     
     sample.pdf = 0.f;

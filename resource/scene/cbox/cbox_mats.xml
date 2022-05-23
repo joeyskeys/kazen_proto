@@ -24,7 +24,7 @@
 
         <ShaderGroupBegin name="mirror"/>
             <Shader name="mirror" layer="layer4">
-                <Parameter Cs="float3 0.5 0.1 0.1" />
+                <Parameter Cs="float3 1.0 1.0 1.0" />
             </Shader>
         <ShaderGroupEnd/>
 
