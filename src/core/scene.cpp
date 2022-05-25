@@ -362,6 +362,12 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case ECamera: {
                 parse_attributes(node, camera.get());
+                camera->init();
+                auto s = Vec3f(1.f);
+                auto scale_attr = node.attribute("scale");
+                if (scale_attr)
+                    parse_attribute(scale_attr, &s);
+                camera->scale(s);
                 break;
             }
 
@@ -592,6 +598,5 @@ void Scene::parse_from_file(fs::path filepath) {
     }
 
     // Construct acceleration structure after all data is parsed
-    camera->init();
     accelerator->build();
 }

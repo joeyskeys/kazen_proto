@@ -72,6 +72,7 @@ namespace
 void register_closures(OSL::ShadingSystem *shadingsys) {
     register_closure<Diffuse>(*shadingsys);
     register_closure<Reflection>(*shadingsys);
+    register_closure<Refraction>(*shadingsys);
     register_closure<Emission>(*shadingsys);
     register_closure<Mirror>(*shadingsys);
     register_closure<Dielectric>(*shadingsys);
@@ -109,6 +110,9 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                         break;
 
                     case ReflectionID:      status = ret.surface.add_bsdf<ReflectionParams>(ReflectionID, cw, comp->as<ReflectionParams>());
+                        break;
+
+                    case RefractionID:      status = ret.surface.add_bsdf<RefractionParams>(RefractionID, cw, comp->as<RefractionParams>());
                         break;
 
                     case EmissionID:        status = ret.surface.add_bsdf<EmptyParams>(EmissionID, cw, comp->as<EmptyParams>());

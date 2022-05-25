@@ -22,6 +22,7 @@ struct Intersection {
     Vec3f shading_normal;
     Vec3f tangent;
     Vec3f bitangent;
+    Frame frame;
     Vec3f wo;
     Vec3f wi;
     Vec3f bary;
@@ -39,6 +40,14 @@ struct Intersection {
     Vec3f adaptive_offset_point(int64_t initial_mag);
     Vec3f offset_point1() const;
     float offset_point2() const;
+
+    inline Vec3f to_local(const Vec3f& v) const {
+        return frame.to_local(v);
+    }
+
+    inline Vec3f to_world(const Vec3f v) const {
+        return frame.to_world(v);
+    }
 };
 
 inline Vec3f Intersection::adaptive_offset_point(int64_t inital_mag) {

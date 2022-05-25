@@ -62,9 +62,9 @@ RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r, const RecordContext& rc
     }
 
     auto sample = sample_hemisphere().normalized();
-    //auto shadow_ray_dir = tangent_to_world(sample, isect.N, isect.tangent, isect.bitangent);
-    //auto shadow_ray_dir = tangent_to_world(sample, isect.N);
-    auto shadow_ray_dir = tangent_to_world(sample, isect.shading_normal);
+    //auto shadow_ray_dir = local_to_world(sample, isect.N, isect.tangent, isect.bitangent);
+    //auto shadow_ray_dir = local_to_world(sample, isect.N);
+    auto shadow_ray_dir = local_to_world(sample, isect.shading_normal);
     auto shadow_ray = Ray(isect.P, shadow_ray_dir.normalized());
 
     float t;
@@ -143,7 +143,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             if (!Ls.is_zero()) {
                 //float cos_theta_v = dot(light_dir, isect.N);
                 float cos_theta_v = dot(light_dir, isect.shading_normal);
-                sample.wo = light_dir;
+                sample.wo = isect.to_local(light_dir);
                 auto f = ret.surface.eval(sg, sample);
                 recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
                 Li += throughput * (f * Ls * cos_theta_v) * lights->size();
@@ -152,9 +152,9 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             break;
         }
         else {
-            if (randomf() < 0.95f) {
+            if (randomf() < 0.99f) {
                 throughput *= sampled_f;
-                ray = Ray(isect.P, sample.wo);
+                ray = Ray(isect.P, isect.to_world(sample.wo));
             }
             else
                 break;

@@ -6,10 +6,18 @@ Ray Camera::generate_ray(uint x, uint y) {
     // fov denotes the vertical fov
     auto fov_in_radian = to_radian(fov);
 
-    auto direction = upper_left_corner
+    ///*
+    auto direction2 = upper_left_corner
         + horizontal * film_plane_width * (static_cast<float>(x) + randomf()) / film->width
         + vertical * film_plane_height * (static_cast<float>(y) + randomf()) / film->height
         - position;
+    //*/
+
+    auto direction = center
+        + horizontal * film_plane_width * (static_cast<float>(x) + randomf() - film->width / 2) / film->width
+        + vertical * film_plane_height * (static_cast<float>(y) + randomf() - film->height / 2) / film->height
+        - position;
+
     /*
     auto direction = upper_left_corner
         + horizontal * film_plane_width * (Dual2f(static_cast<float>(x) + randomf(), 1, 0) / film->width)

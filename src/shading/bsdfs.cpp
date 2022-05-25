@@ -20,7 +20,7 @@ namespace constants = boost::math::constants;
 float Diffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const DiffuseParams*>(data);
-    sample.pdf = std::max(dot(sample.wo, static_cast<Vec3f>(params->N)), 0.f) * constants::one_div_pi<float>();
+    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     return 1.f;
 }
 
@@ -28,15 +28,14 @@ float Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const DiffuseParams*>(data);
     sample.wo = sample_hemisphere();
-    sample.wo = tangent_to_world(sample.wo, sg.N);
-    sample.pdf = std::max(dot(sample.wo, params->N), 0.f) * constants::one_div_pi<float>();
+    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     return 1.f;
 }
 
 float Phong::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const PhongParams*>(data);
-    float cos_ni = dot(static_cast<Vec3f>(params->N), sample.wo);
+    float cos_ni = cos_theta(sample.wo);
     float cos_no = dot(static_cast<Vec3f>(-params->N), sg.I);
     if (cos_ni > 0 && cos_no > 0) {
         Vec3f R = (2 * cos_no) * params->N + sg.I;
@@ -59,7 +58,7 @@ float Phong::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
         Vec3f R = (2 * cos_no) * params->N + sg.I;
         sample.wo = sample_hemisphere_with_exponent(params->exponent);
         auto v_cos_theta = sample.wo.y();
-        sample.wo = tangent_to_world(sample.wo, R);
+        sample.wo = local_to_world(sample.wo, R);
         float cos_ni = dot(static_cast<Vec3f>(params->N), sample.wo);
         if (cos_ni > 0) {
             sample.pdf = (params->exponent + 1) * constants::one_div_two_pi<float>()
@@ -80,7 +79,7 @@ float Reflection::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSampl
 float Reflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.mode = ScatteringMode::Specular;
     auto params = reinterpret_cast<const ReflectionParams*>(data);
-    auto cos_theta_i = -dot(Vec3f(sg.N), Vec3f(sg.I));
+    auto cos_theta_i = -cos_theta(sg.I);
     if (cos_theta_i > 0) {
         sample.wo = reflect(-sg.I, sg.N);
         sample.pdf = 1.f;
@@ -92,6 +91,36 @@ float Reflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
     return 0.f;
 }
 
+float Refraction::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    // mode shouldn't be set in eval function since one-sample MIS applied
+    // in composite closure
+    // sample.mode = ScatteringMode::Specular;
+    sample.pdf = 0;
+    return 0;
+}
+
+float Refraction::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    sample.mode = ScatteringMode::Specular;
+    auto params = reinterpret_cast<const RefractionParams*>(data);
+    auto cos_theta_i = -cos_theta(Vec3f(sg.I));
+    auto n = sg.N;
+    auto eta = params->eta;
+
+    if (cos_theta_i < 0.f) {
+        eta = 1. / eta;
+        n = -n;
+    }
+    sample.wo = refract(sg.I, n, eta);
+
+    if (sample.wo.is_zero()) {
+        sample.pdf = 0.f;
+        return 0.f;
+    }
+
+    sample.pdf = 1.f;
+    return 1.f;
+}
+
 float Emission::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.mode = ScatteringMode::Diffuse;
     sample.pdf = std::max(dot(sample.wo, sg.N), 0.f) * constants::one_div_pi<float>();
@@ -101,8 +130,7 @@ float Emission::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample&
 float Emission::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.mode = ScatteringMode::Diffuse;
     sample.wo = sample_hemisphere();
-    sample.wo = tangent_to_world(sample.wo, sg.N, sg.dPdu, sg.dPdv);
-    sample.pdf = std::max(dot(sample.wo, sg.N), 0.f) * constants::one_div_pi<float>();
+    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     return 1.f;
 }
 

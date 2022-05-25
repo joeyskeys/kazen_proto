@@ -54,9 +54,15 @@ public:
             + dir * near_plane
             - film_plane_width * 0.5f * horizontal
             - film_plane_height * 0.5f * vertical;
+        center = position + dir * near_plane;
     }
 
     Ray generate_ray(uint x, uint y);
+
+    void scale(const Vec3f& s) {
+        horizontal *= s[0];
+        vertical *= s[1];
+    }
 
     void* address_of(const std::string& name) override;
     //void* runtime_address_of(const std::string& name);
@@ -68,6 +74,7 @@ public:
     Vec3f horizontal;
     Vec3f vertical;
     Vec3f upper_left_corner;
+    Vec3f center;
     float near_plane;
     float far_plane;
     float fov;

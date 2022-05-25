@@ -1,6 +1,16 @@
 surface dielectric
     [[ string description = "Dielectric surface" ]]
-()
+(
+    color Cs = 1
+        [[  string description = "Base color",
+            float UImin = 0, float UImax = 1 ]],
+    float eta = 1.5
+        [[  string description = "index of refraction",
+            float UImin = 0, float UImax = 2 ]]
+)
 {
-    
+    float r, t;
+    vector rv, tv;
+    //fresnel(-I, N, eta, r, t, rv, tv);
+    Ci = Cs * refraction(N, eta);
 }

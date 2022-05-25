@@ -295,6 +295,7 @@ bool EmbreeAccel::intersect(const Ray& r, Intersection& isect) const {
         isect.prim_id = rayhit.hit.primID;
         isect.shape = reinterpret_cast<Shape*>(hitables->at(rayhit.hit.geomID).get());
         isect.shape->post_hit(isect);
+        isect.frame = Frame(isect.shading_normal);
     
         return true;
     }

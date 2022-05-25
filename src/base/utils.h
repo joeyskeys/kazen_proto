@@ -57,11 +57,11 @@ inline T square(const T& a) {
  *  1. To avoid ambiguous, all the variables start with a v.
  */
 
-inline Vec3f world_to_tangent(const Vec3f& w, const Vec3f& n, const Vec3f& t, const Vec3f& b) {
+inline Vec3f world_to_local(const Vec3f& w, const Vec3f& n, const Vec3f& t, const Vec3f& b) {
     return Vec3f{dot(w, t), dot(w, n), dot(w, b)};
 }
 
-inline Vec3f tangent_to_world(const Vec3f& w, const Vec3f& n, const Vec3f& t, const Vec3f& b) {
+inline Vec3f local_to_world(const Vec3f& w, const Vec3f& n, const Vec3f& t, const Vec3f& b) {
     return Vec3f{
         t.x() * w.x() + n.x() * w.y() + b.x() * w.z(),
         t.y() * w.x() + n.y() * w.y() + b.y() * w.z(),
@@ -69,10 +69,10 @@ inline Vec3f tangent_to_world(const Vec3f& w, const Vec3f& n, const Vec3f& t, co
     };
 }
 
-inline Vec3f tangent_to_world(const Vec3f& w, const Vec3f& n) {
+inline Vec3f local_to_world(const Vec3f& w, const Vec3f& n) {
     auto t = (fabsf(w.x()) > .01f ? Vec3f(w.z(), 0, -w.x()) : Vec3f(0, -w.z(), w.y())).normalized();
     auto b = cross(w, t);
-    return tangent_to_world(w, n, t, b);
+    return local_to_world(w, n, t, b);
 }
 
 inline float cos_theta(const Vec3f& w) {
@@ -171,3 +171,32 @@ inline float fresnel(float cos_theta_i, float ext_ior, float int_ior) {
 inline bool same_hemisphere(const Vec3f& w, const Vec3f& n) {
     return w.y() * n.y() > 0.f;
 }
+
+struct Frame {
+    Vec3f s, t, n;
+
+    Frame() {}
+
+    Frame(const Vec3f& s, const Vec3f& t, const Vec3f& n)
+        : s(s), t(t), n(n) {}
+
+    Frame(const Vec3f& n) : n(n) {
+        if (std::abs(n[0]) > std::abs(n[1])) {
+            float inv_len = 1.f / std::sqrt(n[0] * n[0] + n[2] * n[2]);
+            t = Vec3f(n[2] * inv_len, 0.f, -n[0] * inv_len);
+        }
+        else {
+            float inv_len = 1.f / std::sqrt(n[1] * n[1] + n[2] * n[2]);
+            t = Vec3f(0.f, n[2] * inv_len, -n[1] * inv_len);
+        }
+        s = cross(t, n);
+    }
+
+    Vec3f to_local(const Vec3f& v) const {
+        return Vec3f(dot(v, s), dot(v, n), dot(v, t));
+    }
+
+    Vec3f to_world(const Vec3f& v) const {
+        return s * v[0] + n * v[1] + t * v[2];
+    }
+};

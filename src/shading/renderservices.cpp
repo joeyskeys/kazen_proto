@@ -234,8 +234,12 @@ void KazenRenderServices::globals_from_hit(
 {
     memset((char*)&sg, 0, sizeof(OSL::ShaderGlobals));
     sg.P = isect.P;
+    /*
     sg.N = isect.shading_normal;
     sg.Ng = isect.N;
+    */
+    sg.N = OSL::Vec3(0.f, 1.f, 0.f);
+    sg.Ng = isect.to_local(isect.N);
 
     sg.u = isect.uv[0];
     sg.v = isect.uv[1];
@@ -244,11 +248,11 @@ void KazenRenderServices::globals_from_hit(
     sg.dPdu = isect.tangent;
     sg.dPdv = isect.bitangent;
 
-    sg.I = r.direction;
+    sg.I = isect.to_local(r.direction);
     sg.backfacing = sg.N.dot(sg.I) > 0;
     if (sg.backfacing) {
-        sg.N = -sg.N;
-        sg.Ng = -sg.Ng;
+        //sg.N = -sg.N;
+        //sg.Ng = -sg.Ng;
     }
     sg.flipHandedness = flip;
     sg.renderstate = &sg;

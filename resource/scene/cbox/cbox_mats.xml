@@ -1,7 +1,7 @@
 <Scene>
     <Film width="int 800" height="int 600"/>
 
-    <Camera position="float3 0 0.919769 5.41159" lookat="float3 0 0.893051 4.41198" up="float3 0 1 0" fov="float 27.7856"/>
+    <Camera position="float3 0 0.919769 5.41159" lookat="float3 0 0.893051 4.41198" up="float3 0 1 0" fov="float 27.7856" scale="float3 -1 1 1"/>
 
     <Materials>
         <ShaderGroupBegin name="diffuse1"/>
@@ -29,8 +29,9 @@
         <ShaderGroupEnd/>
 
         <ShaderGroupBegin name="dielectric"/>
-            <Shader name="diffuse" layer="layer5">
-                <Parameter Cs="float3 0.1 0.5 0.1"/>
+            <Shader name="dielectric" layer="layer5">
+                <Parameter Cs="float3 1 1 1"/>
+                <Parameter eta="float 1.5"/>
             </Shader>
         <ShaderGroupEnd/>
 

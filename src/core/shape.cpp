@@ -580,7 +580,7 @@ void TriangleMesh::post_hit(Intersection& isect) const {
     }
     else
         isect.shading_normal = isect.N;
-    
+
     if (is_light)
         isect.light_id = light->light_id;
 }

@@ -18,7 +18,7 @@ int main() {
     LambertianBxDF lamb{RGBSpectrum{1.f, 1.f, 1.f}};
     MetalBxDF metal{RGBSpectrum{1.f, 1.f, 1.f}};
     Vec3f wi;
-    Vec3f local_wo = world_to_tangent(-r.direction, isect.N, isect.tangent, isect.bitangent);
+    Vec3f local_wo = world_to_local(-r.direction, isect.N, isect.tangent, isect.bitangent);
     float p;
     //lamb.sample_f(local_wo, wi, isect, Vec2f{0.8f, 0.4f}, p);
     metal.sample_f(local_wo, wi, isect, Vec2f{0.1f, 0.1f}, p);
@@ -32,7 +32,7 @@ int main() {
     std::cout << "local wo : " << local_wo;
     std::cout << "world wo : " << -r.direction;
     std::cout << "local wi : " << wi;
-    std::cout << "world wi : " << tangent_to_world(wi, isect.normal, isect.tangent, isect.bitangent);
+    std::cout << "world wi : " << local_to_world(wi, isect.normal, isect.tangent, isect.bitangent);
     */
 
     auto tt = Transform();

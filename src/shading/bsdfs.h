@@ -27,6 +27,11 @@ struct ReflectionParams {
     float eta;
 };
 
+struct RefractionParams {
+    OSL::Vec3 N;
+    float eta;
+};
+
 struct DielectricParams {
     float int_ior = 1.5046f;
     float ext_ior = 1.000277f;
@@ -70,6 +75,20 @@ struct Reflection {
         };
 
         shadingsys.register_closure("reflection", ReflectionID, params, nullptr, nullptr);
+    }
+};
+
+struct Refraction {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(RefractionParams, N),
+            CLOSURE_FLOAT_PARAM(RefractionParams, eta),
+            CLOSURE_FINISH_PARAM(RefractionParams)
+        };
+
+        shadingsys.register_closure("refraction", RefractionID, params, nullptr, nullptr);
     }
 };
 
@@ -125,7 +144,7 @@ inline eval_func get_eval_func(ClosureID id) {
         nullptr,
         nullptr,
         Reflection::eval,
-        nullptr,
+        Refraction::eval,
         nullptr,
         nullptr,
         nullptr,
@@ -148,7 +167,7 @@ inline sample_func get_sample_func(ClosureID id) {
         nullptr,
         nullptr,
         Reflection::sample,
-        nullptr,
+        Refraction::sample,
         nullptr,
         nullptr,
         nullptr,
