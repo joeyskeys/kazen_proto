@@ -25,6 +25,7 @@ enum ClosureID {
 
     // Microfacet closures
     MicrofacetID,
+    MicrofacetAnisoID,
 
     // BSSRDF closures
     SubsurfaceID,

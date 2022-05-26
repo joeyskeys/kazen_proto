@@ -4,7 +4,7 @@ Vec3f BeckmannMDF(const Vec2f& sample, float alpha) {
     auto phi = constants::two_pi<float>() * sample.x();
     auto theta = std::atan(std::sqrt(-alpha * alpha * std::log(sample.y())));
     auto sin_theta = std::sin(theta);
-    return Vec3f(sin_theta * std::cos(phi), sin_theta * std::sin(phi), std::cos(theta));
+    return Vec3f(sin_theta * std::cos(phi), std::cos(theta), sin_theta * std::sin(phi));
 }
 
 float BeckmannPDF(const Vec3f& m, float alpha) {

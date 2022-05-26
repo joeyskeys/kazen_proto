@@ -74,6 +74,7 @@ void register_closures(OSL::ShadingSystem *shadingsys) {
     register_closure<Reflection>(*shadingsys);
     register_closure<Refraction>(*shadingsys);
     register_closure<Microfacet>(*shadingsys);
+    register_closure<MicrofacetAniso>(*shadingsys);
     register_closure<Emission>(*shadingsys);
     register_closure<Mirror>(*shadingsys);
     register_closure<Dielectric>(*shadingsys);
@@ -117,6 +118,9 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                         break;
 
                     case MicrofacetID:      status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetID, cw, comp->as<MicrofacetParams>());
+                        break;
+
+                    case MicrofacetAnisoID: status = ret.surface.add_bsdf<MicrofacetAnisoParams>(MicrofacetAnisoID, cw, comp->as<MicrofacetAnisoParams>());
                         break;
 
                     case EmissionID:        status = ret.surface.add_bsdf<EmptyParams>(EmissionID, cw, comp->as<EmptyParams>());

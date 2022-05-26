@@ -6,5 +6,5 @@ surface rough
             float UImin = 0, float UImax = 1 ]]
 )
 {
-    Ci = Cs * microfacet("beckmann", N, 0.28, 1.5, 0);
+    Ci = Cs * microfacet("beckmann", N, 0.08, 1.5, 0);
 }

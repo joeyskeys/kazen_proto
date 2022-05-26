@@ -561,7 +561,7 @@ void TriangleMesh::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     //p = vs[0] + u * (vs[1] - vs[0]) + v * (vs[2] - vs[0]);
     p = u * vs[0] + v * vs[1] + (1 - u - v) * vs[2];
     n = cross(vs[1] - vs[0], vs[2] - vs[0]).normalized();
-    pdf = 1;
+    pdf = 1. / m_area;
 }
 
 void TriangleMesh::post_hit(Intersection& isect) const {
@@ -587,7 +587,7 @@ void TriangleMesh::post_hit(Intersection& isect) const {
 
 float TriangleMesh::area() const {
     // Need some pre-calculation;
-    return 1.f;
+    return m_area;
 }
 
 void TriangleMesh::print_info() const {
@@ -607,7 +607,7 @@ void TriangleMesh::setup_dpdf() {
             auto area = surface_area(i);
             m_dpdf.append(area);
         }
-        m_dpdf.normalize();
+        m_area = m_dpdf.normalize();
     }
 }
 

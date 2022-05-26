@@ -179,10 +179,11 @@ public:
     float surface_area(uint32_t i) const;
     void setup_dpdf();
 
-    std::vector<Vec3f> verts;
-    std::vector<Vec3f> norms;
-    std::vector<Vec3i> indice;
-    DiscrectPDF m_dpdf;
+    std::vector<Vec3f>  verts;
+    std::vector<Vec3f>  norms;
+    std::vector<Vec3i>  indice;
+    DiscrectPDF         m_dpdf;
+    float               m_area;
 };
 
 std::vector<std::shared_ptr<TriangleMesh>> load_triangle_mesh(const std::string& file_path, const size_t start_id, const std::string& m="");

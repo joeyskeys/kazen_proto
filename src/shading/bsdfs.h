@@ -26,6 +26,13 @@ struct PhongParams {
 
 struct MicrofacetParams {
     OSL::ustring dist;
+    OSL::Vec3 N;
+    float alpha, eta;
+    int refract;
+};
+
+struct MicrofacetAnisoParams {
+    OSL::ustring dist;
     OSL::Vec3 N, U;
     float xalpha, yalpha, eta;
     int refract;
@@ -73,8 +80,6 @@ struct Phong {
     }
 };
 
-// Make it template for different distribution later
-//template <typename Dist, int Refract>
 struct Microfacet {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
@@ -82,15 +87,34 @@ struct Microfacet {
         const OSL::ClosureParam params[] = {
             CLOSURE_STRING_PARAM(MicrofacetParams, dist),
             CLOSURE_VECTOR_PARAM(MicrofacetParams, N),
-            CLOSURE_VECTOR_PARAM(MicrofacetParams, U),
-            CLOSURE_FLOAT_PARAM(MicrofacetParams, xalpha),
-            CLOSURE_FLOAT_PARAM(MicrofacetParams, yalpha),
+            CLOSURE_FLOAT_PARAM(MicrofacetParams, alpha),
             CLOSURE_FLOAT_PARAM(MicrofacetParams, eta),
             CLOSURE_INT_PARAM(MicrofacetParams, refract),
             CLOSURE_FINISH_PARAM(MicrofacetParams)
         };
 
         shadingsys.register_closure("microfacet", MicrofacetID, params, nullptr, nullptr);
+    }
+};
+
+// Make it template for different distribution later
+//template <typename Dist, int Refract>
+struct MicrofacetAniso {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_STRING_PARAM(MicrofacetAnisoParams, dist),
+            CLOSURE_VECTOR_PARAM(MicrofacetAnisoParams, N),
+            CLOSURE_VECTOR_PARAM(MicrofacetAnisoParams, U),
+            CLOSURE_FLOAT_PARAM(MicrofacetAnisoParams, xalpha),
+            CLOSURE_FLOAT_PARAM(MicrofacetAnisoParams, yalpha),
+            CLOSURE_FLOAT_PARAM(MicrofacetAnisoParams, eta),
+            CLOSURE_INT_PARAM(MicrofacetAnisoParams, refract),
+            CLOSURE_FINISH_PARAM(MicrofacetAnisoParams)
+        };
+
+        shadingsys.register_closure("microfacet", MicrofacetAnisoID, params, nullptr, nullptr);
     }
 };
 
@@ -168,7 +192,7 @@ using sample_func = std::function<float(const void*, const OSL::ShaderGlobals&,
 // cpp 17 inlined constexpr variables will have external linkage will
 // have only one copy among all included files
 inline eval_func get_eval_func(ClosureID id) {
-    static std::array<eval_func, 17> eval_functions {
+    static std::array<eval_func, 18> eval_functions {
         Diffuse::eval,
         Phong::eval,
         nullptr,
@@ -178,6 +202,7 @@ inline eval_func get_eval_func(ClosureID id) {
         nullptr,
         nullptr,
         Microfacet::eval,
+        MicrofacetAniso::eval,
         nullptr,
         Emission::eval, // emission
         nullptr,
@@ -191,7 +216,7 @@ inline eval_func get_eval_func(ClosureID id) {
 };
 
 inline sample_func get_sample_func(ClosureID id) {
-    static std::array<sample_func, 17> sample_functions {
+    static std::array<sample_func, 18> sample_functions {
         Diffuse::sample,
         Phong::sample,
         nullptr,
@@ -201,6 +226,7 @@ inline sample_func get_sample_func(ClosureID id) {
         nullptr,
         nullptr,
         Microfacet::sample,
+        MicrofacetAniso::sample,
         nullptr,
         Emission::sample, // emission
         nullptr,

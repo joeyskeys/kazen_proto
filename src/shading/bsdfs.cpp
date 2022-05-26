@@ -123,7 +123,7 @@ float Refraction::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
 }
 
 float Microfacet::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    auto params = reinterpret_cast<const MicrofacetParams*>(data);
+    auto params = reinterpret_cast<const MicrofacetAnisoParams*>(data);
     auto wo = sample.wo;
     auto wi = -sg.I;
 
@@ -146,6 +146,36 @@ float Microfacet::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSampl
 float Microfacet::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const MicrofacetParams*>(data);
+    auto wh = BeckmannMDF(random2f(), params->alpha);
+    sample.wo = reflect(-sg.I, wh);
+    auto f = eval(data, sg, sample);
+    return f;
+}
+
+float MicrofacetAniso::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    auto params = reinterpret_cast<const MicrofacetAnisoParams*>(data);
+    auto wo = sample.wo;
+    auto wi = -sg.I;
+
+    auto cos_theta_i = cos_theta(wi);
+    auto cos_theta_o = cos_theta(wo);
+    if (cos_theta_i <= 0 || cos_theta_o <= 0)
+        return 0;
+
+    auto wh = (wo + wi).normalized();
+    auto D = BeckmannPDF(wh, params->xalpha);
+    //auto Jh = 1. / (4. * dot(wh, wo));
+    auto F = fresnel(dot(wh, wi), 1, params->eta);
+    auto G = G1(wh, wi, params->xalpha) * G1(wh, wo, params->xalpha);
+    //sample.pdf = D * Jh;
+    sample.pdf = D;
+
+    return D * F * G / (4. * cos_theta_i * cos_theta_o * cos_theta(wh));
+}
+
+float MicrofacetAniso::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    sample.mode = ScatteringMode::Diffuse;
+    auto params = reinterpret_cast<const MicrofacetAnisoParams*>(data);
     auto wh = BeckmannMDF(random2f(), params->xalpha);
     sample.wo = reflect(-sg.I, wh);
     auto f = eval(data, sg, sample);
