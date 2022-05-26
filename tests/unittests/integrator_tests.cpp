@@ -3,7 +3,7 @@
 
 int main() {
     Scene scene;
-    scene.parse_from_file("../resource/scene/cbox/cbox_mats.xml");
+    scene.parse_from_file("../resource/scene/ajax/ajax.xml");
 
     auto integrator_ptr = scene.integrator_fac.create(
         scene.camera.get(), scene.film.get(), &scene.recorder);

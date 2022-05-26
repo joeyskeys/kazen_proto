@@ -96,7 +96,10 @@ inline float sin_theta(const Vec3f& w) {
 }
 
 inline float tan_theta(const Vec3f& w) {
-    return sin_theta(w) / cos_theta(w);
+    float tmp = 1 - w[1] * w[1];
+    if (tmp < 0.f)
+        return 0.f;
+    return std::sqrt(tmp) / w[1];
 }
 
 inline float tan_2_theta(const Vec3f& w) {

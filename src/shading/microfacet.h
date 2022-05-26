@@ -7,6 +7,7 @@
 
 namespace constants = boost::math::constants;
 
+/*
 inline float stretch_roughness(
     const Vec3f&    m,
     const float     sin_theta_v,
@@ -59,3 +60,10 @@ float GGX_ndf(
     const float tmp = 1.f + tan_theta_2 * A;
     return 1.f / (constants::pi<float>() * ax * ay * cos_theta_4 * square(tmp));
 }
+*/
+
+Vec3f BeckmannMDF(const Vec2f& sample, float alpha);
+
+float BeckmannPDF(const Vec3f& m, float alpha);
+
+float G1(const Vec3f& wh, const Vec3f& wv, float alpha);

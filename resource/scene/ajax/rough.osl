@@ -1,0 +1,10 @@
+surface rough
+    [[ string description = "Microfacet surface" ]]
+(
+    color Cs = 1
+        [[  string description = "Base color",
+            float UImin = 0, float UImax = 1 ]]
+)
+{
+    Ci = Cs * microfacet("beckmann", N, 0.28, 1.5, 0);
+}

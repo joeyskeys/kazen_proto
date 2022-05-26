@@ -69,7 +69,8 @@ set(CORE_HEADERS
     src/core/transform.h
     src/shading/bsdf.h
     src/shading/bsdfs.h
-    src/shading/renderservices.h)
+    src/shading/renderservices.h
+    src/shading/microfacet.h)
 
 set(CORE_SOURCES
     src/core/accel.cpp
@@ -84,7 +85,8 @@ set(CORE_SOURCES
     src/core/shape.cpp
     src/shading/bsdf.cpp
     src/shading/bsdfs.cpp
-    src/shading/renderservices.cpp)
+    src/shading/renderservices.cpp
+    src/shading/microfacet.cpp)
 
 add_library(kazen_proto_lib
     ${CORE_SOURCES})
