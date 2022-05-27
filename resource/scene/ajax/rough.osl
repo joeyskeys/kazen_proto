@@ -3,8 +3,11 @@ surface rough
 (
     color Cs = 1
         [[  string description = "Base color",
+            float UImin = 0, float UImax = 1 ]],
+    float roughness = 0.28
+        [[  string description = "Roughness",
             float UImin = 0, float UImax = 1 ]]
 )
 {
-    Ci = Cs * microfacet("beckmann", N, 0.08, 1.5, 0);
+    Ci = Cs * microfacet("beckmann", N, roughness, 1.5, 0);
 }

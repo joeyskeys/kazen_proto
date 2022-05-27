@@ -6,6 +6,7 @@
     <Materials>
         <ShaderGroupBegin name="rough"/>
             <Shader name="rough" layer="layer1">
+                <Parameter roughness="float 0.08"/>
             </Shader>
         <ShaderGroupEnd/>
 
@@ -18,7 +19,7 @@
 
     <Objects>
         <Mesh filename="string meshes/ajax.obj" shader_name="rough"/>
-        <Mesh filename="string meshes/light.obj" shader_name="emitter" is_light="bool true" radiance="float3 1 1 1" intensity="float 20"/>
+        <Mesh filename="string meshes/light.obj" shader_name="emitter" is_light="bool true" radiance="float3 1 1 1" intensity="float 60"/>
     </Objects>
 
     <EmbreeAccelerator/>
