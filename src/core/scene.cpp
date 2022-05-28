@@ -16,6 +16,7 @@
 #include <OpenImageIO/texture.h>
 
 #include "scene.h"
+#include "shading/shader.h"
 
 enum ETag {
     EScene,
