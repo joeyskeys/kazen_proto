@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
+configure_file(resource/shader/kp_extension.h.in shader/kp_extension.h @ONLY)
+
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty)
 

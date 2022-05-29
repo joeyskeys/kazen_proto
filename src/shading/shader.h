@@ -5,7 +5,7 @@
 
 namespace fs = std::filesystem;
 
-std::string load_file(const fs::path& path) {
+static std::string load_file(const fs::path& path) {
     std::ifstream file(path, std::ios::ate | std::ios::binary);
 
     if (!file.good()) {

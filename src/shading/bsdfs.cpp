@@ -195,13 +195,13 @@ float Emission::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSampl
     return 1.f;
 }
 
-float Mirror::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float KpMirror::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.mode = ScatteringMode::Specular;
     sample.pdf = 0.f;
     return 0.f;
 }
 
-float Mirror::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float KpMirror::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.mode = ScatteringMode::Specular;
     if (cos_theta(sample.wo) <= 0)
         return 0.f;
@@ -210,13 +210,13 @@ float Mirror::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample&
     return 1.f;
 }
 
-float Dielectric::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float KpDielectric::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.mode = ScatteringMode::Specular;
     sample.pdf = 0.f;
     return 0.f;
 }
 
-float Dielectric::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float KpDielectric::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.mode = ScatteringMode::Specular;
     auto params = reinterpret_cast<const DielectricParams*>(data);
     auto cos_theta_i = cos_theta(sg.I);

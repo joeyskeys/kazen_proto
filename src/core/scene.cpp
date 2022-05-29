@@ -248,6 +248,15 @@ bool Scene::process_shader_node(const pugi::xml_node& node, OSL::ShaderGroupRef 
     const char* type = type_attr ? type_attr.value() : "surface";
     if (!name_attr || !layer_attr)
         return false;
+
+    // TODO : Compile raw osl shader in runtime
+    auto shader_file_path = working_dir / name_attr.value();
+    if (!fs::exists(shader_file_path))
+        throw std::runtime_error(fmt::format("file {} does not exists", shader_file_path));
+    Shader shader(shader_file_path);
+    shader.compile_shader(&compiler);
+    shadingsys->LoadMemoryCompiledShader(shader.binary);
+
     return shadingsys->Shader(*shader_group, type, name_attr.value(), layer_attr.value());
 }
 

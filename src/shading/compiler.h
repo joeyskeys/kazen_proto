@@ -13,7 +13,7 @@ public:
     //std::unique_ptr<OSL::ErrorHandler>  m_error_handler;
     std::vector<std::string>                m_options;
 
-    ShaderCompiler(const fs::path& stdosl_path)
+    ShaderCompiler(const fs::path& stdosl_path="./shader")
         : m_stdosl_path(stdosl_path)
     {}
 

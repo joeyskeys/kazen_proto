@@ -14,6 +14,7 @@
 #include "core/light.h"
 #include "core/material.h"
 #include "core/shape.h"
+#include "shading/compiler.h"
 
 namespace fs = std::filesystem;
 
@@ -39,6 +40,7 @@ public:
     Recorder recorder;
 
     // OSL related
+    ShaderCompiler compiler;
     KazenRenderServices rend;
     std::unique_ptr<OSL::ShadingSystem> shadingsys;
     std::unordered_map<std::string, OSL::ShaderGroupRef> shaders;

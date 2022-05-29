@@ -45,8 +45,9 @@ enum ClosureID {
     /************
      * Kazen specific
      ************/
-    MirrorID,
-    DielectricID,
+    KpMirrorID,
+    KpDielectricID,
+    KpMicrofacetID,
 
     NumClosureIDs
 };

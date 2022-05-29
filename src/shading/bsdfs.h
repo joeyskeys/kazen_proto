@@ -48,9 +48,16 @@ struct RefractionParams {
     float eta;
 };
 
-struct DielectricParams {
+struct KpDielectricParams {
     float int_ior = 1.5046f;
     float ext_ior = 1.000277f;
+};
+
+struct KpMicrofacetParams {
+    float alpha = 0.1;
+    float int_ior = 1.5046f;
+    float ext_ior = 1.000277f;
+    OSL::Vec3 kd;
 };
 
 struct Diffuse {
@@ -158,7 +165,7 @@ struct Emission {
     }
 };
 
-struct Mirror {
+struct KpMirror {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
@@ -166,21 +173,37 @@ struct Mirror {
             CLOSURE_FINISH_PARAM(EmptyParams)
         };
 
-        shadingsys.register_closure("mirror", MirrorID, params, nullptr, nullptr);
+        shadingsys.register_closure("kp_mirror", KpMirrorID, params, nullptr, nullptr);
     }
 };
 
-struct Dielectric {
+struct KpDielectric {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
-            CLOSURE_FLOAT_PARAM(DielectricParams, int_ior),
-            CLOSURE_FLOAT_PARAM(DielectricParams, ext_ior),
-            CLOSURE_FINISH_PARAM(DielectricParams)
+            CLOSURE_FLOAT_PARAM(KpDielectricParams, int_ior),
+            CLOSURE_FLOAT_PARAM(KpDielectricParams, ext_ior),
+            CLOSURE_FINISH_PARAM(KpDielectricParams)
         };
 
-        shadingsys.register_closure("dielectric", DielectricID, params, nullptr, nullptr);
+        shadingsys.register_closure("kp_dielectric", KpDielectricID, params, nullptr, nullptr);
+    }
+};
+
+struct KpMicrofacet {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_FLOAT_PARAM(KpMicrofacetParams, alpha),
+            CLOSURE_FLOAT_PARAM(KpMicrofacetParams, int_ior),
+            CLOSURE_FLOAT_PARAM(KpMicrofacetParams, ext_ior),
+            CLOSURE_VECTOR_PARAM(KpMicrofacetParams, kd),
+            CLOSURE_FINISH_PARAM(KpMicrofacetParams)
+        };
+
+        shadingsys.register_closure("kp_microfacet", KpMicrofacetID, params, nullptr, nullptr);
     }
 };
 
@@ -192,7 +215,7 @@ using sample_func = std::function<float(const void*, const OSL::ShaderGlobals&,
 // cpp 17 inlined constexpr variables will have external linkage will
 // have only one copy among all included files
 inline eval_func get_eval_func(ClosureID id) {
-    static std::array<eval_func, 18> eval_functions {
+    static std::array<eval_func, 19> eval_functions {
         Diffuse::eval,
         Phong::eval,
         nullptr,
@@ -208,15 +231,16 @@ inline eval_func get_eval_func(ClosureID id) {
         nullptr,
         nullptr,
         nullptr,
-        Mirror::eval,
-        Dielectric::eval,
+        KpMirror::eval,
+        KpDielectric::eval,
+        KpMicrofacet::eval,
         nullptr
     };
     return eval_functions[id];
 };
 
 inline sample_func get_sample_func(ClosureID id) {
-    static std::array<sample_func, 18> sample_functions {
+    static std::array<sample_func, 19> sample_functions {
         Diffuse::sample,
         Phong::sample,
         nullptr,
@@ -232,8 +256,9 @@ inline sample_func get_sample_func(ClosureID id) {
         nullptr,
         nullptr,
         nullptr,
-        Mirror::sample,
-        Dielectric::sample,
+        KpMirror::sample,
+        KpDielectric::sample,
+        KpMicrofacet::sample,
         nullptr
     };
     return sample_functions[id];
