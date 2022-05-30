@@ -11,4 +11,4 @@ closure color kp_microfacet(
     float alpha=0.1,
     float int_ior=1.5046,
     float ext_ior=1.000277,
-    color kd=0.5) BUILTIN;
+    float kd=0.5) BUILTIN;

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <filesystem>
-#include <iostream>
+#include <fstream>
+
+#include "shading/compiler.h"
 
 namespace fs = std::filesystem;
 

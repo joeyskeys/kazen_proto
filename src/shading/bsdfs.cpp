@@ -207,6 +207,7 @@ float KpMirror::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSampl
         return 0.f;
 
     sample.wo = reflect(sg.I);
+    sample.pdf = 1.f;
     return 1.f;
 }
 
@@ -218,7 +219,8 @@ float KpDielectric::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
 
 float KpDielectric::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.mode = ScatteringMode::Specular;
-    auto params = reinterpret_cast<const DielectricParams*>(data);
+    sample.pdf = 1.f;
+    auto params = reinterpret_cast<const KpDielectricParams*>(data);
     auto cos_theta_i = cos_theta(sg.I);
     auto f = fresnel(cos_theta_i, params->ext_ior, params->int_ior);
 
@@ -237,4 +239,40 @@ float KpDielectric::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFS
         refract(-sg.I, n, fac);
     }
     return 1.f;
+}
+
+float KpMicrofacet::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    auto params = reinterpret_cast<const KpMicrofacetParams*>(data);
+    auto wi = Vec3f(-sg.I);
+    auto cos_theta_i = cos_theta(-sg.I);
+    auto cos_theta_o = cos_theta(sample.wo);
+    if (cos_theta_i <= 0 || cos_theta_o <= 0)
+        return 0.f;
+
+    auto wh = (wi + sample.wo).normalized();
+    auto D = BeckmannPDF(wh, params->alpha);
+    auto F = fresnel(dot(wh, wi), params->ext_ior, params->int_ior);
+    auto G = G1(wh, wi, params->alpha) * G1(wh, sample.wo, params->alpha);
+    auto ks = 1. - params->kd;
+    auto Jh = 1. / (4. * dot(wh, sample.wo));
+    sample.pdf = ks * D * Jh + params->kd * cos_theta_o * constants::one_div_pi<float>();
+
+    return params->kd * constants::one_div_pi<float>() +
+        ks * D * F * G / (4. * cos_theta_i * cos_theta_o * cos_theta(wh));
+}
+
+float KpMicrofacet::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    auto params = reinterpret_cast<const KpMicrofacetParams*>(data);
+    auto ks = 1. - params->kd;
+    auto wi = Vec3f(-sg.I);
+
+    if (randomf() < ks) {
+        auto n = BeckmannMDF(random2f(), params->alpha);
+        sample.wo = reflect(wi, n);
+    }
+    else {
+        sample.wo = to_cosine_hemisphere(random2f());
+    }
+
+    return eval(data, sg, sample) * cos_theta(sample.wo);
 }

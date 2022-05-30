@@ -51,6 +51,9 @@ include_directories(${EMBREE_INCLUDE_DIRS})
 include_directories("./src")
 
 set(BASE_HEADERS
+    src/base/basic_types.h
+    src/base/dictlike.h
+    src/base/dpdf.h
     src/base/mat.h
     src/base/types.h
     src/base/vec.h)
@@ -71,7 +74,9 @@ set(CORE_HEADERS
     src/core/transform.h
     src/shading/bsdf.h
     src/shading/bsdfs.h
+    src/shading/compiler.h
     src/shading/renderservices.h
+    src/shading/shader.h
     src/shading/microfacet.h)
 
 set(CORE_SOURCES
@@ -87,7 +92,9 @@ set(CORE_SOURCES
     src/core/shape.cpp
     src/shading/bsdf.cpp
     src/shading/bsdfs.cpp
+    src/shading/compiler.cpp
     src/shading/renderservices.cpp
+    src/shading/shader.cpp
     src/shading/microfacet.cpp)
 
 add_library(kazen_proto_lib
@@ -107,3 +114,8 @@ target_link_libraries(kazen
     kazen_proto_lib)
 
 add_subdirectory(tests)
+
+set(OSL_HEADERS
+    resource/shader/stdosl.h)
+
+install(FILES ${OSL_HEADERS} DESTINATION ${CMAKE_BINARY_DIR}/shader)

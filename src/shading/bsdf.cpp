@@ -76,8 +76,9 @@ void register_closures(OSL::ShadingSystem *shadingsys) {
     register_closure<Microfacet>(*shadingsys);
     register_closure<MicrofacetAniso>(*shadingsys);
     register_closure<Emission>(*shadingsys);
-    register_closure<Mirror>(*shadingsys);
-    register_closure<Dielectric>(*shadingsys);
+    register_closure<KpMirror>(*shadingsys);
+    register_closure<KpDielectric>(*shadingsys);
+    register_closure<KpMicrofacet>(*shadingsys);
 }
 
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only) {
@@ -126,10 +127,13 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                     case EmissionID:        status = ret.surface.add_bsdf<EmptyParams>(EmissionID, cw, comp->as<EmptyParams>());
                         break;
 
-                    case MirrorID:          status = ret.surface.add_bsdf<EmptyParams>(MirrorID, cw, comp->as<EmptyParams>());
+                    case KpMirrorID:        status = ret.surface.add_bsdf<EmptyParams>(KpMirrorID, cw, comp->as<EmptyParams>());
                         break;
 
-                    case DielectricID:      status = ret.surface.add_bsdf<DielectricParams>(DielectricID, cw, comp->as<DielectricParams>());
+                    case KpDielectricID:    status = ret.surface.add_bsdf<KpDielectricParams>(KpDielectricID, cw, comp->as<KpDielectricParams>());
+                        break;
+
+                    case KpMicrofacetID:    status = ret.surface.add_bsdf<KpMicrofacetParams>(KpMicrofacetID, cw, comp->as<KpMicrofacetParams>());
                         break;
                 }
                 OSL_ASSERT(status && "Invalid closure invoked");

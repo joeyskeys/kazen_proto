@@ -448,6 +448,8 @@ string concat (string a, string b, string c, string d, string e, string f) {
 
 // Closures
 
+#include "kp_extension.h"
+
 closure color emission() BUILTIN;
 closure color background() BUILTIN;
 closure color diffuse(normal N) BUILTIN;

@@ -57,7 +57,7 @@ struct KpMicrofacetParams {
     float alpha = 0.1;
     float int_ior = 1.5046f;
     float ext_ior = 1.000277f;
-    OSL::Vec3 kd;
+    float kd = 0.5;
 };
 
 struct Diffuse {
@@ -199,7 +199,7 @@ struct KpMicrofacet {
             CLOSURE_FLOAT_PARAM(KpMicrofacetParams, alpha),
             CLOSURE_FLOAT_PARAM(KpMicrofacetParams, int_ior),
             CLOSURE_FLOAT_PARAM(KpMicrofacetParams, ext_ior),
-            CLOSURE_VECTOR_PARAM(KpMicrofacetParams, kd),
+            CLOSURE_FLOAT_PARAM(KpMicrofacetParams, kd),
             CLOSURE_FINISH_PARAM(KpMicrofacetParams)
         };
 
