@@ -52,5 +52,5 @@
     </Objects>
 
     <EmbreeAccelerator/>
-    <WhittedIntegrator/>
+    <PathMatsIntegrator/>
 </Scene>

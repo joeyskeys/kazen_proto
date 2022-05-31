@@ -29,6 +29,7 @@ enum ETag {
     ENormalIntegrator,
     EAmbientOcclusionIntegrator,
     EWhittedIntegrator,
+    EPathMatsIntegrator,
     EPathIntegrator,
     EOldPathIntegrator,
     // objects
@@ -52,7 +53,7 @@ enum ETag {
     EInvalid
 };
 
-constexpr static frozen::unordered_map<frozen::string, ETag, 25> tags = {
+constexpr static frozen::unordered_map<frozen::string, ETag, 26> tags = {
     {"Scene", EScene},
     {"Film", EFilm},
     {"Camera", ECamera},
@@ -63,6 +64,7 @@ constexpr static frozen::unordered_map<frozen::string, ETag, 25> tags = {
     {"NormalIntegrator", ENormalIntegrator},
     {"AmbientOcclusionIntegrator", EAmbientOcclusionIntegrator},
     {"WhittedIntegrator", EWhittedIntegrator},
+    {"PathMatsIntegrator", EPathMatsIntegrator},
     {"PathIntegrator", EPathIntegrator},
     {"OldPathIntegrator", EOldPathIntegrator},
     {"Objects", EObjects},
@@ -222,7 +224,7 @@ void parse_attributes(const pugi::xml_node& node, DictLike* obj) {
     for (auto& attr : node.attributes()) {
         void* dst = obj->address_of(attr.name());
         if (dst == nullptr) {
-            std::cout << "Attribute " << attr.name() << " not directly used.." << std::endl;
+            //std::cout << "Attribute " << attr.name() << " not directly used.." << std::endl;
             continue;
         }
 
@@ -419,6 +421,11 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case EWhittedIntegrator: {
                 integrator_fac.create_functor = &WhittedIntegrator::create;
+                break;
+            }
+
+            case EPathMatsIntegrator: {
+                integrator_fac.create_functor = &PathMatsIntegrator::create;
                 break;
             }
 

@@ -84,7 +84,7 @@ WhittedIntegrator::WhittedIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* r
     : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
 {}
 
-void WhittedIntegrator::setup(Scene* scene) {
+void OSLBasedIntegrator::setup(Scene* scene) {
     Integrator::setup(scene);
     shadingsys = scene->shadingsys.get();
     shaders = &scene->shaders;
@@ -167,6 +167,16 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
     return Li;
 }
 
+PathMatsIntegrator::PathMatsIntegrator()
+    : OSLBasedIntegrator()
+{}
+
+PathMatsIntegrator::PathMatsIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
+    : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
+{}
+
+
+
 PathIntegrator::PathIntegrator()
     : OSLBasedIntegrator()
 {}
@@ -174,6 +184,40 @@ PathIntegrator::PathIntegrator()
 PathIntegrator::PathIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
     : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
 {}
+
+RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
+    Intersection its;
+    if (!accel_ptr->intersect(r, its))
+        return 0.f;
+
+    RGBSpectrum Li{0}, throughput{1};
+    Ray ray(r);
+    int depth = 1;
+    float eta = 0.95f;
+    BSDFSample sample;
+    ShadingResult ret;
+    OSL::ShaderGlobals sg;
+    
+    while (true) {
+        if (its.is_light)
+            Li += throughput * ret.Le;
+
+        float prob = std::min(throughput.max_component() * eta * eta, 0.99f);
+        if (randomf() >= prob)
+            return Li;
+        throughput /= prob;
+
+        auto shader_ptr = (*shaders)[its.shader_name];
+        shadingsys->execute(*ctx, *shader_ptr, sg);
+        process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
+        ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
+        auto f = ret.surface.sample(sg, sample);
+        throughput *= f;
+        ray = Ray(its.P, sample.wo);
+        if (!accel_ptr->intersect(ray, its))
+            return Li;
+    }
+}
 
 void PathIntegrator::setup(Scene* scene) {
     Integrator::setup(scene);

@@ -64,6 +64,8 @@ public:
         : Integrator(cam_ptr, flm_ptr, rec)
     {}
 
+    void setup(Scene* scene) override;
+
     OSL::ShadingSystem* shadingsys;
     std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
     OSL::PerThreadInfo* thread_info;
@@ -79,7 +81,20 @@ public:
         return std::make_unique<WhittedIntegrator>(cam_ptr, flm_ptr, rec);
     }
 
-    void setup(Scene* scene) override;
+    //void setup(Scene* scene) override;
+    RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
+};
+
+class PathMatsIntegrator : public OSLBasedIntegrator {
+public:
+    PathMatsIntegrator();
+    PathMatsIntegrator(Camera* camera_ptr, Film* flm_ptr, Recorder* rec);
+
+    static std::unique_ptr<Integrator> create(Camera* cam_ptr, Film* flm_ptr, Recorder* rec) {
+        return std::make_unique<PathMatsIntegrator>(cam_ptr, flm_ptr, rec);
+    }
+
+    //void setup(Scene* scene) override;
     RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
 };
 
