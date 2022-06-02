@@ -30,6 +30,7 @@ enum ETag {
     EAmbientOcclusionIntegrator,
     EWhittedIntegrator,
     EPathMatsIntegrator,
+    EPathEmsIntegrator,
     EPathIntegrator,
     EOldPathIntegrator,
     // objects
@@ -65,6 +66,7 @@ constexpr static frozen::unordered_map<frozen::string, ETag, 26> tags = {
     {"AmbientOcclusionIntegrator", EAmbientOcclusionIntegrator},
     {"WhittedIntegrator", EWhittedIntegrator},
     {"PathMatsIntegrator", EPathMatsIntegrator},
+    {"PathEmsIntegrator", EPathEmsIntegrator},
     {"PathIntegrator", EPathIntegrator},
     {"OldPathIntegrator", EOldPathIntegrator},
     {"Objects", EObjects},
@@ -426,6 +428,11 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case EPathMatsIntegrator: {
                 integrator_fac.create_functor = &PathMatsIntegrator::create;
+                break;
+            }
+
+            case EPathEmsIntegrator: {
+                integrator_fac.create_functor = &PathEmsIntegrator::create;
                 break;
             }
 
