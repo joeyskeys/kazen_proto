@@ -175,16 +175,6 @@ PathMatsIntegrator::PathMatsIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder*
     : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
 {}
 
-
-
-PathIntegrator::PathIntegrator()
-    : OSLBasedIntegrator()
-{}
-
-PathIntegrator::PathIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
-    : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
-{}
-
 RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     Intersection its;
     if (!accel_ptr->intersect(r, its))
@@ -199,6 +189,11 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) cons
     OSL::ShaderGlobals sg;
     
     while (true) {
+        auto shader_ptr = (*shaders)[its.shader_name];
+        shadingsys->execute(*ctx, *shader_ptr, sg);
+        process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
+        ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
+
         if (its.is_light)
             Li += throughput * ret.Le;
 
@@ -207,10 +202,6 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) cons
             return Li;
         throughput /= prob;
 
-        auto shader_ptr = (*shaders)[its.shader_name];
-        shadingsys->execute(*ctx, *shader_ptr, sg);
-        process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
-        ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
         auto f = ret.surface.sample(sg, sample);
         throughput *= f;
         ray = Ray(its.P, sample.wo);
@@ -218,6 +209,87 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) cons
             return Li;
     }
 }
+
+PathEmsIntegrator::PathEmsIntegrator()
+    : OSLBasedIntegrator()
+{}
+
+PathEmsIntegrator::PathEmsIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
+    : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
+{}
+
+RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
+    Intersection its;
+    if (!accel_ptr->intersect(r, its))
+        return 0.f;
+
+    RGBSpectrum Li{0}, throughput{1};
+    Ray ray(r);
+    int depth = 1;
+    float eta = 0.95f;
+    bool is_specular = true;
+    BSDFSample sample;
+    ShadingResult ret;
+    OSL::ShadingGlobals sg;
+
+    while (true) {
+        auto shader_ptr = (*shaders)[its.shader_name];
+        shadingsys->execute(*ctx, *shader_ptr, sg);
+        process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
+        ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
+
+        if (its.is_light)
+            Li += throughput * ret.Le * is_specular;
+
+        auto sampled_f = ret.surface.sample(sg, sample);
+        if (sample.mode != ScatteringMode::Specular) {
+            is_specular = false;
+            auto light_cnt = lights->size();
+            if (light_cnt == 0)
+                return RGBSpectrum(0.f);
+            int sampled_light_idx = std::min(static_cast<size_t>(randomf() * light_cnt), light_cnt - 1);
+
+            auto light_ptr = lights->at(sampled_light_idx).get();
+            Vec3f light_dir;
+            float light_pdf, bsdf_pdf;
+            auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
+
+            if (!Ls.is_zero()) {
+                //float cos_theta_v = dot(light_dir, isect.N);
+                float cos_theta_v = dot(light_dir, isect.shading_normal);
+                sample.wo = isect.to_local(light_dir);
+                auto f = ret.surface.eval(sg, sample);
+                recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
+                Li += throughput * (f * Ls * cos_theta_v) * lights->size();
+            }
+        }
+        else {
+            is_specular = true;
+        }
+
+        if (depth >= 3) {
+            float prob = std::min(throughput.max_component() * eta * eta, 0.99f);
+            if (randomf() >= prob)
+                return Li;
+            throughput /= prob;
+        }
+
+        throughput *= sampled_f;
+        ray = Ray(its.P, its.to_world(sample.wo));
+        if (!accel_ptr->intersect(ray, its))
+            return Li;
+
+        depth += 1;
+    }
+}
+
+PathIntegrator::PathIntegrator()
+    : OSLBasedIntegrator()
+{}
+
+PathIntegrator::PathIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
+    : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
+{}
 
 void PathIntegrator::setup(Scene* scene) {
     Integrator::setup(scene);

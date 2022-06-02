@@ -98,6 +98,18 @@ public:
     RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
 };
 
+class PathEmsIntegrator : public OSLBasedIntegrator {
+public:
+    PathEmsIntegrator();
+    PathEmsIntegrator(Camera* camera_ptr, Film* flm_ptr, Recorder* rec);
+
+    static std::unique_ptr<Integrator> create(Camera* cam_ptr, Film* flm_ptr, Recorder* rec) {
+        return std::make_unique<PathEmsIntegrator>(cam_ptr, flm_ptr, rec);
+    }
+
+    RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
+}
+
 class PathIntegrator : public OSLBasedIntegrator {
 public:
     PathIntegrator();
