@@ -32,7 +32,7 @@ enum ETag {
     EPathMatsIntegrator,
     EPathEmsIntegrator,
     EPathIntegrator,
-    EOldPathIntegrator,
+    //EOldPathIntegrator,
     // objects
     EObjects,
     ESphere,
@@ -68,7 +68,7 @@ constexpr static frozen::unordered_map<frozen::string, ETag, 26> tags = {
     {"PathMatsIntegrator", EPathMatsIntegrator},
     {"PathEmsIntegrator", EPathEmsIntegrator},
     {"PathIntegrator", EPathIntegrator},
-    {"OldPathIntegrator", EOldPathIntegrator},
+    //{"OldPathIntegrator", EOldPathIntegrator},
     {"Objects", EObjects},
     {"Sphere", ESphere},
     {"Triangle", ETriangle},
@@ -624,4 +624,14 @@ void Scene::parse_from_file(fs::path filepath) {
 
     // Construct acceleration structure after all data is parsed
     accelerator->build();
+}
+
+Light* Scene::get_random_light(const float& xi, float& pdf) const {
+    const auto cnt = lights.size();
+    if (cnt == 0)
+        return nullptr;
+
+    pdf = 1. / cnt;
+    auto idx = std::min(static_cast<size_t>(xi * cnt), cnt - 1);
+    return lights[idx];
 }

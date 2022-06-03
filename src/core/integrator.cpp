@@ -291,14 +291,6 @@ PathIntegrator::PathIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
     : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
 {}
 
-void PathIntegrator::setup(Scene* scene) {
-    Integrator::setup(scene);
-    shadingsys = scene->shadingsys.get();
-    shaders = &scene->shaders;
-    thread_info = shadingsys->create_thread_info();
-    ctx = shadingsys->get_context(thread_info);
-}
-
 RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     /* *********************************************
      * The rendering equation is:
@@ -314,13 +306,16 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
      * 
      * *********************************************/
 
-    RGBSpectrum Li{0}, throughput{1};
-    float direct_weight;
-    float indirect_weight = 1.f;
-    float eta = 0.95f;
-    float emission_pdf, light_pdf, bsdf_pdf;
+    Intersection its;
+    if (!accel_ptr->intersect(r, its))
+        return 0.f;
 
-    Intersection isect;
+    RGBSpectrum Li{0}, throughput{1};
+    float eta = 0.95f;
+    float lpdf, mpdf = 1.f;
+    float mis_weight = 1.f;
+    bool last_bounce_specular = true;
+
     Ray ray(r);
 
     constexpr int max_depth = 8;
@@ -336,136 +331,90 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     e_start.Li = Li;
     p.record(std::move(e_start));
     size_t last_geom_id = -1;
-    bool specular_bounce = false;
 
     for (int depth = 0; depth < max_depth; ++depth) {
         OSL::ShaderGlobals sg;
 
-        if (accel_ptr->intersect(ray, isect)) {
-            if (isect.geom_id == last_geom_id) {
-                // Bypass self-intersection
-                ray.tmin = isect.offset_point2();
-                ray.tmax = std::numeric_limits<float>::max();
-                isect.ray_t = std::numeric_limits<float>::max();
-                continue;
+        KazenRenderServices::globals_from_hit(sg, ray, isect);
+        auto shader_ptr = (*shaders)[isect.shader_name];
+        if (shader_ptr == nullptr)
+            throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", isect.shader_name));
+        shadingsys->execute(*ctx, *shader_ptr, sg);
+        ShadingResult ret;
+        process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
+        ret.surface.compute_pdfs(sg, throughput, depth >= min_depth);
+
+        /* *********************************************
+            * 1. Le calculation
+            * We try out pbrt's impl, add emitted contribution
+            * at only first hit and specular bounce coz further
+            * emission is counted in the direction light sampling
+            * part
+            * *********************************************/
+        //if (isect.is_light)
+        if (depth == 0 || specular_bounce) {
+            Ls = light_ptr->eval(its, bsdf_sample.wo, its.P, lpdf, its.shading_normal);
+            mis_weight = power_heuristic(1, mpdf, 1, lpdf);
+            Li += mis_weight * throughput * Ls;
+            //Li += throughput * ret.Le;
+        }
+
+        BSDFSample bsdf_sample;
+        auto sampled_f = ret.surface.sample(sg, bsdf_sample);
+
+        /* *********************************************
+        * 2. Sampling light to get direct light contribution
+        * *********************************************/
+        float pdf;
+        auto light_ptr = get_random_light(randomf(), pdf);
+        Vec3f light_dir;
+        auto Ls = light_ptr->sample(its, light_dir, light_pdf, accel_ptr);
+        if (!Ls.is_zero()) {
+            float cos_theta_v = dot(light_dir, isect.shading_normal);
+            if (cos_theta_v > 0.) {
+                bsdf_sample.wo = light_dir;
+                auto f = ret.surface.eval(sg, bsdf_sample);
+                mis_weight = power_heuristic(1, lpdf, 1, bsdf_sample.pdf);
+                mis_weight = std::isnan(mis_weight) ? 0.f : mis_weight;
+                Li += mis_weight * throughput * Ls * f * cos_theta_v * pdf;
             }
-            last_geom_id = isect.geom_id;
+        }
 
-            KazenRenderServices::globals_from_hit(sg, ray, isect);
-            auto shader_ptr = (*shaders)[isect.shader_name];
-            if (shader_ptr == nullptr)
-                throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", isect.shader_name));
-            shadingsys->execute(*ctx, *shader_ptr, sg);
-            ShadingResult ret;
-            bool last_bounce = depth == max_depth;
-            process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
-
-            /* *********************************************
-             * 1. Le calculation
-             * We try out pbrt's impl, add emitted contribution
-             * at only first hit and specular bounce coz further
-             * emission is counted in the direction light sampling
-             * part
-             * *********************************************/
-            //if (isect.is_light)
-            if (depth == 0 || specular_bounce)
-                Li += throughput * ret.Le;
-
-
-            ret.surface.compute_pdfs(sg, throughput, depth >= min_depth);
-
-            int light_sample_range = lights->size();
-
-            // Avoid sampling itself if we've hit a geometry light
-            if (isect.is_light)
-                --light_sample_range;
-
-            BSDFSample bsdf_sample;
-            auto sampled_f = ret.surface.sample(sg, bsdf_sample);
-
-            if (light_sample_range > 0) {
-                int sampled_light_idx = randomf() * 0.99999 * light_sample_range;
-
-                // Shift the index if we happen to sampled itself
-                if (isect.is_light && sampled_light_idx >= isect.light_id)
-                    ++sampled_light_idx;
-
-                /* *********************************************
-                * 2. Sampling light to get direct light contribution
-                * *********************************************/
-                auto light_ptr = lights->at(sampled_light_idx).get();
-                Vec3f light_dir;
-                auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
-                if (!Ls.is_zero()) {
-                    //float cos_theta_v = dot(light_dir, isect.N);
-                    float cos_theta_v = dot(light_dir, isect.shading_normal);
-                    BSDFSample tmp_sample;
-                    tmp_sample.wo = light_dir;
-                    auto f = ret.surface.eval(sg, tmp_sample);
-                    direct_weight = power_heuristic(1, light_pdf, 1, tmp_sample.pdf);
-                    Li += throughput * Ls * f * cos_theta_v * direct_weight * lights->size();
-                }
-
-                recorder->print(rctx, fmt::format("Ls sampling light : {}", Ls));
-
-                /* *********************************************
-                * 3. Sampling material to get next direction
-                * *********************************************/
-                //float cos_theta_v = dot(bsdf_sample.wo, isect.N);
-                float cos_theta_v = dot(bsdf_sample.wo, isect.shading_normal);
-                Intersection tmpsect;
-                if (accel_ptr->intersect(Ray(isect.P, bsdf_sample.wo), tmpsect) && tmpsect.is_light) {
-                    Ls = light_ptr->eval(isect, bsdf_sample.wo, tmpsect.P, light_pdf, tmpsect.N);
-                    indirect_weight = power_heuristic(1, bsdf_sample.pdf, 1, light_pdf);
-                    Li += throughput * Ls * sampled_f * cos_theta_v * indirect_weight / bsdf_sample.pdf;
-                }
-
-                recorder->print(rctx, fmt::format("Ls sampling bsdf : {}", Ls));
-            }
-
-            throughput *= sampled_f;
-            if (throughput.is_zero())
+        // Russian Roulette
+        // The time of doing the Russian Roulette will determine
+        // which part will be discarded.
+        // Here we follow the implementation in mitsuba and will
+        // discard the L_direct & L_indirect on condition.
+        if (depth >= min_depth) {
+            auto prob = std::min(throughput.max_component() * eta * eta, 0.99f);
+            if (prob < randomf()) {
+                p.record(ERouletteCut, isect, throughput, Li);
                 return Li;
-            // TODO : add the real eta calculation
-            //eta *= 0.95f;
-
-            // Russian Roulette
-            // The time of doing the Russian Roulette will determine
-            // which part will be discarded.
-            // Here we follow the implementation in mitsuba and will
-            // discard the L_direct & L_indirect on condition.
-            if (depth >= min_depth) {
-                auto prob = std::min(throughput.max_component() * eta * eta, 0.99f);
-                if (prob < randomf()) {
-                    p.record(ERouletteCut, isect, throughput, Li);
-                    break;
-                }
-                throughput /= prob;
             }
+            throughput /= prob;
+        }
 
-            // Construct next ray
-            //ray.direction = isect.wi;
-            //ray.direction = next_ray_dir;
-            ray.direction = bsdf_sample.wo;
-            //isect.refined_point = isect.P + isect.offset_point1();
-            isect.refined_point = isect.P;
-            ray.origin = isect.refined_point;
-            //ray.tmin = isect.offset_point2();
-            ray.tmin = epsilon<float>;
-            ray.tmax = std::numeric_limits<float>::max();
-            isect.ray_t = std::numeric_limits<float>::max();
-            
-            // LightPath event recording
-            if (isect.is_light)
-                p.record(EEmission, isect, throughput, Li);
-            else
-                p.record(EReflection, isect, throughput, Li);
+        /* *********************************************
+        * 3. Sampling material to get next direction
+        * *********************************************/
+        float cos_theta_v = dot(bsdf_sample.wo, isect.shading_normal);
+        auto f = ret.surface.sample(sg, bsdf_sample);
+        last_bounce_specular = bsdf_sample.mode == ScatteringMode::Specular;
+        throughput *= f;
+        mpdf = bsdf_sample.pdf;
+        ray = Ray(its.P, its.to_world(bsdf_sample.wo));
+
+        if (!accel_ptr->intersect(ray, its))
+            return Li;
+
+        // LightPath event recording
+        if (isect.is_light)
+            p.record(EEmission, isect, throughput, Li);
+        else
+            p.record(EReflection, isect, throughput, Li);
         }
-        else {
-            // Hit background
-            p.record(EBackground, isect, throughput, Li);
-            break;
-        }
+
+        depth += 1;
     }
 
     recorder->record(p, rctx);
@@ -473,6 +422,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     return Li;
 }
 
+/*
 OldPathIntegrator::OldPathIntegrator()
     : OSLBasedIntegrator()
 {}
@@ -592,3 +542,4 @@ RGBSpectrum OldPathIntegrator::Li (const Ray& r, const RecordContext& rctx) cons
 
     return Li;
 }
+*/
