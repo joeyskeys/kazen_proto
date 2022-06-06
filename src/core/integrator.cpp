@@ -21,6 +21,16 @@ void Integrator::setup(Scene* scene) {
     lights = &scene->lights;
 }
 
+const Light* Integrator::get_random_light(const float& xi, float& pdf) const {
+    const auto cnt = lights->size();
+    if (cnt == 0)
+        return nullptr;
+
+    pdf = 1. / cnt;
+    auto idx = std::min(static_cast<size_t>(xi * cnt), cnt - 1);
+    return lights->at(idx).get();
+}
+
 Integrator::Integrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
     : camera_ptr(cam_ptr)
     , film_ptr(flm_ptr)
@@ -185,11 +195,12 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) cons
     int depth = 1;
     float eta = 0.95f;
     BSDFSample sample;
-    ShadingResult ret;
     OSL::ShaderGlobals sg;
     
     while (true) {
+        KazenRenderServices::globals_from_hit(sg, ray, its);
         auto shader_ptr = (*shaders)[its.shader_name];
+        ShadingResult ret;
         shadingsys->execute(*ctx, *shader_ptr, sg);
         process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
         ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
@@ -204,7 +215,7 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) cons
 
         auto f = ret.surface.sample(sg, sample);
         throughput *= f;
-        ray = Ray(its.P, sample.wo);
+        ray = Ray(its.P, its.to_world(sample.wo));
         if (!accel_ptr->intersect(ray, its))
             return Li;
     }
@@ -229,11 +240,12 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
     float eta = 0.95f;
     bool is_specular = true;
     BSDFSample sample;
-    ShadingResult ret;
-    OSL::ShadingGlobals sg;
+    OSL::ShaderGlobals sg;
 
     while (true) {
+        KazenRenderServices::globals_from_hit(sg, ray, its);
         auto shader_ptr = (*shaders)[its.shader_name];
+        ShadingResult ret;
         shadingsys->execute(*ctx, *shader_ptr, sg);
         process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
         ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
@@ -252,12 +264,12 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             auto light_ptr = lights->at(sampled_light_idx).get();
             Vec3f light_dir;
             float light_pdf, bsdf_pdf;
-            auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
+            auto Ls = light_ptr->sample(its, light_dir, light_pdf, accel_ptr);
 
             if (!Ls.is_zero()) {
                 //float cos_theta_v = dot(light_dir, isect.N);
-                float cos_theta_v = dot(light_dir, isect.shading_normal);
-                sample.wo = isect.to_local(light_dir);
+                float cos_theta_v = dot(light_dir, its.shading_normal);
+                sample.wo = its.to_local(light_dir);
                 auto f = ret.surface.eval(sg, sample);
                 recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
                 Li += throughput * (f * Ls * cos_theta_v) * lights->size();
@@ -267,14 +279,13 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             is_specular = true;
         }
 
-        if (depth >= 3) {
-            float prob = std::min(throughput.max_component() * eta * eta, 0.99f);
-            if (randomf() >= prob)
-                return Li;
-            throughput /= prob;
-        }
+        float prob = std::min(throughput.max_component() * eta * eta, 0.99f);
+        if (randomf() >= prob)
+            return Li;
+        throughput /= prob;
 
         throughput *= sampled_f;
+        eta *= 0.9;
         ray = Ray(its.P, its.to_world(sample.wo));
         if (!accel_ptr->intersect(ray, its))
             return Li;
@@ -314,10 +325,12 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     float eta = 0.95f;
     float lpdf, mpdf = 1.f;
     float mis_weight = 1.f;
+    BSDFSample bsdf_sample;
     bool last_bounce_specular = true;
 
     Ray ray(r);
 
+    int depth = 1;
     constexpr int max_depth = 8;
     constexpr int min_depth = 3;
 
@@ -335,10 +348,10 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     for (int depth = 0; depth < max_depth; ++depth) {
         OSL::ShaderGlobals sg;
 
-        KazenRenderServices::globals_from_hit(sg, ray, isect);
-        auto shader_ptr = (*shaders)[isect.shader_name];
+        KazenRenderServices::globals_from_hit(sg, ray, its);
+        auto shader_ptr = (*shaders)[its.shader_name];
         if (shader_ptr == nullptr)
-            throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", isect.shader_name));
+            throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", its.shader_name));
         shadingsys->execute(*ctx, *shader_ptr, sg);
         ShadingResult ret;
         process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
@@ -352,25 +365,24 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
             * part
             * *********************************************/
         //if (isect.is_light)
-        if (depth == 0 || specular_bounce) {
-            Ls = light_ptr->eval(its, bsdf_sample.wo, its.P, lpdf, its.shading_normal);
+        float pdf;
+        auto light_ptr = get_random_light(randomf(), pdf);
+        if (depth == 0 || last_bounce_specular) {
+            auto Ls = light_ptr->eval(its, bsdf_sample.wo, its.P, lpdf, its.shading_normal);
             mis_weight = power_heuristic(1, mpdf, 1, lpdf);
             Li += mis_weight * throughput * Ls;
             //Li += throughput * ret.Le;
         }
 
-        BSDFSample bsdf_sample;
         auto sampled_f = ret.surface.sample(sg, bsdf_sample);
 
         /* *********************************************
         * 2. Sampling light to get direct light contribution
         * *********************************************/
-        float pdf;
-        auto light_ptr = get_random_light(randomf(), pdf);
         Vec3f light_dir;
-        auto Ls = light_ptr->sample(its, light_dir, light_pdf, accel_ptr);
+        auto Ls = light_ptr->sample(its, light_dir, lpdf, accel_ptr);
         if (!Ls.is_zero()) {
-            float cos_theta_v = dot(light_dir, isect.shading_normal);
+            float cos_theta_v = dot(light_dir, its.shading_normal);
             if (cos_theta_v > 0.) {
                 bsdf_sample.wo = light_dir;
                 auto f = ret.surface.eval(sg, bsdf_sample);
@@ -388,7 +400,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         if (depth >= min_depth) {
             auto prob = std::min(throughput.max_component() * eta * eta, 0.99f);
             if (prob < randomf()) {
-                p.record(ERouletteCut, isect, throughput, Li);
+                p.record(ERouletteCut, its, throughput, Li);
                 return Li;
             }
             throughput /= prob;
@@ -397,7 +409,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         /* *********************************************
         * 3. Sampling material to get next direction
         * *********************************************/
-        float cos_theta_v = dot(bsdf_sample.wo, isect.shading_normal);
+        float cos_theta_v = dot(bsdf_sample.wo, its.shading_normal);
         auto f = ret.surface.sample(sg, bsdf_sample);
         last_bounce_specular = bsdf_sample.mode == ScatteringMode::Specular;
         throughput *= f;
@@ -408,11 +420,10 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
             return Li;
 
         // LightPath event recording
-        if (isect.is_light)
-            p.record(EEmission, isect, throughput, Li);
+        if (its.is_light)
+            p.record(EEmission, its, throughput, Li);
         else
-            p.record(EReflection, isect, throughput, Li);
-        }
+            p.record(EReflection, its, throughput, Li);
 
         depth += 1;
     }

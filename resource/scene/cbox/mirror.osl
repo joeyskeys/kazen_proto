@@ -10,5 +10,6 @@ surface mirror
 )
 {
     //Ci = Cs * mirror();
-    Ci = Cs * reflection(N, eta);
+    //Ci = Cs * reflection(N, eta);
+    Ci = Cs * kp_mirror();
 }

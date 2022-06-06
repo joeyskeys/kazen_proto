@@ -441,9 +441,11 @@ void Scene::parse_from_file(fs::path filepath) {
                 break;
             }
 
+            /*
             case EOldPathIntegrator: {
                 integrator_fac.create_functor = &OldPathIntegrator::create;
             }
+            */
 
             case EObjects:
                 break;
@@ -624,14 +626,4 @@ void Scene::parse_from_file(fs::path filepath) {
 
     // Construct acceleration structure after all data is parsed
     accelerator->build();
-}
-
-Light* Scene::get_random_light(const float& xi, float& pdf) const {
-    const auto cnt = lights.size();
-    if (cnt == 0)
-        return nullptr;
-
-    pdf = 1. / cnt;
-    auto idx = std::min(static_cast<size_t>(xi * cnt), cnt - 1);
-    return lights[idx];
 }

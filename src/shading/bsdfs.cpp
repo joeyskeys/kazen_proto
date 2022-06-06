@@ -196,17 +196,14 @@ float Emission::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSampl
 }
 
 float KpMirror::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    sample.mode = ScatteringMode::Specular;
     sample.pdf = 0.f;
     return 0.f;
 }
 
 float KpMirror::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.mode = ScatteringMode::Specular;
-    if (cos_theta(sample.wo) <= 0)
-        return 0.f;
 
-    sample.wo = reflect(sg.I);
+    sample.wo = reflect(-sg.I);
     sample.pdf = 1.f;
     return 1.f;
 }

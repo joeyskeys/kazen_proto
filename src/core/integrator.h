@@ -24,6 +24,7 @@ public:
 
     virtual void setup(Scene* scene);
     virtual RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const = 0;
+    const Light*  get_random_light(const float& xi, float& pdf) const;
 
     HitablePtr          accel_ptr;
     Camera*             camera_ptr;
@@ -106,7 +107,7 @@ public:
     }
 
     RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
-}
+};
 
 class PathIntegrator : public OSLBasedIntegrator {
 public:

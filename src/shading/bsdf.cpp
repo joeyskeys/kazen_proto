@@ -136,7 +136,11 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                     case KpMicrofacetID:    status = ret.surface.add_bsdf<KpMicrofacetParams>(KpMicrofacetID, cw, comp->as<KpMicrofacetParams>());
                         break;
                 }
-                OSL_ASSERT(status && "Invalid closure invoked");
+                //OSL_ASSERT(status && "Invalid closure invoked");
+                if (!status) {
+                    std::cout << "error closure id : " << comp->id << std::endl;
+                    throw std::runtime_error(fmt::format("Invalid closure invoked: {}", comp->id));
+                }
             }
 
             break;
