@@ -194,6 +194,7 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) cons
     Ray ray(r);
     int depth = 1;
     float eta = 0.95f;
+    float lpdf;
     BSDFSample sample;
     OSL::ShaderGlobals sg;
     
@@ -205,8 +206,11 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) cons
         process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
         ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
 
-        if (its.is_light)
-            Li += throughput * ret.Le;
+        if (its.is_light) {
+            //Li += throughput * ret.Le;
+            auto Ls = lights->at(its.light_id)->eval(its, -ray.direction, random3f(), lpdf, its.N);
+            Li += throughput * Ls;
+        }
 
         float prob = std::min(throughput.max_component() * eta * eta, 0.99f);
         if (randomf() >= prob)

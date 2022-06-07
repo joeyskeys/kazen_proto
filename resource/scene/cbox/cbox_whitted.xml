@@ -48,7 +48,7 @@
         <Mesh filename="string meshes/leftwall.obj" shader_name="diffuse3"/>
         <Mesh filename="string meshes/sphere1.obj" shader_name="mirror"/>
         <Mesh filename="string meshes/sphere2.obj" shader_name="dielectric"/>
-        <Mesh filename="string meshes/light.obj" shader_name="emitter" is_light="bool true" radiance="float3 1 1 1" intensity="float 5"/>
+        <Mesh filename="string meshes/light.obj" shader_name="emitter" is_light="bool true" radiance="float3 2 2 2" intensity="float 10"/>
     </Objects>
 
     <EmbreeAccelerator/>
