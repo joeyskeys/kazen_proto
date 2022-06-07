@@ -60,6 +60,10 @@ struct KpMicrofacetParams {
     float kd = 0.5;
 };
 
+struct KpEmitterParams {
+    float albedo;
+};
+
 struct Diffuse {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
@@ -207,6 +211,19 @@ struct KpMicrofacet {
     }
 };
 
+struct KpEmitter {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(KpEmitterParams, albedo),
+            CLOSURE_FINISH_PARAM(KpEmitterParams)
+        };
+
+        shadingsys.register_closure("kp_emitter", KpEmitterID, params, nullptr, nullptr);
+    }
+};
+
 using eval_func = std::function<float(const void*, const OSL::ShaderGlobals&,
     BSDFSample&)>;
 using sample_func = std::function<float(const void*, const OSL::ShaderGlobals&,
@@ -215,7 +232,7 @@ using sample_func = std::function<float(const void*, const OSL::ShaderGlobals&,
 // cpp 17 inlined constexpr variables will have external linkage will
 // have only one copy among all included files
 inline eval_func get_eval_func(ClosureID id) {
-    static std::array<eval_func, 19> eval_functions {
+    static std::array<eval_func, 20> eval_functions {
         Diffuse::eval,
         Phong::eval,
         nullptr,
@@ -234,13 +251,14 @@ inline eval_func get_eval_func(ClosureID id) {
         KpMirror::eval,
         KpDielectric::eval,
         KpMicrofacet::eval,
+        KpEmitter::eval,
         nullptr
     };
     return eval_functions[id];
-};
+}
 
 inline sample_func get_sample_func(ClosureID id) {
-    static std::array<sample_func, 19> sample_functions {
+    static std::array<sample_func, 20> sample_functions {
         Diffuse::sample,
         Phong::sample,
         nullptr,
@@ -259,7 +277,8 @@ inline sample_func get_sample_func(ClosureID id) {
         KpMirror::sample,
         KpDielectric::sample,
         KpMicrofacet::sample,
+        KpEmitter::sample,
         nullptr
     };
     return sample_functions[id];
-};
+}

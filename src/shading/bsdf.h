@@ -48,6 +48,7 @@ enum ClosureID {
     KpMirrorID,
     KpDielectricID,
     KpMicrofacetID,
+    KpEmitterID,
 
     NumClosureIDs
 };

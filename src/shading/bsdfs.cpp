@@ -273,3 +273,16 @@ float KpMicrofacet::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFS
 
     return eval(data, sg, sample) * cos_theta(sample.wo);
 }
+
+float KpEmitter::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    sample.pdf = 1;
+    auto params = reinterpret_cast<const KpEmitterParams*>(data);
+    return params->albedo;
+}
+
+float KpEmitter::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    sample.mode = ScatteringMode::Diffuse;
+    sample.pdf = 1;
+    auto params = reinterpret_cast<const KpEmitterParams*>(data);
+    return params->albedo;
+}

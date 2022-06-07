@@ -79,6 +79,7 @@ void register_closures(OSL::ShadingSystem *shadingsys) {
     register_closure<KpMirror>(*shadingsys);
     register_closure<KpDielectric>(*shadingsys);
     register_closure<KpMicrofacet>(*shadingsys);
+    register_closure<KpEmitter>(*shadingsys);
 }
 
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only) {
@@ -103,7 +104,7 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
             const OSL::ClosureComponent *comp = closure->as_comp();
             cw = w * comp->w;
 
-            if (comp->id == EmissionID)
+            if (comp->id == EmissionID || comp->id == KpEmitterID)
                 ret.Le += cw;
             
             if (!light_only) {
@@ -134,6 +135,9 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                         break;
 
                     case KpMicrofacetID:    status = ret.surface.add_bsdf<KpMicrofacetParams>(KpMicrofacetID, cw, comp->as<KpMicrofacetParams>());
+                        break;
+
+                    case KpEmitterID:       status = ret.surface.add_bsdf<KpEmitterParams>(KpEmitterID, cw, comp->as<KpEmitterParams>());
                         break;
                 }
                 //OSL_ASSERT(status && "Invalid closure invoked");
