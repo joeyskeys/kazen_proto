@@ -241,6 +241,8 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
     bool is_specular = true;
     BSDFSample sample;
     OSL::ShaderGlobals sg;
+    float pdf = 0.f;
+    float light_pdf, bsdf_pdf;
 
     while (true) {
         KazenRenderServices::globals_from_hit(sg, ray, its);
@@ -250,8 +252,11 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
         process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
         ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
 
-        if (its.is_light)
-            Li += throughput * ret.Le * is_specular;
+        if (its.is_light) {
+            //Li += throughput * ret.Le * is_specular;
+            auto Ls = lights->at(its.light_id)->eval(its, -ray.direction, random3f(), light_pdf, its.N);
+            Li += throughput * Ls * is_specular;
+        }
 
         auto sampled_f = ret.surface.sample(sg, sample);
         if (sample.mode != ScatteringMode::Specular) {
@@ -259,11 +264,9 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             auto light_cnt = lights->size();
             if (light_cnt == 0)
                 return RGBSpectrum(0.f);
-            int sampled_light_idx = std::min(static_cast<size_t>(randomf() * light_cnt), light_cnt - 1);
 
-            auto light_ptr = lights->at(sampled_light_idx).get();
+            auto light_ptr = get_random_light(randomf(), pdf);
             Vec3f light_dir;
-            float light_pdf, bsdf_pdf;
             auto Ls = light_ptr->sample(its, light_dir, light_pdf, accel_ptr);
 
             if (!Ls.is_zero()) {
@@ -272,7 +275,7 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
                 sample.wo = its.to_local(light_dir);
                 auto f = ret.surface.eval(sg, sample);
                 recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
-                Li += throughput * (f * Ls * cos_theta_v) * lights->size();
+                Li += throughput * f * Ls * cos_theta_v / pdf;
             }
         }
         else {
@@ -388,7 +391,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
                 auto f = ret.surface.eval(sg, bsdf_sample);
                 mis_weight = power_heuristic(1, lpdf, 1, bsdf_sample.pdf);
                 mis_weight = std::isnan(mis_weight) ? 0.f : mis_weight;
-                Li += mis_weight * throughput * Ls * f * cos_theta_v * pdf;
+                Li += mis_weight * throughput * Ls * f * cos_theta_v / pdf;
             }
         }
 

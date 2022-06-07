@@ -3,6 +3,7 @@
 #include "renderservices.h"
 #include "core/intersection.h"
 #include "core/ray.h"
+#include "core/shape.h"
 #include "core/transform.h"
 
 KazenRenderServices::KazenRenderServices()
@@ -243,6 +244,8 @@ void KazenRenderServices::globals_from_hit(
 
     sg.u = isect.uv[0];
     sg.v = isect.uv[1];
+
+    sg.surfacearea = isect.shape->area();
 
     // TODO : setup dPdu dPdv correctly
     sg.dPdu = isect.tangent;

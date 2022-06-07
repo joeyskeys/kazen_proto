@@ -184,7 +184,7 @@ float MicrofacetAniso::sample(const void* data, const OSL::ShaderGlobals& sg, BS
 
 float Emission::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.mode = ScatteringMode::Diffuse;
-    sample.pdf = std::max(dot(sample.wo, sg.N), 0.f) * constants::one_div_pi<float>();
+    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     return 1.f;
 }
 

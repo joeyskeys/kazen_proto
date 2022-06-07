@@ -10,5 +10,5 @@ surface emitter
     // the power (in Watts) by the surface area and the factor of PI implied by
     // uniform emission over the hemisphere. N.B.: The total power is BEFORE Cs
     // filters the color!
-    Ci = Cs * emission();
+    Ci = emission();
 }

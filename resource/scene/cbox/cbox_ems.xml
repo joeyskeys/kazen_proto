@@ -36,7 +36,7 @@
         <ShaderGroupEnd/>
 
         <ShaderGroupBegin name="emitter"/>
-            <Shader name="emitter" layer="layer6">
+            <Shader name="area" layer="layer6">
                 <Parameter Cs="float3 40 40 40"/>
             </Shader>
         <ShaderGroupEnd/>
