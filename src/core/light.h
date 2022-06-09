@@ -16,11 +16,10 @@ public:
     {}
 
     virtual RGBSpectrum sample(const Intersection& isect, Vec3f& light_dir, float& pdf, const HitablePtr scene) const = 0;
-    virtual float       pdf(const Intersection& isect) const {
+    virtual float       pdf(const Intersection& isect, const Vec3f& p, const Vec3f& n) const {
         return 1.f;
     }
-    virtual RGBSpectrum eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample,
-        float& pdf, const Vec3f& n) const = 0;
+    virtual RGBSpectrum eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample) const = 0;
 
     // members
     RGBSpectrum radiance;
@@ -42,8 +41,7 @@ public:
     {}
 
     RGBSpectrum sample(const Intersection& isect, Vec3f& light_dir, float& pdf, const HitablePtr scene) const override;
-    RGBSpectrum eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample,
-        float& pdf, const Vec3f& n) const override;
+    RGBSpectrum eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample) const override;
 
     void* address_of(const std::string& name) override;
     
@@ -64,8 +62,8 @@ public:
     {}
 
     RGBSpectrum sample(const Intersection& isect, Vec3f& light_dir, float& pdf, const HitablePtr scene) const override;
-    RGBSpectrum eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample,
-        float& pdf, const Vec3f& n) const override;
+    RGBSpectrum eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample) const override;
+    float       pdf(const Intersection& isect, const Vec3f& p, const Vec3f& n) const override;
 
 public:
     std::shared_ptr<Shape> geometry;

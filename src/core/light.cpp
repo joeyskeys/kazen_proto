@@ -17,10 +17,8 @@ RGBSpectrum PointLight::sample(const Intersection& isect, Vec3f& light_dir, floa
     return radiance / length_sqr;
 }
 
-RGBSpectrum PointLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample,
-    float& pdf, const Vec3f& n) const {
+RGBSpectrum PointLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample) const {
     auto length_sqr = (position - isect.P).length_squared();
-    pdf = 1.f;
     return radiance / length_sqr;
 }
 
@@ -56,10 +54,14 @@ RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, f
     auto length_sqr = (isect.P - p).length_squared();
     pdf = pdf * length_sqr / cos_theta_v;
 
-    return eval(isect, -light_dir, p, pdf, n) / pdf;
+    return eval(isect, -light_dir, p) / pdf;
 }
 
-RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample,
-    float& pdf, const Vec3f& n) const {
+RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample) const {
     return radiance * intensity;
+}
+
+float GeometryLight::pdf(const Intersection& isect, const Vec3f& p, const Vec3f& n) const {
+    auto light_vec = isect.P - p;
+    return 1. / geometry->area() * light_vec.length_squared() / dot(light_vec.normalized(), n);
 }

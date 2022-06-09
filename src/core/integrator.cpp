@@ -194,7 +194,6 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) cons
     Ray ray(r);
     int depth = 1;
     float eta = 0.95f;
-    float lpdf;
     BSDFSample sample;
     OSL::ShaderGlobals sg;
     
@@ -208,7 +207,7 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) cons
 
         if (its.is_light) {
             //Li += throughput * ret.Le;
-            auto Ls = lights->at(its.light_id)->eval(its, -ray.direction, random3f(), lpdf, its.N);
+            auto Ls = lights->at(its.light_id)->eval(its, -ray.direction, random3f());
             Li += throughput * Ls;
         }
 
@@ -258,7 +257,7 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
 
         if (its.is_light) {
             //Li += throughput * ret.Le * is_specular;
-            auto Ls = lights->at(its.light_id)->eval(its, -ray.direction, random3f(), light_pdf, its.N);
+            auto Ls = lights->at(its.light_id)->eval(its, -ray.direction, random3f());
             Li += throughput * Ls * is_specular;
         }
 
@@ -337,7 +336,6 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
 
     Ray ray(r);
 
-    int depth = 1;
     constexpr int max_depth = 8;
     constexpr int min_depth = 3;
 
@@ -352,7 +350,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     p.record(std::move(e_start));
     size_t last_geom_id = -1;
 
-    for (int depth = 0; depth < max_depth; ++depth) {
+    for (int depth = 1; depth < max_depth; ++depth) {
         OSL::ShaderGlobals sg;
 
         KazenRenderServices::globals_from_hit(sg, ray, its);
@@ -374,8 +372,10 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         //if (isect.is_light)
         float pdf;
         auto light_ptr = get_random_light(randomf(), pdf);
-        if (depth == 0 || last_bounce_specular) {
-            auto Ls = light_ptr->eval(its, bsdf_sample.wo, its.P, lpdf, its.shading_normal);
+        if (last_bounce_specular) {
+            auto Ls = light_ptr->eval(its, bsdf_sample.wo, its.P);
+            // We have a problem here with interface design...
+            lpdf = light_ptr->pdf(its, );
             mis_weight = power_heuristic(1, mpdf, 1, lpdf);
             Li += mis_weight * throughput * Ls;
             //Li += throughput * ret.Le;

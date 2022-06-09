@@ -7,6 +7,8 @@
 #include <OSL/oslclosure.h>
 
 #include "base/vec.h"
+#include "core/hitable.h"
+#include "core/intersection.h"
 #include "core/spectrum.h"
 
 enum ClosureID {
@@ -177,7 +179,7 @@ class BackgroundCompositeClosure : public CompositeClosure {
 };
 
 struct ShadingResult {
-    // The implementation in testrender in OSL in reasonable.
+    // The implementation in testrender in OSL is reasonable.
     // We want the emission lobe can be sampled later on, so
     // put it into the composite closure. The Le will be set
     // when processing the closure tree and a diffuse EDF will
