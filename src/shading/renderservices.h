@@ -5,6 +5,7 @@
 #include <OpenImageIO/texture.h>
 
 #include "core/hitable.h"
+#include "core/light.h"
 
 void register_closures(OSL::ShadingSystem *shadingsys);
 
@@ -126,6 +127,11 @@ public:
         const Ray& r,
         const Intersection& t,
         bool flip=false);
+
+    static void globals_from_lightrec(
+        OSL::ShaderGlobals& sg,
+        const LightRecord& lrec
+    );
 
 public:
     std::vector<OSL::ShaderGroupRef> shaders;

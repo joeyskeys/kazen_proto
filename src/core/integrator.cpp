@@ -86,14 +86,6 @@ RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r, const RecordContext& rc
     return RGBSpectrum{0};
 }
 
-WhittedIntegrator::WhittedIntegrator()
-    : OSLBasedIntegrator()
-{}
-
-WhittedIntegrator::WhittedIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
-    : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
-{}
-
 void OSLBasedIntegrator::setup(Scene* scene) {
     Integrator::setup(scene);
     shadingsys = scene->shadingsys.get();
@@ -102,11 +94,19 @@ void OSLBasedIntegrator::setup(Scene* scene) {
     ctx = shadingsys->get_context(thread_info);
 }
 
+WhittedIntegrator::WhittedIntegrator()
+    : OSLBasedIntegrator()
+{}
+
+WhittedIntegrator::WhittedIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
+    : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
+{}
+
 RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     RGBSpectrum Li{0};
     Intersection isect;
     Ray ray(r);
-    OSL::ShaderGlobals sg;
+    OSL::ShaderGlobals sg, lighting_sg;
     RGBSpectrum throughput{1};
 
     LightPath p;
@@ -148,6 +148,19 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             auto light_ptr = lights->at(sampled_light_idx).get();
             Vec3f light_dir;
             float light_pdf, bsdf_pdf;
+
+            KazenRenderServices::globals_from_hit(lighting_sg, )
+            auto light_shader = (*shaders)[light_ptr->shader_name];
+            if (light_shader == nullptr)
+                throw std::runtime_error(fmt::format("Light shader for name : {} does not exist..", light_ptr->shader_name));
+            shadingsys->execute(*ctx, *light_shader, sg);
+            ShadingResult lighting_ret;
+            process_closure(lighting_ret, sg.Ci, RGBSpectrum{1}, false);
+            lighting_ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
+            light_ptr->prepare(lighting_ret.Le);
+
+            // Light sampling interface should be changed
+            // Need a interface for purly lighting point sampling
             auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
 
             if (!Ls.is_zero()) {

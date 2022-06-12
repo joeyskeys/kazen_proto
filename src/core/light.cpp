@@ -1,6 +1,6 @@
 
 
-#include "light.h"
+#include "core/light.h"
 
 RGBSpectrum PointLight::sample(const Intersection& isect, Vec3f& light_dir, float& pdf, const HitablePtr scene) const {
     // TODO : how to sample delta light?
@@ -47,7 +47,6 @@ RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, f
     // PDF must unified in unit, solid angle or area
     // Since we're using solid angle for bsdf, convert light pdf to
     // solid angle measured too
-    // The result is still not correct..
     auto cos_theta_v = dot(-light_dir, n);
     if (cos_theta_v <= 0.f)
         return 0.f;
@@ -58,7 +57,7 @@ RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, f
 }
 
 RGBSpectrum GeometryLight::eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample) const {
-    return radiance * intensity;
+    return radiance;
 }
 
 float GeometryLight::pdf(const Intersection& isect, const Vec3f& p, const Vec3f& n) const {

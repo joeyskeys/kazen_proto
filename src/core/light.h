@@ -6,24 +6,38 @@
 #include "core/material.h"
 #include "core/hitable.h"
 
+struct LightRecord {
+    // This struct is like a parameter pack in Nori and Mitsuba
+    // renderers
+    Vec3f shading_pt;
+    Vec3f lighting_pt;
+    Vec3f n;
+    float pdf;
+
+    Ray     get_shadow_ray();
+    Vec3f   get_shadow_ray_dir();
+};
+
 class Light : public DictLike {
 public:
-    Light(uint id, RGBSpectrum l=RGBSpectrum(1.f, 1.f, 1.f), const float& i=5.f, bool d=true)
+    Light(uint id, const std::string& sname, bool d=true)
         : light_id(id)
-        , radiance(l)
-        , intensity(i)
         , is_delta(d)
     {}
 
+    virtual void        prepare(const RGBSpectrum& r) {
+        radiance = r;
+    }
+
     virtual RGBSpectrum sample(const Intersection& isect, Vec3f& light_dir, float& pdf, const HitablePtr scene) const = 0;
+    virtual RGBSpectrum eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample) const = 0;
     virtual float       pdf(const Intersection& isect, const Vec3f& p, const Vec3f& n) const {
         return 1.f;
     }
-    virtual RGBSpectrum eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample) const = 0;
 
     // members
+    std::string shader_name;
     RGBSpectrum radiance;
-    float intensity;
     bool is_delta;
     uint light_id;
 };
@@ -31,12 +45,12 @@ public:
 class PointLight : public Light {
 public:
     PointLight(uint id)
-        : Light(id, RGBSpectrum(1, 1, 1))
+        : Light(id, "")
         , position(Vec3f(0, 5, 0))
     {}
     
-    PointLight(uint id, const RGBSpectrum& l, const float& i, const Vec3f& pos)
-        : Light(id, l, i)
+    PointLight(uint id, const std::string& sname const Vec3f& pos)
+        : Light(id, sname)
         , position(pos)
     {}
 
@@ -52,12 +66,12 @@ public:
 class GeometryLight : public Light {
 public:
     GeometryLight(uint id)
-        : Light(id, RGBSpectrum(1, 1, 1), 5.f, false)
+        : Light(id, "", false)
         , geometry(nullptr)
     {}
 
-    GeometryLight(uint id, const RGBSpectrum& l, const float& i, std::shared_ptr<Shape>g)
-        : Light(id, l, i, false)
+    GeometryLight(uint id, const std::string& sname, std::shared_ptr<Shape>g)
+        : Light(id, sname, false)
         , geometry(g)
     {}
 

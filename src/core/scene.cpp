@@ -319,20 +319,7 @@ void Scene::parse_from_file(fs::path filepath) {
         if (shape_shared_ptr->is_light) {
             // If the geometry is a light, an extra radiance attribute
             // must be added.
-            auto radiance_attr = node.attribute("radiance");
-            if (!radiance_attr)
-                throw std::runtime_error(fmt::format("No radiance specified for gemetry light \
-                    {} at {}", node.name(), offset(node.offset_debug())));
-            RGBSpectrum radiance{};
-            // Treated as Vec3f
-            parse_attribute(radiance_attr, &radiance);
-
-            float intensity = 5.f;
-            auto intensity_attr = node.attribute("intensity");
-            if (intensity_attr)
-                parse_attribute(intensity_attr, &intensity);
-
-            auto light = std::make_unique<GeometryLight>(lights.size(), radiance, intensity, shape_shared_ptr);
+            auto light = std::make_unique<GeometryLight>(lights.size(), shape_shared_ptr->shader_name, shape_shared_ptr);
             shape_shared_ptr->light = light.get();
             lights.emplace_back(std::move(light));
         }
