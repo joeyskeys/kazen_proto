@@ -12,7 +12,9 @@ struct LightRecord {
     Vec3f shading_pt;
     Vec3f lighting_pt;
     Vec3f n;
+    Vec2f uv;
     float pdf;
+    float area;
 
     Ray     get_shadow_ray();
     Vec3f   get_shadow_ray_dir();
@@ -29,6 +31,7 @@ public:
         radiance = r;
     }
 
+    virtual LightRecord sample() const = 0;
     virtual RGBSpectrum sample(const Intersection& isect, Vec3f& light_dir, float& pdf, const HitablePtr scene) const = 0;
     virtual RGBSpectrum eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample) const = 0;
     virtual float       pdf(const Intersection& isect, const Vec3f& p, const Vec3f& n) const {
@@ -49,11 +52,12 @@ public:
         , position(Vec3f(0, 5, 0))
     {}
     
-    PointLight(uint id, const std::string& sname const Vec3f& pos)
+    PointLight(uint id, const std::string& sname, const Vec3f& pos)
         : Light(id, sname)
         , position(pos)
     {}
 
+    LightRecord sample() const;
     RGBSpectrum sample(const Intersection& isect, Vec3f& light_dir, float& pdf, const HitablePtr scene) const override;
     RGBSpectrum eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample) const override;
 
@@ -75,6 +79,7 @@ public:
         , geometry(g)
     {}
 
+    LightRecord sample() const;
     RGBSpectrum sample(const Intersection& isect, Vec3f& light_dir, float& pdf, const HitablePtr scene) const override;
     RGBSpectrum eval(const Intersection& isect, const Vec3f& light_dir, const Vec3f& pt_sample) const override;
     float       pdf(const Intersection& isect, const Vec3f& p, const Vec3f& n) const override;

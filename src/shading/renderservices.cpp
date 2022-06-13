@@ -260,3 +260,21 @@ void KazenRenderServices::globals_from_hit(
     sg.flipHandedness = flip;
     sg.renderstate = &sg;
 }
+
+void KazenRenderServices::globals_from_lightrec(
+    OSL::ShaderGlobals& sg,
+    const LightRecord& lrec)
+{
+    memset((char*)&sg, 0, sizeof(OSL::ShaderGlobals));
+    sg.P = lrec.lighting_pt;
+    sg.N = sg.Ng = OSL::Vec3(0.f, 1.f, 0.f);
+
+    sg.u = lrec.uv[0];
+    sg.v = lrec.uv[1];
+
+    // Ignore partial derivatives for now
+
+    sg.surfacearea = lrec.area;
+    sg.flipHandedness = false;
+    sg.renderstate = &sg;
+}

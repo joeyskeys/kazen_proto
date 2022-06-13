@@ -136,7 +136,7 @@ void* Sphere::address_of(const std::string& name) {
     return nullptr;
 }
 
-void Sphere::sample(Vec3f& p, Vec3f& n, float& pdf) const {
+void Sphere::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
     auto sample = random3f();
 
     n = sample.normalized();
@@ -144,6 +144,10 @@ void Sphere::sample(Vec3f& p, Vec3f& n, float& pdf) const {
 
     p = center_n_radius.reduct<3>() + n * center_n_radius.w();
     p = local_to_world.apply(p);
+
+    uv[1] = acos(center_n_radius.y()) * constants::one_div_pi<float>();
+    auto sin_theta_v = asin(center_n_radius.y());
+    uv[0] = acos(center_n_radius.x() / sin_theta_v) * constants::one_div_two_pi<float>();
 
     pdf = 1.f / area();
 }
@@ -288,7 +292,7 @@ void* Quad::address_of(const std::string& name) {
         return nullptr;
 }
 
-void Quad::sample(Vec3f& p, Vec3f& n, float& pdf) const {
+void Quad::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
     auto sample = random2f();
 
     p = center + horizontal_vec * half_width * (sample.x() * 2 - 1) + \
@@ -297,6 +301,9 @@ void Quad::sample(Vec3f& p, Vec3f& n, float& pdf) const {
 
     n = dir;
     n = local_to_world.apply_normal(n);
+
+    uv[0] = sample.x();
+    uv[1] = sample.y();
 
     pdf = 1.f / area();
 }
@@ -447,7 +454,7 @@ void* Triangle::address_of(const std::string& name) {
     return nullptr;
 }
 
-void Triangle::sample(Vec3f& p, Vec3f& n, float& pdf) const {
+void Triangle::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
     auto sample = random2f();
     float alpha = 1 - sample.x();
     float beta = alpha * sample.y();
@@ -455,6 +462,9 @@ void Triangle::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     p = verts[0] + alpha * (verts[1] - verts[0]) + beta * (verts[2] - verts[0]);
     p = local_to_world.apply(p);
     n = local_to_world.apply_normal(normal);
+
+    uv[0] = alpha;
+    uv[1] = beta;
 
     pdf = 1.f / area();
 }
@@ -544,7 +554,7 @@ AABBf TriangleMesh::bbox() const {
     return box;
 }
 
-void TriangleMesh::sample(Vec3f& p, Vec3f& n, float& pdf) const {
+void TriangleMesh::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
     //uint idx = randomf() * indice.size();
     auto idx = m_dpdf.sample(randomf());
     
@@ -561,6 +571,8 @@ void TriangleMesh::sample(Vec3f& p, Vec3f& n, float& pdf) const {
     //p = vs[0] + u * (vs[1] - vs[0]) + v * (vs[2] - vs[0]);
     p = u * vs[0] + v * vs[1] + (1 - u - v) * vs[2];
     n = cross(vs[1] - vs[0], vs[2] - vs[0]).normalized();
+    uv[0] = u;
+    uv[1] = v;
     pdf = 1. / m_area;
 }
 

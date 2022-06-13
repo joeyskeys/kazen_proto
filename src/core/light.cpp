@@ -2,6 +2,19 @@
 
 #include "core/light.h"
 
+Ray LightRecord::get_shadow_ray() {
+    return Ray(lighting_pt, (shading_pt - lighting_pt).normalized());
+}
+
+Vec3f LightRecord::get_shadow_ray_dir() {
+    return (shading_pt - lighting_pt).normalized();
+}
+
+LightRecord PointLight::sample() const {
+    // Not implemented yet
+    throw std::runtime_error("Not implemented");
+}
+
 RGBSpectrum PointLight::sample(const Intersection& isect, Vec3f& light_dir, float& pdf, const HitablePtr scene) const {
     // TODO : how to sample delta light?
     // Visibility test
@@ -30,9 +43,17 @@ void* PointLight::address_of(const std::string& name) {
     return nullptr;
 }
 
+LightRecord GeometryLight::sample() const {
+    LightRecord lrec;
+    geometry->sample(lrec.lighting_pt, lrec.n, lrec.uv, lrec.pdf);
+    lrec.area = geometry->area();
+    return lrec;
+}
+
 RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, float& pdf, const HitablePtr scene) const {
     Vec3f p, n;
-    geometry->sample(p, n, pdf);
+    Vec2f uv;
+    geometry->sample(p, n, uv, pdf);
     auto light_vec = p - isect.P;
     light_dir = light_vec.normalized();
 

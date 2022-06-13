@@ -27,7 +27,7 @@ public:
         , geom_id(id)
     {}
 
-    virtual void sample(Vec3f& p, Vec3f& n, float& pdf) const = 0;
+    virtual void sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const = 0;
 
     // This function is added to handle tangent & bitangent calculation
     // in embree intersection
@@ -60,7 +60,7 @@ public:
     AABBf bbox() const override;
 
     void* address_of(const std::string& name) override;
-    void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
+    void sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const override;
     void post_hit(Intersection& isect) const override;
     float area() const override;
     void print_info() const override;
@@ -103,7 +103,7 @@ public:
     AABBf bbox() const override;
 
     void* address_of(const std::string& name) override;
-    void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
+    void sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const override;
     void post_hit(Intersection& isect) const override;
     float area() const override;
     void print_info() const override;
@@ -144,7 +144,7 @@ public:
     AABBf bbox() const override;
 
     void* address_of(const std::string& name) override;
-    void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
+    void sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const override;
     void post_hit(Intersection& isect) const override;
     float area() const override;
     void print_info() const override;
@@ -171,7 +171,7 @@ public:
     AABBf bbox() const override;
 
     //void* address_of(const std::string& name) override
-    void sample(Vec3f& p, Vec3f& n, float& pdf) const override;
+    void sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const override;
     void post_hit(Intersection& isect) const override;
     float area() const override;
     void print_info() const override;

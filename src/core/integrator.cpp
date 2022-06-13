@@ -149,7 +149,8 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             Vec3f light_dir;
             float light_pdf, bsdf_pdf;
 
-            KazenRenderServices::globals_from_hit(lighting_sg, )
+            auto lrec = light_ptr->sample();
+            KazenRenderServices::globals_from_lightrec(lighting_sg, lrec);
             auto light_shader = (*shaders)[light_ptr->shader_name];
             if (light_shader == nullptr)
                 throw std::runtime_error(fmt::format("Light shader for name : {} does not exist..", light_ptr->shader_name));
@@ -388,7 +389,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         if (last_bounce_specular) {
             auto Ls = light_ptr->eval(its, bsdf_sample.wo, its.P);
             // We have a problem here with interface design...
-            lpdf = light_ptr->pdf(its, );
+            //lpdf = light_ptr->pdf(its, );
             mis_weight = power_heuristic(1, mpdf, 1, lpdf);
             Li += mis_weight * throughput * Ls;
             //Li += throughput * ret.Le;

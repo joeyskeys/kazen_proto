@@ -6,9 +6,5 @@ surface emitter
             float UImin = 0, float UImax = 1 ]]
 )
 {
-    // Because emission() expects a weight in radiance, we must convert by dividing
-    // the power (in Watts) by the surface area and the factor of PI implied by
-    // uniform emission over the hemisphere. N.B.: The total power is BEFORE Cs
-    // filters the color!
-    Ci = emission();
+    Ci = kp_emitter(0.5);
 }
