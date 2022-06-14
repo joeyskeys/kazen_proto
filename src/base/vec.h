@@ -12,7 +12,6 @@
 
 #include "basic_types.h"
 
-
 template <typename T, uint N>
 class Vec {
 public:
@@ -332,7 +331,8 @@ public:
         return ss;
     }
 
-protected:
+//protected:
+public:
     std::array<T, N> arr;
 };
 

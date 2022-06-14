@@ -4,6 +4,7 @@
 
 #include "base/dictlike.h"
 //#include "base/dual.h"
+#include "base/mat.h"
 #include "base/vec.h"
 #include "base/utils.h"
 
@@ -41,6 +42,7 @@ public:
     }
 
     inline void init() {
+        /*
         ratio =  static_cast<float>(film->width) / static_cast<float>(film->height);
 
         auto dir = normalize(lookat - position);
@@ -55,6 +57,24 @@ public:
             - film_plane_width * 0.5f * horizontal
             - film_plane_height * 0.5f * vertical;
         center = position + dir * near_plane;
+        */
+        auto z_axis = (position - lookat).normalized();
+        auto x_axis = cross(up, z_axis).normalized();
+        auto y_axis = cross(z_axis, x_axis);
+        view_matrix = Mat4f{
+            Vec4f{x_axis, position[0]},
+            Vec4f{y_axis, position[1]},
+            Vec4f{z_axis, position[2]},
+            Vec4f{0, 0, 0, 1}
+        };
+
+        float recip = 1.f / (far_plane - near_plane);
+        float cot = 1.f / std::tan(to_radian(fov / 2.f));
+        proj_matrix[0][0] = cot;
+        proj_matrix[1][1] = cot;
+        proj_matrix[2][2] = far_plane * recip;
+        proj_matrix[2][3] = -near_plane * far_plane * recip;
+        proj_matrix[3][2] = 1;
     }
 
     Ray generate_ray(uint x, uint y);
@@ -82,4 +102,7 @@ public:
     float film_plane_width;
     float film_plane_height;
     Film *film;
+
+    Mat4f view_matrix;
+    Mat4f proj_matrix;
 };

@@ -4,29 +4,21 @@
 Ray Camera::generate_ray(uint x, uint y) {
     // Default to perspective camera for now
     // fov denotes the vertical fov
+    /*
     auto fov_in_radian = to_radian(fov);
 
-    ///*
     auto direction2 = upper_left_corner
         + horizontal * film_plane_width * (static_cast<float>(x) + randomf()) / film->width
         + vertical * film_plane_height * (static_cast<float>(y) + randomf()) / film->height
         - position;
-    //*/
 
     auto direction = center
         + horizontal * film_plane_width * (static_cast<float>(x) + randomf() - film->width / 2) / film->width
         + vertical * film_plane_height * (static_cast<float>(y) + randomf() - film->height / 2) / film->height
         - position;
 
-    /*
-    auto direction = upper_left_corner
-        + horizontal * film_plane_width * (Dual2f(static_cast<float>(x) + randomf(), 1, 0) / film->width)
-        + vertical * film_plane_height * (Dual2f(static_cast<float>(y) + randomf(), 0, 1) / film->height)
-        - position;
-    */
-
     return Ray(position, direction.normalized());
-    //return Ray(position, normalize(direction));
+    */
 }
 
 void* Camera::address_of(const std::string& name) {

@@ -43,8 +43,23 @@ public:
 
     template <typename ...Ts>
     Mat(Ts... args) {
-        static_assert(sizeof...(Ts) == N * N);
-        arr = { static_cast<T>(args)... };
+        static_assert(
+            (sizeof...(Ts) == N * N && (true && ... && std::is_arithmetic_v<Ts>)) ||
+            (sizeof...(Ts) == N &&
+                ((true && ... && std::is_same_v<Ts, Vec<float, N>>) ||
+                (true && ... && std::is_same_v<Ts, Vec<double, N>>))));
+        
+        if constexpr (sizeof...(Ts) == N * N) {
+            arr = { static_cast<T>(args)... };
+        }
+        else {
+            int i = 0;
+            auto unwrap = [&](uint32_t i, auto v) {
+                for (int j = 0; auto const& ve : v.arr)
+                    arr[N * i + j++] = ve;
+            };
+            (unwrap(i++, args), ...);
+        }
     }
 
     auto operator [](unsigned int idx) {

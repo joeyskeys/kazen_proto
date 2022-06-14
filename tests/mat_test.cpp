@@ -40,5 +40,14 @@ int main()
 
     auto mat4i = Mat4f::identity();
 
+    Mat4f mat_from_vec {
+        Vec4f{1, 0, 0, 0},
+        Vec4f{0, 1, 0, 0},
+        Vec4f{0, 0, 1, 0},
+        Vec4f{0, 0, 0, 1}
+    };
+
+    std::cout << "mat from vec : \n" << mat_from_vec << std::endl;
+
     return 0;
 }
