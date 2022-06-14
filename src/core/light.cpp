@@ -6,7 +6,7 @@ Ray LightRecord::get_shadow_ray() {
     return Ray(lighting_pt, (shading_pt - lighting_pt).normalized());
 }
 
-Vec3f LightRecord::get_shadow_ray_dir() {
+Vec3f LightRecord::get_light_dir() {
     return (shading_pt - lighting_pt).normalized();
 }
 
@@ -46,6 +46,7 @@ void* PointLight::address_of(const std::string& name) {
 LightRecord GeometryLight::sample() const {
     LightRecord lrec;
     geometry->sample(lrec.lighting_pt, lrec.n, lrec.uv, lrec.pdf);
+    lrec.pdf *= (lrec.shading_pt - lrec.lighting_pt).length_squared() / dot(lrec.get_light_dir(), lrec.n);
     lrec.area = geometry->area();
     return lrec;
 }

@@ -216,7 +216,7 @@ struct KpEmitter {
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
-            CLOSURE_VECTOR_PARAM(KpEmitterParams, albedo),
+            CLOSURE_FLOAT_PARAM(KpEmitterParams, albedo),
             CLOSURE_FINISH_PARAM(KpEmitterParams)
         };
 

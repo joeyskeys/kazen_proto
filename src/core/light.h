@@ -17,13 +17,14 @@ struct LightRecord {
     float area;
 
     Ray     get_shadow_ray();
-    Vec3f   get_shadow_ray_dir();
+    Vec3f   get_light_dir();
 };
 
 class Light : public DictLike {
 public:
     Light(uint id, const std::string& sname, bool d=true)
         : light_id(id)
+        , shader_name(sname)
         , is_delta(d)
     {}
 

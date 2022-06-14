@@ -150,6 +150,8 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             float light_pdf, bsdf_pdf;
 
             auto lrec = light_ptr->sample();
+            lrec.shading_pt = isect.P;
+            light_dir = -lrec.get_light_dir();
             KazenRenderServices::globals_from_lightrec(lighting_sg, lrec);
             auto light_shader = (*shaders)[light_ptr->shader_name];
             if (light_shader == nullptr)
@@ -162,7 +164,8 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
 
             // Light sampling interface should be changed
             // Need a interface for purly lighting point sampling
-            auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
+            //auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
+            auto Ls = light_ptr->eval(isect, lrec.get_light_dir(), random3f()) / lrec.pdf;
 
             if (!Ls.is_zero()) {
                 //float cos_theta_v = dot(light_dir, isect.N);
