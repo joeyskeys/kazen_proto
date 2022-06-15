@@ -43,7 +43,7 @@ public:
 
     inline void init() {
         /*
-        ratio =  static_cast<float>(film->width) / static_cast<float>(film->height);
+        ratio = static_cast<float>(film->width) / static_cast<float>(film->height);
 
         auto dir = normalize(lookat - position);
         horizontal = normalize(dir.cross(up));
@@ -58,23 +58,28 @@ public:
             - film_plane_height * 0.5f * vertical;
         center = position + dir * near_plane;
         */
+        auto aspect = static_cast<float>(film->width) / static_cast<float>(film->height);
         auto z_axis = (position - lookat).normalized();
         auto x_axis = cross(up, z_axis).normalized();
         auto y_axis = cross(z_axis, x_axis);
-        view_matrix = Mat4f{
-            Vec4f{x_axis, position[0]},
-            Vec4f{y_axis, position[1]},
-            Vec4f{z_axis, position[2]},
-            Vec4f{0, 0, 0, 1}
+        camera_to_world = Mat4f{
+            Vec4f{x_axis, 0.f},
+            Vec4f{y_axis, 0.f},
+            Vec4f{z_axis, 0.f},
+            Vec4f{position, 1}
         };
 
         float recip = 1.f / (far_plane - near_plane);
         float cot = 1.f / std::tan(to_radian(fov / 2.f));
-        proj_matrix[0][0] = cot;
-        proj_matrix[1][1] = cot;
-        proj_matrix[2][2] = far_plane * recip;
-        proj_matrix[2][3] = -near_plane * far_plane * recip;
-        proj_matrix[3][2] = 1;
+        auto proj_matrix = Mat4f{
+            cot, 0, 0, 0,
+            0, cot, 0, 0,
+            0, 0, far_plane * recip, -near_plane * far_plane * recip,
+            0, 0, 1, 0
+        };
+
+        sample_to_camera = proj_matrix.inverse() * Mat4f::translate(Vec4f(-1.f, -1.f / aspect, 0.f, 1.f)) *
+            Mat4f::scale(Vec4f(2.f, 2.f / aspect, 1.f, 1.f));
     }
 
     Ray generate_ray(uint x, uint y);
@@ -103,6 +108,6 @@ public:
     float film_plane_height;
     Film *film;
 
-    Mat4f view_matrix;
-    Mat4f proj_matrix;
+    Mat4f camera_to_world;
+    Mat4f sample_to_camera;
 };

@@ -1,5 +1,5 @@
-#include "camera.h"
-#include "sampling.h"
+#include "core/camera.h"
+#include "core/sampling.h"
 
 Ray Camera::generate_ray(uint x, uint y) {
     // Default to perspective camera for now
@@ -19,6 +19,16 @@ Ray Camera::generate_ray(uint x, uint y) {
 
     return Ray(position, direction.normalized());
     */
+
+    Vec3f near_p = (sample_to_camera * Vec4f(
+        (static_cast<float>(x) + randomf()) / film->width,
+        (static_cast<float>(y) + randomf()) / film->height,
+        0.f, 1.f)).reduct<3>();
+    auto d = Vec4f{near_p.normalized(), 0.f};
+    float inv_z = 1.f / d.z();
+
+    return Ray((camera_to_world * Vec4f{0.f, 0.f, 0.f, 1.f}).reduct<3>(), (camera_to_world * d).reduct<3>(),
+        0.f, near_plane * inv_z, far_plane * inv_z);
 }
 
 void* Camera::address_of(const std::string& name) {

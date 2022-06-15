@@ -241,6 +241,26 @@ public:
         return ret;
     }
 
+    static Mat scale(const Vec<T, N>& v) {
+        Mat ret;
+        for (int i = 0; i < N; i++)
+            ret[i][i] = v[i];
+
+        return ret;
+    }
+
+    static Mat translate(const Vec<T, N>& v) {
+        static_assert(N > 2);
+
+        Mat ret;
+        for (int i = 0; i < N; i++) {
+            ret[N - 1][i] = v[i];
+            ret[i][i] = 1.f;
+        }
+
+        return ret;
+    }
+
 public:
     std::array<T, N * N> arr;
 };
