@@ -6,13 +6,14 @@
     <Materials>
         <ShaderGroupBegin name="rough"/>
             <Shader name="rough" layer="layer1">
-                <Parameter roughness="float 0.08"/>
+                <Parameter roughness="float 0.28"/>
+                <Parameter Cs="float3 0.2 0.2 0.4"/>
             </Shader>
         <ShaderGroupEnd/>
 
         <ShaderGroupBegin name="emitter"/>
             <Shader name="emitter" layer="layer2">
-                <Parameter Cs="float3 40 40 40"/>
+                <Parameter Cs="float3 20 20 20"/>
             </Shader>
         <ShaderGroupEnd/>
     </Materials>

@@ -3,7 +3,7 @@
 
 int main() {
     Scene scene;
-    scene.parse_from_file("../resource/scene/cbox/cbox_whitted.xml");
+    scene.parse_from_file("../resource/scene/ajax/ajax_smooth.xml");
 
     auto integrator_ptr = scene.integrator_fac.create(
         scene.camera.get(), scene.film.get(), &scene.recorder);
@@ -18,7 +18,7 @@ int main() {
     rctx.pixel_x = 400;
     rctx.pixel_y = 300;
 
-    auto ray = scene.camera->generate_ray(400, 300);
+    auto ray = scene.camera->generate_ray(380, 330);
     auto radiance = integrator_ptr->Li(ray, rctx);
 
     scene.recorder.output(std::cout);

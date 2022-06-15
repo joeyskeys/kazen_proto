@@ -254,7 +254,7 @@ float KpMicrofacet::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
     auto Jh = 1. / (4. * dot(wh, sample.wo));
     sample.pdf = ks * D * Jh + params->kd * cos_theta_o * constants::one_div_pi<float>();
 
-    return params->kd * constants::one_div_pi<float>() +
+    return constants::one_div_pi<float>() +
         ks * D * F * G / (4. * cos_theta_i * cos_theta_o * cos_theta(wh));
 }
 

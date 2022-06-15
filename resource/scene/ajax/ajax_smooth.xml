@@ -1,0 +1,28 @@
+<Scene>
+    <Film width="int 768" height="int 768"/>
+
+    <Camera position="float3 -65.6055 47.5762 24.3583" lookat="float3 -64.8161 47.2211 23.8576" up="float3 0 1 0" fov="float 30"/>
+
+    <Materials>
+        <ShaderGroupBegin name="rough"/>
+            <Shader name="rough" layer="layer1">
+                <Parameter roughness="float 0.08"/>
+                <Parameter Cs="float3 0.2 0.2 0.4"/>
+            </Shader>
+        <ShaderGroupEnd/>
+
+        <ShaderGroupBegin name="emitter"/>
+            <Shader name="emitter" layer="layer2">
+                <Parameter Cs="float3 20 20 20"/>
+            </Shader>
+        <ShaderGroupEnd/>
+    </Materials>
+
+    <Objects>
+        <Mesh filename="string meshes/ajax.obj" shader_name="rough"/>
+        <Mesh filename="string meshes/light.obj" shader_name="emitter" is_light="bool true" radiance="float3 1 1 1" intensity="float 20"/>
+    </Objects>
+
+    <EmbreeAccelerator/>
+    <WhittedIntegrator/>
+</Scene>

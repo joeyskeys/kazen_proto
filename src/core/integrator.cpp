@@ -72,8 +72,6 @@ RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r, const RecordContext& rc
     }
 
     auto sample = sample_hemisphere().normalized();
-    //auto shadow_ray_dir = local_to_world(sample, isect.N, isect.tangent, isect.bitangent);
-    //auto shadow_ray_dir = local_to_world(sample, isect.N);
     auto shadow_ray_dir = local_to_world(sample, isect.shading_normal);
     auto shadow_ray = Ray(isect.P, shadow_ray_dir.normalized());
 
@@ -162,9 +160,6 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             lighting_ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
             light_ptr->prepare(lighting_ret.Le);
 
-            // Light sampling interface should be changed
-            // Need a interface for purly lighting point sampling
-            //auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
             auto Ls = light_ptr->eval(isect, lrec.get_light_dir(), random3f()) / lrec.pdf;
 
             if (!Ls.is_zero()) {

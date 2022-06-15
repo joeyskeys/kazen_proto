@@ -14,7 +14,7 @@ Ray Camera::generate_ray(uint x, uint y) {
 
     return Ray(position, direction.normalized());
     */
-
+    
     Vec3f near_p = (sample_to_camera * Vec4f(
         (static_cast<float>(x) + randomf()) / film->width,
         (static_cast<float>(y) + randomf()) / film->height,
