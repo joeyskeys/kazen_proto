@@ -58,6 +58,7 @@ public:
             - film_plane_height * 0.5f * vertical;
         center = position + dir * near_plane;
         */
+
         auto aspect = static_cast<float>(film->width) / static_cast<float>(film->height);
         auto z_axis = (position - lookat).normalized();
         auto x_axis = cross(up, z_axis).normalized();
@@ -78,8 +79,8 @@ public:
             0, 0, 1, 0
         };
 
-        sample_to_camera = proj_matrix.inverse() * Mat4f::translate(Vec4f(-1.f, -1.f / aspect, 0.f, 1.f)) *
-            Mat4f::scale(Vec4f(2.f, 2.f / aspect, 1.f, 1.f));
+        sample_to_camera = proj_matrix.inverse() * Mat4f::translate(Vec4f(1.f, 1.f / aspect, 0.f, 1.f)) *
+            Mat4f::scale(Vec4f(-2.f, -2.f / aspect, 1.f, 1.f));
     }
 
     Ray generate_ray(uint x, uint y);

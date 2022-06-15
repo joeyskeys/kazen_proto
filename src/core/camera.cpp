@@ -7,11 +7,6 @@ Ray Camera::generate_ray(uint x, uint y) {
     /*
     auto fov_in_radian = to_radian(fov);
 
-    auto direction2 = upper_left_corner
-        + horizontal * film_plane_width * (static_cast<float>(x) + randomf()) / film->width
-        + vertical * film_plane_height * (static_cast<float>(y) + randomf()) / film->height
-        - position;
-
     auto direction = center
         + horizontal * film_plane_width * (static_cast<float>(x) + randomf() - film->width / 2) / film->width
         + vertical * film_plane_height * (static_cast<float>(y) + randomf() - film->height / 2) / film->height
@@ -27,8 +22,7 @@ Ray Camera::generate_ray(uint x, uint y) {
     auto d = Vec4f{near_p.normalized(), 0.f};
     float inv_z = 1.f / d.z();
 
-    return Ray((camera_to_world * Vec4f{0.f, 0.f, 0.f, 1.f}).reduct<3>(), (camera_to_world * d).reduct<3>(),
-        0.f, near_plane * inv_z, far_plane * inv_z);
+    return Ray((camera_to_world * Vec4f{0.f, 0.f, 0.f, 1.f}).reduct<3>(), (camera_to_world * d).reduct<3>());
 }
 
 void* Camera::address_of(const std::string& name) {
