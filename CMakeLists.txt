@@ -5,9 +5,24 @@ project(kazen-prototype LANGUAGES CXX C)
 cmake_policy(SET CMP0074 NEW)
 set(CMAKE_CXX_STANDARD 20)
 
+set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "set build type")
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
+
+set(VECTORIZATION "None" CACHE STRING "Chooose vectorization solution")
+set_property(CACHE VECTORIZATION PROPERTY STRINGS None Enoki Eigen)
+set(USE_ENOKI OFF)
+set(USE_EIGEN OFF)
+if (${VECTORIZATION} STREQUAL "Enoki")
+    set(USE_ENOKI ON)
+elseif(${VECTORIZATION} STREQUAL "Eigen")
+    set(USE_EIGEN ON)
+endif()
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 configure_file(resource/shader/kp_extension.h.in shader/kp_extension.h @ONLY)
+configure_file(src/base/config.h.in include/config.h @ONLY)
+include_directories(${CMAKE_BINARY_DIR}/include)
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty)

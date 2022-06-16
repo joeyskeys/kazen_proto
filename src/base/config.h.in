@@ -1,0 +1,8 @@
+#pragma once
+
+#cmakedefine USE_ENOKI
+#cmakedefine USE_EIGEN
+
+#ifdef USE_ENOKI
+#include <enoki/array.h>
+#endif
