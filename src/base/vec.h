@@ -15,6 +15,9 @@
 
 #ifdef USE_ENOKI
 
+template <typename T, size_t N>
+using Vec = enoki::Array<T, N>;
+
 template <typename T>
 using Vec2 = enoki::Array<T, 2>;
 
@@ -33,6 +36,37 @@ using Vec3i = Vec3<int>;
 using Vec4f = Vec4<float>;
 using Vec4d = Vec4<double>;
 using Vec4i = Vec4<int>;
+
+// Horizontal funcs
+template <typename T, size_t N>
+inline T max_component(const Vec<T, N>& v) {
+    return enoki::hmax(v);
+}
+
+template <typename T, size_t N>
+inline T min_component(const Vec<T, N>& v) {
+    return enoki::hmin(v);
+}
+
+template <typename T, size_t N>
+inline T length(const Vec<T, N>& v) {
+    return enoki::norm(v);
+}
+
+template <typename T, size_t N>
+inline T length_squared(const Vec<T, N>& v) {
+    return enoki::squared_norm(v);
+}
+
+template <typename T, size_t N>
+inline T dot(const Vec<T, N>& v1, const Vec<T, N>& v2) {
+    return enoki::dot(v1, v2);
+}
+
+template <typename T, size_t N>
+inline Vec<T, N> cross(const Vec<T, N>& v1, const Vec<T, N>& v2) {
+    return enoki::cross(v1, v2);
+}
 
 #else
 
