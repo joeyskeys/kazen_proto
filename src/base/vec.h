@@ -49,6 +49,11 @@ inline T min_component(const Vec<T, N>& v) {
 }
 
 template <typename T, size_t N>
+inline T sum(const Vec<T, N>& v) {
+    return enoki::hsum(v);
+}
+
+template <typename T, size_t N>
 inline T length(const Vec<T, N>& v) {
     return enoki::norm(v);
 }
@@ -66,6 +71,23 @@ inline T dot(const Vec<T, N>& v1, const Vec<T, N>& v2) {
 template <typename T, size_t N>
 inline Vec<T, N> cross(const Vec<T, N>& v1, const Vec<T, N>& v2) {
     return enoki::cross(v1, v2);
+}
+
+template <typename T, size_t N>
+inline Vec<T, N> normalize(const Vec<T, N>& v) {
+    return enoki::normalize(v);
+}
+
+// Misc
+template <typename T, size_t N>
+inline Vec<T, N> abs(const Vec<T, N>& v) {
+    return enoki::abs(v);
+}
+
+// Comparison
+template <typename T, size_t N>
+inline bool is_zero(const Vec<T, N>& v, const T& epsilon=1e-5) {
+    return enoki::all(abs(v) < epsilon);
 }
 
 #else

@@ -31,8 +31,10 @@ TEST_CASE("Vector operations", "[single-file]") {
     REQUIRE(v8[0] == Approx(4));
 
     // Horizontal ops
+    v8 = Vec3f{4, 3, 1};
     REQUIRE(max_component(v8) == Approx(4));
-    REQUIRE(min_component(v8) == Approx(0));
+    REQUIRE(min_component(v8) == Approx(1));
+    REQUIRE(sum(v8) == Approx(8));
 
     auto v9 = Vec3f{1, 2, 3};
     REQUIRE(length(v9) == Approx(3.7416573867739413));
@@ -45,4 +47,18 @@ TEST_CASE("Vector operations", "[single-file]") {
     v4 = Vec3f{0, 0, 1};
     REQUIRE(dot(v1, v3) == 1);
     REQUIRE(cross(v1, v2) == v4);
+
+    // Normalize
+    v1 = Vec3f{1, 1, 1};
+    v2 = Vec3f{0.577350269, 0.577350269, 0.577350269};
+    REQUIRE(normalize(v1) == v2);
+
+    // Misc
+    v1 = Vec3f{1, -1, 0};
+    v2 = Vec3f{1, 1, 0};
+    REQUIRE(abs(v1) == v2);
+
+    // Comparison
+    auto v10 = Vec3f{0, 0, 0};
+    REQUIRE(is_zero(v10) == true);
 }
