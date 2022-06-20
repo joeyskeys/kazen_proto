@@ -73,7 +73,7 @@ inline Vec3f Intersection::offset_point1() const {
 
 // Method from appleseed, works but cannot totally avoid self-intersection
 inline float Intersection::offset_point2() const {
-    auto max_dir_component = wi.max_component();
+    auto max_dir_component = max_component(wi);
     uint32_t max_origin_exp = std::max(std::max(
         FP<float>::exponent(P.x()),
         FP<float>::exponent(P.y())),

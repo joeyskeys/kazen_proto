@@ -6,7 +6,50 @@
 
 #include <OSL/Imathx/ImathMatrix.h>
 
-#include "vec.h"
+#include "base/vec.h"
+
+#ifdef USE_ENOKI
+
+template <typename T, size_t N>
+using Mat = enoki::Matrix<T, N>;
+
+template <typename T>
+using Mat2 = enoki::Matrix<T, 2>;
+
+template <typename T>
+using Mat3 = enoki::Matrix<T, 3>;
+
+template <typename T>
+using Mat4 = enoki::Matrix<T, 4>;
+
+using Mat2f = Mat2<float>;
+using Mat2d = Mat2<double>;
+using Mat3f = Mat3<float>;
+using Mat3d = Mat3<double>;
+using Mat4f = Mat4<float>;
+using Mat4d = Mat4<double>;
+
+template <typename T, size_t N>
+inline Mat<T, N> identity() {
+    return enoki::identity<Mat<T, N>>(N);
+}
+
+template <typename T, size_t N>
+inline Mat<T, N> translate(const Vec<T, N - 1>& v) {
+    return enoki::translate<Mat>(v);
+}
+
+template <typename T, size_t N>
+inline Mat<T, N> rotate(const Vec<T, N - 1>& axis, const T& angle) {
+    return enoki::rotate<Mat>(axis, enoki::deg_to_rad(angle));
+}
+
+template <typename T, size_t N>
+inline Mat<T, N> scale(const Vec<T, N - 1>& v) {
+    return enoki::scale<Mat>(v);
+}
+
+#else
 
 template <typename T, unsigned int N>
 class Column {
@@ -280,3 +323,5 @@ using Mat3f = Mat3<float>;
 using Mat3d = Mat3<double>;
 using Mat4f = Mat4<float>;
 using Mat4d = Mat4<double>;
+
+#endif

@@ -29,6 +29,8 @@ TEST_CASE("Vector operations", "[single-file]") {
     // Indexing and component getting
     REQUIRE(v8.x() == Approx(4));
     REQUIRE(v8[0] == Approx(4));
+    auto data_ptr = v8.data();
+    REQUIRE(*data_ptr == Approx(4));
 
     // Horizontal ops
     v8 = Vec3f{4, 3, 1};

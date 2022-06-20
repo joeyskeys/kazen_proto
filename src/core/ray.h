@@ -10,7 +10,7 @@ public:
     Ray(Vec3f o, Vec3f d, const float time=0.f, const float tmin=epsilon<float>, const float tmax=std::numeric_limits<float>::max())
     //Ray(Dual2V3f o, Dual2V3f d, const float time=0.f, const float tmin=0.f, const float tmax=std::numeric_limits<float>::Max())
         : origin(o)
-        , direction(d.normalized())
+        , direction(normalize(d))
         , tmin(tmin)
         , tmax(tmax)
         , time(time)

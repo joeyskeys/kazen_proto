@@ -25,9 +25,9 @@ public:
     }
 
     Pixel& operator=(const RGBSpectrum& s) {
-        r = s.r();
-        g = s.g();
-        b = s.b();
+        r = s[0];
+        g = s[1];
+        b = s[2];
 
         return *this;
     }

@@ -70,7 +70,7 @@ inline Vec3f local_to_world(const Vec3f& w, const Vec3f& n, const Vec3f& t, cons
 }
 
 inline Vec3f local_to_world(const Vec3f& w, const Vec3f& n) {
-    auto t = (fabsf(w.x()) > .01f ? Vec3f(w.z(), 0, -w.x()) : Vec3f(0, -w.z(), w.y())).normalized();
+    auto t = (fabsf(w.x()) > .01f ? Vec3f(w.z(), 0, -w.x()) : normalize(Vec3f(0, -w.z(), w.y())));
     auto b = cross(w, t);
     return local_to_world(w, n, t, b);
 }

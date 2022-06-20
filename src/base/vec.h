@@ -63,6 +63,7 @@ inline T length_squared(const Vec<T, N>& v) {
     return enoki::squared_norm(v);
 }
 
+// Dot & cross
 template <typename T, size_t N>
 inline T dot(const Vec<T, N>& v1, const Vec<T, N>& v2) {
     return enoki::dot(v1, v2);
@@ -73,6 +74,7 @@ inline Vec<T, N> cross(const Vec<T, N>& v1, const Vec<T, N>& v2) {
     return enoki::cross(v1, v2);
 }
 
+// Normalize
 template <typename T, size_t N>
 inline Vec<T, N> normalize(const Vec<T, N>& v) {
     return enoki::normalize(v);
@@ -88,6 +90,35 @@ inline Vec<T, N> abs(const Vec<T, N>& v) {
 template <typename T, size_t N>
 inline bool is_zero(const Vec<T, N>& v, const T& epsilon=1e-5) {
     return enoki::all(abs(v) < epsilon);
+}
+
+template <typename T, size_t N>
+inline Vec<T, N> vec_min(const Vec<T, N>& a, const Vec<T, N>& b) {
+    return enoki::min(a, b);
+}
+
+template <typename T, size_t N>
+inline Vec<T, N> vec_max(const Vec<T, N>& a, const Vec<T, N>& b) {
+    return enoki::max(a, b);
+}
+
+// Type conversion
+template <typename T, size_t N>
+OSL::Vec2 to_osl_vec2(const Vec<T, N>& v) {
+    OSL::Vec2 ret;
+    ret.x = v[0];
+    ret.y = v[1];
+    return ret;
+}
+
+template <typename T, size_t N>
+OSL::Vec3 to_osl_vec3(const Vec<T, N>& v) {
+    static_assert(N > 2);
+    OSL::Vec3 ret;
+    ret.x = v[0];
+    ret.y = v[1];
+    ret.z = v[2];
+    return ret;
 }
 
 #else
@@ -174,23 +205,38 @@ public:
         return arr[3];
     }
 
-    inline T* data() {
-        return arr.data();
-    }
-
     inline const T& w() const {
         static_assert(N > 3, "This vec does not have w component");
         return arr[3];
     }
 
-    template <uint M>
-    Vec<T, M> reduct() const {
-        static_assert(M > 1 && M < N, "Invalid component number");
-        Vec<T, M> tmp;
-        for (int i = 0; i < M; i++)
-            tmp[i] = arr[i];
+    inline T& r() {
+        return arr[0];
+    }
 
-        return tmp;
+    inline const T& r() const {
+        return arr[0];
+    }
+
+    inline T& g() {
+        return arr[1];
+    }
+
+    inline const T& g() const {
+        return arr[1];
+    }
+
+    inline T& b() {
+        static_assert(N > 2, "This vec does not have b component");
+        return arr[2];
+    }
+
+    inline const T& b() const {
+        static_assert(N> 2, "This vec does not have b component");
+    }
+
+    inline T* data() {
+        return arr.data();
     }
 
     auto operator +(const Vec& rhs) const {
@@ -296,6 +342,17 @@ public:
         return arr[idx];
     }
 
+    /*
+    template <uint M>
+    Vec<T, M> reduct() const {
+        static_assert(M > 1 && M < N, "Invalid component number");
+        Vec<T, M> tmp;
+        for (int i = 0; i < M; i++)
+            tmp[i] = arr[i];
+
+        return tmp;
+    }
+
     operator OSL::Vec2() const {
         OSL::Vec2 ret;
         ret.x = arr[0];
@@ -389,6 +446,7 @@ public:
     inline auto min_component() const {
         return *std::min_element(arr.begin(), arr.end());
     }
+    */
 
     std::string to_str() const {
         std::string ret = std::to_string(arr[0]);
@@ -411,7 +469,6 @@ public:
         return ss;
     }
 
-//protected:
 public:
     std::array<T, N> arr;
 };
@@ -420,23 +477,53 @@ public:
 //inline T dot(const Vec<T, N>& a, const Vec<T, N>& b) {
 template <template<typename, uint> class C, typename T, uint N, typename = std::enable_if_t<std::is_base_of_v<Vec<T, N>, C<T, N>>>>
 inline T dot(const C<T, N>& a, const C<T, N>& b) {
-    return a.dot(b);
+    //return a.dot(b);
+    T tmp{0};
+    for (int i = 0; i < N; i++)
+        tmp += a.arr[i] * b.arr[i];
+    return tmp;
 }
 
 template <template<typename, uint> class C, typename D, typename T, uint N,
     typename = std::enable_if_t<std::is_base_of_v<Vec<T, N>, C<T, N>>>, typename = std::enable_if_t<std::is_convertible_v<D, C<T, N>>>>
 inline T dot(const C<T, N>& a, const D& b) {
-    return a.dot(static_cast<C<T, N>>(b));
+    //return a.dot(static_cast<C<T, N>>(b));
+    return dot(a, static_cast<C<T, N>>(b));
 }
 
 template <typename T, uint N>
 inline auto cross(const Vec<T, N>& a, const Vec<T, N>& b) {
-    return a.cross(b);
+    //return a.cross(b);
+    static_assert(N > 1 && N < 4);
+    if constexpr (N == 2) {
+        return arr[0] * rhs.arr[1] - arr[1] * rhs.arr[0];
+    }
+    else {
+        Vec tmp;
+        tmp[0] = arr[1] * rhs.arr[2] - arr[2] * rhs.arr[1];
+        tmp[1] = arr[2] * rhs.arr[0] - arr[0] * rhs.arr[2];
+        tmp[2] = arr[0] * rhs.arr[1] - arr[1] * rhs.arr[0];
+        return tmp;
+    }
+}
+
+template <typename T, uint N>
+inline bool is_zero(const Vec<T, N>& v) {
+    for (int i = 0; i < N; i++)
+        if (std::abs(v.arr[i]) >= epsilon<T>)
+            return false;
+    return true;
 }
 
 template <typename T, uint N>
 inline Vec<T, N> normalize(const Vec<T, N>& w) {
-    return w.normalized();
+    //return w.normalized();
+    T sum{0};
+    for (auto& e : arr)
+        sum += e * e;
+    T rcp = 1. / std::sqrt(static_cast<double>(sum));
+    for (auto& e : arr)
+        e *= rcp;
 }
 
 template <typename T, uint N>
