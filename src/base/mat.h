@@ -35,18 +35,52 @@ inline Mat<T, N> identity() {
 }
 
 template <typename T, size_t N>
-inline Mat<T, N> translate(const Vec<T, N - 1>& v) {
-    return enoki::translate<Mat>(v);
+inline Mat<T, N> transpose(const Vec<T, N>& m) {
+    return enoki::transpose(m);
 }
+
+template <typename T, size_t N>
+inline Mat<T, N> inverse(const Mat<T, N>& m) {
+    return enoki::inverse(m);
+}
+
+template <typename T, size_t N>
+inline Mat<T, N> translate(const Vec<T, N - 1>& v) {
+    return enoki::translate<Mat<T, N>>(v);
+}
+
+const auto translate3f = translate<float, 4>;
 
 template <typename T, size_t N>
 inline Mat<T, N> rotate(const Vec<T, N - 1>& axis, const T& angle) {
-    return enoki::rotate<Mat>(axis, enoki::deg_to_rad(angle));
+    return enoki::rotate<Mat<T, N>>(axis, enoki::deg_to_rad(angle));
 }
+
+const auto rotate3f = rotate<float, 4>;
 
 template <typename T, size_t N>
 inline Mat<T, N> scale(const Vec<T, N - 1>& v) {
-    return enoki::scale<Mat>(v);
+    return enoki::scale<Mat<T, N>>(v);
+}
+
+const auto scale3f = scale<float, 4>;
+
+template <typename T, size_t N>
+OSL::Matrix33 to_osl_mat3(const Mat<T, N>& m) {
+    OSL::Matrix33 ret;
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+            ret[i][j] = m[j][i];
+    return ret;
+}
+
+template <typename T>
+OSL::Matrix44 to_osl_mat4(const Mat4<T>& m) {
+    OSL::Matrix44 ret;
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            ret[i][j] = m[j][i];
+    return ret;
 }
 
 #else

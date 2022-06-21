@@ -7,19 +7,16 @@
 
 class Transform {
 public:
-    Transform()
-        : mat(Mat4f::identity())
-        , mat_inv(Mat4f::identity())
-    {}
+    Transform() {}
 
     Transform(const Mat4f& m)
         : mat(m) {
-        mat_inv = m.inverse();
+        mat_inv = inverse(m);
     }
 
     Transform(Mat4f&& m)
         : mat(m) {
-        mat_inv = m.inverse();
+        mat_inv = inverse(m);
     }
 
     Transform(const Mat4f& m, const Mat4f& inv)
@@ -32,10 +29,16 @@ public:
     }
 
     inline Transform& translate(const Vec3f& t) {
+        /*
         for (int i = 0; i < t.dimension; i++) {
             mat[3][i] += t[i];
             mat_inv[3][i] -= t[i];
         }
+        */
+
+        Vec4f v{t[0], t[1], t[2], 0};
+        mat[3] += v;
+        mat_inv[3] -= v;
 
         return *this;
     }
@@ -43,7 +46,7 @@ public:
     //void translate(const T& x, const T& y, const T& z);
 
     Transform& rotate(const Vec3f& axis, const float& angle) {
-        auto a = axis.normalized();
+        auto a = normalize(axis);
         auto angle_in_radian = to_radian<float>(angle);
         auto sin_theta = std::sin(angle_in_radian);
         auto cos_theta = std::cos(angle_in_radian);
@@ -67,17 +70,21 @@ public:
 
         // Column majored matrix, apply transform in the left
         mat = rot * mat;
-        auto rot_inv = rot.transpose();
+        auto rot_inv = transpose(rot);
         mat_inv = rot_inv * mat_inv;
 
         return *this;
     }
 
     inline Transform& scale(const Vec3f& s) {
+        /*
         for (int i = 0; i < s.dimension; i++) {
             mat[i][i] *= s[i];
             mat_inv[i][i] /= s[i];
         }
+        */
+        mat *= scale3f(s);
+        mat *= scale3f(1 / s);
         
         return *this;
     }
@@ -91,7 +98,7 @@ public:
     }
 
     inline Vec3f apply_normal(const Vec3f& v) const {
-        return (mat_inv.transpose() * Vec4f(v, 0.f)).reduct<3>();
+        return (transpose(mat_inv) * Vec4f(v, 0.f)).reduct<3>();
     }
 
     Intersection apply(const Intersection& isect) const {
@@ -125,6 +132,6 @@ public:
     }
 
 public:
-    Mat4f mat = Mat4f::identity();
-    Mat4f mat_inv = Mat4f::identity();
+    Mat4f mat = identity<float, 4>();
+    Mat4f mat_inv = identity<float, 4>();
 };

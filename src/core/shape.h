@@ -89,8 +89,8 @@ public:
     Quad(const Transform& l2w, const Vec3f& c, const Vec3f& d, const Vec3f& u, const float w, const float h, const std::string& m="", bool is_l=false)
         : Shape(l2w, m, is_l, 2)
         , center(c)
-        , dir(d.normalized())
-        , vertical_vec(u.normalized())
+        , dir(normalize(d))
+        , vertical_vec(normalize(u))
         , horizontal_vec(cross(vertical_vec, dir))
         , half_width(w)
         , half_height(h)
@@ -127,7 +127,7 @@ public:
         verts[0] = Vec3f(0, 0, 0);
         verts[1] = Vec3f(1, 0, 0);
         verts[2] = Vec3f(0, 0, -1);
-        normal = cross(verts[1] - verts[0], verts[2] - verts[0]).normalized();
+        normal = normalize(cross(verts[1] - verts[0], verts[2] - verts[0]));
     }
 
     Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c, const std::string m="", bool is_l=false)
@@ -136,7 +136,7 @@ public:
         verts[0] = a;
         verts[1] = b;
         verts[2] = c;
-        normal = cross(verts[1] - verts[0], verts[2] - verts[0]).normalized();
+        normal = normalize(cross(verts[1] - verts[0], verts[2] - verts[0]));
     }
 
     bool intersect(const Ray& r, Intersection& isect) const override;

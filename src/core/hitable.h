@@ -13,11 +13,11 @@ public:
     virtual bool intersect(const Ray& r, float& t) const = 0;
 
     inline bool occluded(const Vec3f& p1, const Vec3f& p2) const {
-        auto vec_p1p2 = (p2 - p1).normalized();
+        auto vec_p1p2 = normalize(p2 - p1);
         Ray r(p1 + vec_p1p2 * 0.00001f, vec_p1p2);
         float ray_t;
 
-        if (intersect(r, ray_t) && ray_t < vec_p1p2.length())
+        if (intersect(r, ray_t) && ray_t < length(vec_p1p2))
             return true;
         return false;
     }

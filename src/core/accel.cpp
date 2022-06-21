@@ -289,7 +289,7 @@ bool EmbreeAccel::intersect(const Ray& r, Intersection& isect) const {
     if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
         isect.ray_t = rayhit.ray.tfar;
         isect.P = r.at(isect.ray_t);
-        isect.N = Vec3f(rayhit.hit.Ng_x, rayhit.hit.Ng_y, rayhit.hit.Ng_z).normalized();
+        isect.N = normalize(Vec3f(rayhit.hit.Ng_x, rayhit.hit.Ng_y, rayhit.hit.Ng_z));
         isect.uv = Vec2f(rayhit.hit.u, rayhit.hit.v);
         isect.geom_id = rayhit.hit.geomID;
         isect.prim_id = rayhit.hit.primID;

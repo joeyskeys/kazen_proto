@@ -67,7 +67,7 @@ inline Vec2f to_uniform_disk(const Vec2f& sample) {
 }
 
 inline float to_uniform_disk_pdf(const Vec2f& sample) {
-    auto r = Vec2f(sample.x(), sample.y()).length();
+    auto r = length(Vec2f(sample.x(), sample.y()));
     if (r > 1)
         return 0;
     else
@@ -98,7 +98,7 @@ inline float to_uniform_hemisphere(const Vec3f& v) {
 
 inline Vec3f to_cosine_hemisphere(const Vec2f& sample) {
     auto pt = to_uniform_disk(sample);
-    float z = std::sqrt(1. - pt.length_squared());
+    float z = std::sqrt(1. - length_squared(pt));
     if (z == 0)
         z = 1e-10f;
     return Vec3f(pt.x(), pt.y(), z);
