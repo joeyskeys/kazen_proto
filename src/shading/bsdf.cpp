@@ -89,7 +89,7 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
     RGBSpectrum cw;
     switch (closure->id) {
         case OSL::ClosureColor::MUL: {
-            cw = w * closure->as_mul()->weight;
+            cw = w * base::to_vec3(closure->as_mul()->weight);
             process_closure(ret, closure->as_mul()->closure, cw, light_only);
             break;
         }
@@ -102,7 +102,7 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
 
         default: {
             const OSL::ClosureComponent *comp = closure->as_comp();
-            cw = w * comp->w;
+            cw = w * base::to_vec3(comp->w);
 
             if (comp->id == EmissionID || comp->id == KpEmitterID)
                 ret.Le += cw;

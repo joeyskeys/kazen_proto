@@ -5,6 +5,8 @@
 #include "base/utils.h"
 #include "base/vec.h"
 
+using base::Vec2f;
+
 namespace constants = boost::math::constants;
 
 /*

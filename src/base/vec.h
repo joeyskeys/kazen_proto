@@ -145,6 +145,23 @@ OSL::Vec3 to_osl_vec3(const Vec<T, N>& v) {
     return ret;
 }
 
+inline Vec2f to_vec2(const OSL::Vec2& v) {
+    return Vec2f{v.x, v.y};
+}
+
+inline Vec3f to_vec3(const OSL::Vec3& v) {
+    return Vec3f{v.x, v.y, v.z};
+}
+
+// stringify
+template <typename T, size_t N>
+std::string to_string(const Vec<T, N>& v) {
+    std::string ret = std::to_string(v[0]);
+    for (int i = 1; i < Vec<T, N>::Size; i++)
+        ret += " " + std::to_string(v[i]);
+    return ret;
+}
+
 #else
 
 template <typename T, uint N>

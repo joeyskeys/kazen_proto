@@ -2,6 +2,8 @@
 
 #include "base/vec.h"
 
+using namespace base;
+
 TEST_CASE("Vector operations", "[single-file]") {
     // Arithmetic operators
     Vec3f v1{1, 0, 0}, v2{0, 1, 0}, v3{1, 1, 0}, v4{0, 0, 0};

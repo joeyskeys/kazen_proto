@@ -81,7 +81,7 @@ int main(int argc, const char **argv) {
 
                         auto ray = scene.camera->generate_ray(x, y);
                         pixel_radiance += integrator_ptr->Li(ray, rctx);
-                        if (!pixel_radiance.is_zero())
+                        if (!base::is_zero(pixel_radiance))
                             hit = true;
                     }
 

@@ -61,8 +61,8 @@ public:
     }
 
     AABB bound_union(const Vec3<T>& rhs) const {
-        auto new_min = vec_min(min, rhs);
-        auto new_max = vec_max(max, rhs);
+        auto new_min = base::vec_min(min, rhs);
+        auto new_max = base::vec_max(max, rhs);
         return AABB{new_min, new_max};
     }
 

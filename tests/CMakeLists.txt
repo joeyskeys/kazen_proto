@@ -5,8 +5,6 @@ target_link_libraries(film_test
     ${OIIO_LIBRARIES}
     kazen_proto_lib)
 
-add_executable(mat_test mat_test.cpp)
-
 add_executable(intersection_test intersection_test.cpp)
 target_link_libraries(intersection_test
     kazen_proto_lib)

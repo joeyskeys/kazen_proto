@@ -31,7 +31,7 @@ bool KazenRenderServices::get_matrix(
         return false;
 
     auto transform = reinterpret_cast<const Transform*>(xform);
-    result = transform->mat;
+    result = base::to_osl_mat4(transform->mat);
 
     return true;
 }
@@ -46,7 +46,7 @@ bool KazenRenderServices::get_inverse_matrix(
         return false;
 
     auto transform = reinterpret_cast<const Transform*>(xform);
-    result = transform->mat_inv;
+    result = base::to_osl_mat4(transform->mat_inv);
 
     return true;
 }
@@ -60,7 +60,7 @@ bool KazenRenderServices::get_matrix(
         return false;
 
     auto transform = reinterpret_cast<const Transform*>(xform);
-    result = transform->mat;
+    result = base::to_osl_mat4(transform->mat);
 
     return true;
 }
@@ -74,7 +74,7 @@ bool KazenRenderServices::get_inverse_matrix(
         return false;
 
     auto transform = reinterpret_cast<const Transform*>(xform);
-    result = transform->mat_inv;
+    result = base::to_osl_mat4(transform->mat_inv);
 
     return true;
 }
@@ -166,9 +166,9 @@ bool KazenRenderServices::trace(
     // Get intersection info from raw pointer
     auto isect_ptr = reinterpret_cast<Intersection*>(sg->tracedata);
 
-    const Vec3f o(P);
-    const Vec3f d(R);
-    const Ray r(P, d);
+    const Vec3f o(base::to_vec3(P));
+    const Vec3f d(base::to_vec3(R));
+    const Ray r(o, d);
 
     // TODO : find out if trace data has to be OSL relavent, aka using
     // OpenEXR types
@@ -234,13 +234,13 @@ void KazenRenderServices::globals_from_hit(
     bool flip)
 {
     memset((char*)&sg, 0, sizeof(OSL::ShaderGlobals));
-    sg.P = isect.P;
+    sg.P = base::to_osl_vec3(isect.P);
     /*
     sg.N = isect.shading_normal;
     sg.Ng = isect.N;
     */
     sg.N = OSL::Vec3(0.f, 1.f, 0.f);
-    sg.Ng = isect.to_local(isect.N);
+    sg.Ng = base::to_osl_vec3(isect.to_local(isect.N));
 
     sg.u = isect.uv[0];
     sg.v = isect.uv[1];
@@ -248,10 +248,10 @@ void KazenRenderServices::globals_from_hit(
     sg.surfacearea = isect.shape->area();
 
     // TODO : setup dPdu dPdv correctly
-    sg.dPdu = isect.tangent;
-    sg.dPdv = isect.bitangent;
+    sg.dPdu = base::to_osl_vec3(isect.tangent);
+    sg.dPdv = base::to_osl_vec3(isect.bitangent);
 
-    sg.I = isect.to_local(r.direction);
+    sg.I = base::to_osl_vec3(isect.to_local(r.direction));
     sg.backfacing = sg.N.dot(sg.I) > 0;
     if (sg.backfacing) {
         //sg.N = -sg.N;
@@ -266,7 +266,7 @@ void KazenRenderServices::globals_from_lightrec(
     const LightRecord& lrec)
 {
     memset((char*)&sg, 0, sizeof(OSL::ShaderGlobals));
-    sg.P = lrec.lighting_pt;
+    sg.P = base::to_osl_vec3(lrec.lighting_pt);
     sg.N = sg.Ng = OSL::Vec3(0.f, 1.f, 0.f);
 
     sg.u = lrec.uv[0];

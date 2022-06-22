@@ -2,6 +2,8 @@
 
 #include "base/mat.h"
 
+using namespace base;
+
 TEST_CASE("Matrix construction", "construction") {
     Mat3f m1 = identity<float, 3>();
     REQUIRE(m1[0] == Vec3f{1, 0, 0});

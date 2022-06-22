@@ -18,7 +18,7 @@ namespace fs = boost::filesystem;
 namespace constants = boost::math::constants;
 
 static inline AABBf bbox_of_triangle(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) {
-    return bound_union(AABBf{vec_min(v0, v1), vec_max(v0, v1)}, v2);
+    return bound_union(AABBf{base::vec_min(v0, v1), base::vec_max(v0, v1)}, v2);
 }
 
 void Shape::print_bound() const {
@@ -29,10 +29,10 @@ void Shape::print_bound() const {
 bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     auto r_local = world_to_local.apply(r);
 
-    auto oc = r_local.origin - center_n_radius.reduct<3>();
-    auto a = r_local.direction.length_squared();
+    auto oc = r_local.origin - base::head<3>(center_n_radius);
+    auto a = base::length_squared(r_local.direction);
     auto half_b = dot(oc, r_local.direction);
-    auto c = oc.length_squared() - center_n_radius.w() * center_n_radius.w();
+    auto c =base::length_squared(oc) - center_n_radius.w() * center_n_radius.w();
     auto discriminant = half_b * half_b - a * c;
 
     if (discriminant < 0.f)
@@ -58,16 +58,16 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
     isect.ray_t = t;
     // small bias to avoid self intersection
     isect.P = r_local.at(t) * 1.00001f;
-    isect.N = (r_local.at(t) - center_n_radius.reduct<3>()) / center_n_radius.w();
+    isect.N = (r_local.at(t) - base::head<3>(center_n_radius)) / center_n_radius.w();
     if (isect.backface)
         isect.N = -isect.N;
 
     if (isect.N == Vec3f(0.f, 1.f, 0.f))
-        isect.tangent = normalize(Vec3f{0.f, 0.f, -1.f}.cross(isect.N));
+        isect.tangent = base::normalize(base::cross(Vec3f{0.f, 0.f, -1.f}, isect.N));
     else
-        isect.tangent = normalize(Vec3f{0.f, 1.f, 0.f}.cross(isect.N));
+        isect.tangent = base::normalize(base::cross(Vec3f{0.f, 1.f, 0.f}, isect.N));
 
-    isect.bitangent = normalize(isect.tangent.cross(isect.N));
+    isect.bitangent = base::normalize(base::cross(isect.tangent, isect.N));
     isect.is_light = is_light;
     isect.shape = const_cast<Sphere*>(this);
     isect.geom_id = geom_id;
@@ -92,10 +92,10 @@ bool Sphere::intersect(const Ray& r, Intersection& isect) const {
 bool Sphere::intersect(const Ray& r, float& t) const {
     auto r_local = world_to_local.apply(r);
 
-    auto oc = r_local.origin - center_n_radius.reduct<3>();
-    auto a = r_local.direction.length_squared();
-    auto half_b = dot(oc, r_local.direction);
-    auto c = oc.length_squared() - center_n_radius.w() * center_n_radius.w();
+    auto oc = r_local.origin - base::head<3>(center_n_radius);
+    auto a = base::length_squared(r_local.direction);
+    auto half_b = base::dot(oc, r_local.direction);
+    auto c = base::length_squared(oc) - center_n_radius.w() * center_n_radius.w();
     auto discriminant = half_b * half_b - a * c;
 
     if (discriminant < 0.f) return false;
@@ -118,7 +118,7 @@ bool Sphere::intersect(const Ray& r, float& t) const {
 }
 
 AABBf Sphere::bbox() const {
-    auto center_in_world = local_to_world.apply(center_n_radius.reduct<3>());
+    auto center_in_world = local_to_world.apply(base::head<3>(center_n_radius));
     auto radius_vec = Vec3f{center_n_radius.w()};
     return AABBf{center_in_world - radius_vec, center_in_world + radius_vec};
 }
@@ -139,10 +139,10 @@ void* Sphere::address_of(const std::string& name) {
 void Sphere::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
     auto sample = random3f();
 
-    n = sample.normalized();
+    n = base::normalize(sample);
     n = local_to_world.apply_normal(n);
 
-    p = center_n_radius.reduct<3>() + n * center_n_radius.w();
+    p = base::head<3>(center_n_radius) + n * center_n_radius.w();
     p = local_to_world.apply(p);
 
     uv[1] = acos(center_n_radius.y()) * constants::one_div_pi<float>();
@@ -156,11 +156,11 @@ void Sphere::post_hit(Intersection& isect) const {
     auto up_in_world = local_to_world.apply(Vec3f(0.f, 1.f, 0.f), true);
     auto forward_in_world = local_to_world.apply(Vec3f(0.f, 0.f, -1.f), true);
     if (isect.N == up_in_world)
-        isect.tangent = normalize(forward_in_world.cross(isect.N));
+        isect.tangent = base::normalize(base::cross(forward_in_world, isect.N));
     else
-        isect.tangent = normalize(up_in_world.cross(isect.N));
+        isect.tangent = base::normalize(base::cross(up_in_world, isect.N));
 
-    isect.bitangent = normalize(isect.tangent.cross(isect.N));
+    isect.bitangent = base::normalize(base::cross(isect.tangent, isect.N));
 
     isect.is_light = is_light;
     isect.shader_name = shader_name;
@@ -191,12 +191,12 @@ void Sphere::print_info() const {
 
 void Sphere::get_world_position(Vec4f* cnr) const {
     auto vec4_cnr = reinterpret_cast<Vec4f*>(cnr);
-    *vec4_cnr = Vec4f(local_to_world.apply(center_n_radius.reduct<3>()), center_n_radius.w());
+    *vec4_cnr = base::concat(local_to_world.apply(base::head<3>(center_n_radius)), center_n_radius.w());
 }
 
 static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3f& dir, float& t) {
     auto pos_vec = center - r.origin;
-    auto projected_distance = dot(pos_vec, dir);
+    auto projected_distance = base::dot(pos_vec, dir);
 
     // Back facing hit ignored
     if (projected_distance >= 0)
@@ -204,13 +204,13 @@ static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3
 
     // Plane direction vector is supposed to be normalized
     // No extra check here
-    auto projected_direction = dot(dir, r.direction);
+    auto projected_direction = base::dot(dir, r.direction);
     
     // Avoid zero division when ray is parallel to the plane
     if (projected_direction == 0.f)
         return false;
 
-    t = projected_distance / dot(dir, r.direction);
+    t = projected_distance / base::dot(dir, r.direction);
     if (t < 0)
         return false;
 
@@ -233,8 +233,8 @@ bool Quad::intersect(const Ray& r, Intersection& isect) const {
 
     isect.ray_t = t;
     auto position_vec = isect.P - center;
-    float horizontal_distance = fabsf(dot(position_vec, horizontal_vec));
-    float vertical_distance = fabsf(dot(position_vec, vertical_vec));
+    float horizontal_distance = fabsf(base::dot(position_vec, horizontal_vec));
+    float vertical_distance = fabsf(base::dot(position_vec, vertical_vec));
 
     if (horizontal_distance > half_width ||  vertical_distance > half_height)
         return false;
@@ -328,7 +328,7 @@ float Quad::area() const {
 
 void Quad::print_info() const {
     std::cout << fmt::format("shape Quad : center {}, dir {}",
-        center.to_str(), dir.to_str()) << std::endl;
+        base::to_string(center), base::to_string(dir)) << std::endl;
     print_bound();
 }
 
@@ -350,34 +350,34 @@ void Quad::get_verts(void* vs) const {
 static bool moller_trumbore_intersect(const Ray& r, const Vec3f* verts, Intersection& isect) {
     Vec3f v1v0 = verts[1] - verts[0];
     Vec3f v2v0 = verts[2] - verts[0];
-    Vec3f pvec = cross(r.direction, v2v0);
-    float det = dot(v1v0, pvec);
+    Vec3f pvec = base::cross(r.direction, v2v0);
+    float det = base::dot(v1v0, pvec);
 
     if (det < 0.000001)
         return false;
 
     float det_inv = 1.f / det;
     Vec3f tvec = r.origin - verts[0];
-    float u = dot(tvec, pvec) * det_inv;
+    float u = base::dot(tvec, pvec) * det_inv;
     if (u < 0.f || u > 1.f)
         return false;
 
-    Vec3f qvec = cross(tvec, v1v0);
-    float v = dot(r.direction, qvec) * det_inv; 
+    Vec3f qvec = base::cross(tvec, v1v0);
+    float v = base::dot(r.direction, qvec) * det_inv; 
     if (v < 0.f || u + v > 1.f)
         return false;
 
-    float t = dot(v2v0, qvec) * det_inv;
+    float t = base::dot(v2v0, qvec) * det_inv;
 
     // Return false if not nearer than previous hit
     if (t < 0 || t > isect.ray_t)
         return false;
 
     isect.P = r.at(t - 0.00001f);
-    isect.N = cross(v1v0, v2v0).normalized();
+    isect.N = base::normalize(base::cross(v1v0, v2v0));
     // TODO : calculate dpdu & dpdv.
-    isect.tangent = v1v0.normalized();
-    isect.bitangent = cross(isect.tangent, isect.N);
+    isect.tangent = base::normalize(v1v0);
+    isect.bitangent = base::cross(isect.tangent, isect.N);
     isect.ray_t = t;
     isect.backface = t < 0.f ? true : false;
 
@@ -471,8 +471,8 @@ void Triangle::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
 
 void Triangle::post_hit(Intersection& isect) const {
     Vec3f v1v0 = verts[1] - verts[0];
-    isect.tangent = local_to_world.apply(v1v0.normalized(), true);
-    isect.bitangent = cross(isect.tangent, isect.N);
+    isect.tangent = local_to_world.apply(base::normalize(v1v0), true);
+    isect.bitangent = base::cross(isect.tangent, isect.N);
     isect.is_light = is_light;
     isect.shader_name = shader_name;
     isect.shading_normal = isect.N;
@@ -487,7 +487,7 @@ void Triangle::post_hit(Intersection& isect) const {
 }
 
 float Triangle::area() const {
-    return cross(verts[1] - verts[0], verts[2] - verts[0]).length_squared() * 0.5f;
+    return base::length_squared(base::cross(verts[1] - verts[0], verts[2] - verts[0])) * 0.5f;
 }
 
 void Triangle::print_info() const {
@@ -570,7 +570,7 @@ void TriangleMesh::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
     float v = sp.y() * su0;
     //p = vs[0] + u * (vs[1] - vs[0]) + v * (vs[2] - vs[0]);
     p = u * vs[0] + v * vs[1] + (1 - u - v) * vs[2];
-    n = cross(vs[1] - vs[0], vs[2] - vs[0]).normalized();
+    n = base::normalize(base::cross(vs[1] - vs[0], vs[2] - vs[0]));
     uv[0] = u;
     uv[1] = v;
     pdf = 1. / m_area;
@@ -579,16 +579,16 @@ void TriangleMesh::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
 void TriangleMesh::post_hit(Intersection& isect) const {
     auto idx = indice[isect.prim_id];
     auto v1 = verts[idx.x()], v2 = verts[idx.y()], v3 = verts[idx.z()];
-    isect.tangent = local_to_world.apply((v2 - v1).normalized(), true);
-    isect.bitangent = cross(isect.tangent, isect.N);
+    isect.tangent = local_to_world.apply(base::normalize(v2 - v1), true);
+    isect.bitangent = base::cross(isect.tangent, isect.N);
     isect.is_light = is_light;
     isect.shader_name = shader_name;
     auto bary_x = 1. - isect.uv[0] - isect.uv[1];
     isect.P = bary_x * v1 + isect.uv[0] * v2 + isect.uv[1] * v3;
 
     if (norms.size() > 0) {
-        isect.shading_normal = (bary_x * norms[idx[0]] + isect.uv[0] * norms[idx[1]]
-            + isect.uv[1] * norms[idx[2]]).normalized();
+        isect.shading_normal = base::normalize(bary_x * norms[idx[0]] + isect.uv[0] * norms[idx[1]]
+            + isect.uv[1] * norms[idx[2]]);
     }
     else
         isect.shading_normal = isect.N;
@@ -609,7 +609,7 @@ void TriangleMesh::print_info() const {
 float TriangleMesh::surface_area(uint32_t i) const {
     auto idxes = indice[i];
     const auto &p0 = verts[idxes[0]], &p1 = verts[idxes[1]], &p2 = verts[idxes[2]];
-    return 0.5f * cross(p1 - p0, p2 - p0).length();
+    return 0.5f * base::length(base::cross(p1 - p0, p2 - p0));
 }
 
 void TriangleMesh::setup_dpdf() {
