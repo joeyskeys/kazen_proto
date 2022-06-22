@@ -17,7 +17,7 @@ public:
         Ray r(p1 + vec_p1p2 * 0.00001f, vec_p1p2);
         float ray_t;
 
-        if (intersect(r, ray_t) && ray_t < length(vec_p1p2))
+        if (intersect(r, ray_t) && ray_t < base::length(vec_p1p2))
             return true;
         return false;
     }

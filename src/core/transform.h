@@ -5,18 +5,21 @@
 #include "ray.h"
 #include "material.h"
 
+using base::Vec4f;
+using base::Mat4f;
+
 class Transform {
 public:
     Transform() {}
 
     Transform(const Mat4f& m)
         : mat(m) {
-        mat_inv = inverse(m);
+        mat_inv = base::inverse(m);
     }
 
     Transform(Mat4f&& m)
         : mat(m) {
-        mat_inv = inverse(m);
+        mat_inv = base::inverse(m);
     }
 
     Transform(const Mat4f& m, const Mat4f& inv)
@@ -46,7 +49,7 @@ public:
     //void translate(const T& x, const T& y, const T& z);
 
     Transform& rotate(const Vec3f& axis, const float& angle) {
-        auto a = normalize(axis);
+        auto a = base::normalize(axis);
         auto angle_in_radian = to_radian<float>(angle);
         auto sin_theta = std::sin(angle_in_radian);
         auto cos_theta = std::cos(angle_in_radian);
@@ -70,7 +73,7 @@ public:
 
         // Column majored matrix, apply transform in the left
         mat = rot * mat;
-        auto rot_inv = transpose(rot);
+        auto rot_inv = base::transpose(rot);
         mat_inv = rot_inv * mat_inv;
 
         return *this;
@@ -83,14 +86,15 @@ public:
             mat_inv[i][i] /= s[i];
         }
         */
-        mat *= scale3f(s);
-        mat *= scale3f(1 / s);
+        mat *= base::scale3f(s);
+        mat *= base::scale3f(1 / s);
         
         return *this;
     }
 
     inline Vec3f apply(const Vec3f& v, bool is_vector=false) const {
-        return (mat * Vec4f(v, is_vector ? 0.f : 1.f)).reduct<3>();
+        //return (mat * Vec4f(v, is_vector ? 0.f : 1.f)).reduct<3>();
+        return head<3>((mat * concat(v, is_vector ? 0.f : 1.f)));
     }
 
     inline Vec4f apply(const Vec4f& v) const {
@@ -98,13 +102,13 @@ public:
     }
 
     inline Vec3f apply_normal(const Vec3f& v) const {
-        return (transpose(mat_inv) * Vec4f(v, 0.f)).reduct<3>();
+        return head<3>(transpose(mat_inv) * concat(v, 0.f));
     }
 
     Intersection apply(const Intersection& isect) const {
         Intersection ret;
         ret.P = apply(isect.P);
-        ret.N = (mat_inv.transpose() * Vec4f(isect.N, 0.f)).reduct<3>();
+        ret.N = base::head<3>((transpose(mat_inv) * concat(isect.N, 0.f)));
         ret.shading_normal = isect.shading_normal;
         ret.tangent = apply(isect.tangent, true);
         ret.bitangent = apply(isect.bitangent, true);
@@ -132,6 +136,6 @@ public:
     }
 
 public:
-    Mat4f mat = identity<float, 4>();
-    Mat4f mat_inv = identity<float, 4>();
+    Mat4f mat = base::identity<float, 4>();
+    Mat4f mat_inv = base::identity<float, 4>();
 };

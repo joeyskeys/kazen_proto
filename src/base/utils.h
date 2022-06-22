@@ -6,6 +6,8 @@
 
 #include "vec.h"
 
+using base::Vec3f;
+
 namespace constants = boost::math::constants;
 
 template <typename T>

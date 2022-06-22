@@ -52,7 +52,7 @@ RGBSpectrum NormalIntegrator::Li(const Ray& r, const RecordContext& rctx) const 
     }
 
     //auto ret = isect.N.abs();
-    auto ret = isect.shading_normal.abs();
+    auto ret = base::abs(isect.shading_normal);
     return ret;
 }
 
@@ -71,9 +71,9 @@ RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r, const RecordContext& rc
         return RGBSpectrum{0};
     }
 
-    auto sample = sample_hemisphere().normalized();
+    auto sample = base::normalize(sample_hemisphere());
     auto shadow_ray_dir = local_to_world(sample, isect.shading_normal);
-    auto shadow_ray = Ray(isect.P, shadow_ray_dir.normalized());
+    auto shadow_ray = Ray(isect.P, base::normalize(shadow_ray_dir));
 
     float t;
     if (!accel_ptr->intersect(shadow_ray, t)) {
@@ -162,7 +162,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
 
             auto Ls = light_ptr->eval(isect, lrec.get_light_dir(), random3f()) / lrec.pdf;
 
-            if (!Ls.is_zero()) {
+            if (!base::is_zero(Ls)) {
                 //float cos_theta_v = dot(light_dir, isect.N);
                 float cos_theta_v = dot(light_dir, isect.shading_normal);
                 sample.wo = isect.to_local(light_dir);
@@ -223,7 +223,7 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) cons
             Li += throughput * Ls;
         }
 
-        float prob = std::min(throughput.max_component() * eta * eta, 0.99f);
+        float prob = std::min(base::max_component(throughput) * eta * eta, 0.99f);
         if (randomf() >= prob)
             return Li;
         throughput /= prob;
@@ -284,7 +284,7 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             Vec3f light_dir;
             auto Ls = light_ptr->sample(its, light_dir, light_pdf, accel_ptr);
 
-            if (!Ls.is_zero()) {
+            if (!base::is_zero(Ls)) {
                 //float cos_theta_v = dot(light_dir, isect.N);
                 float cos_theta_v = dot(light_dir, its.shading_normal);
                 sample.wo = its.to_local(light_dir);
@@ -297,7 +297,7 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             is_specular = true;
         }
 
-        float prob = std::min(throughput.max_component() * eta * eta, 0.99f);
+        float prob = std::min(base::max_component(throughput) * eta * eta, 0.99f);
         if (randomf() >= prob)
             return Li;
         throughput /= prob;
@@ -400,7 +400,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         * *********************************************/
         Vec3f light_dir;
         auto Ls = light_ptr->sample(its, light_dir, lpdf, accel_ptr);
-        if (!Ls.is_zero()) {
+        if (!base::is_zero(Ls)) {
             float cos_theta_v = dot(light_dir, its.shading_normal);
             if (cos_theta_v > 0.) {
                 bsdf_sample.wo = light_dir;
@@ -417,7 +417,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         // Here we follow the implementation in mitsuba and will
         // discard the L_direct & L_indirect on condition.
         if (depth >= min_depth) {
-            auto prob = std::min(throughput.max_component() * eta * eta, 0.99f);
+            auto prob = std::min(base::max_component(throughput) * eta * eta, 0.99f);
             if (prob < randomf()) {
                 p.record(ERouletteCut, its, throughput, Li);
                 return Li;

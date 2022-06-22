@@ -13,7 +13,14 @@
 #include "base/basic_types.h"
 #include "config.h"
 
+namespace base
+{
+
 #ifdef USE_ENOKI
+
+// The reason why not using inheritance to have the same OOP interface is
+// because if you don't reimplement all the operator, the return enoki::Array
+// object cannot be converted to the inherited class object.
 
 template <typename T, size_t N>
 using Vec = enoki::Array<T, N>;
@@ -36,6 +43,23 @@ using Vec3i = Vec3<int>;
 using Vec4f = Vec4<float>;
 using Vec4d = Vec4<double>;
 using Vec4i = Vec4<int>;
+
+// Construct funcs
+template <typename T, size_t N>
+inline Vec<T, N + 1> concat(const Vec<T, N>& v, const typename Vec<T, N>::Scalar& s) {
+    return enoki::concat(v, s);
+}
+
+template <typename T, size_t N, size_t M>
+inline Vec<T, N + M> concat(const Vec<T, N>& v1, const Vec<T, M>& v2) {
+    return enoki::concat(v1, v2);
+}
+
+template <size_t M, typename T, size_t N>
+inline Vec<T, M> head(const Vec<T, N>& v) {
+    static_assert(N > M);
+    return enoki::head<M>(v);
+}
 
 // Horizontal funcs
 template <typename T, size_t N>
@@ -344,7 +368,7 @@ public:
 
     /*
     template <uint M>
-    Vec<T, M> reduct() const {
+    Vec<T, M> head() const {
         static_assert(M > 1 && M < N, "Invalid component number");
         Vec<T, M> tmp;
         for (int i = 0; i < M; i++)
@@ -562,3 +586,5 @@ using Vec4d = Vec4<double>;
 using Vec4i = Vec4<int>;
 
 #endif
+
+} // namspace base

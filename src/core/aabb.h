@@ -4,6 +4,8 @@
 
 #include "base/vec.h"
 
+using base::Vec3;
+
 template <typename T>
 class AABB {
 public:
@@ -53,8 +55,8 @@ public:
     }
 
     AABB bound_union(const AABB& rhs) const {
-        auto new_min = vec_min(min, rhs.min);
-        auto new_max = vec_max(max, rhs.max);
+        auto new_min = base::vec_min(min, rhs.min);
+        auto new_max = base::vec_max(max, rhs.max);
         return AABB{new_min, new_max};
     }
 

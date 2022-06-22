@@ -8,6 +8,9 @@
 
 #include "base/vec.h"
 
+namespace base
+{
+
 #ifdef USE_ENOKI
 
 template <typename T, size_t N>
@@ -35,7 +38,7 @@ inline Mat<T, N> identity() {
 }
 
 template <typename T, size_t N>
-inline Mat<T, N> transpose(const Vec<T, N>& m) {
+inline Mat<T, N> transpose(const Mat<T, N>& m) {
     return enoki::transpose(m);
 }
 
@@ -359,3 +362,5 @@ using Mat4f = Mat4<float>;
 using Mat4d = Mat4<double>;
 
 #endif
+
+}

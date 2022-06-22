@@ -11,6 +11,10 @@
 #include "core/film.h"
 #include "core/ray.h"
 
+using base::Vec3f;
+using base::Vec4f;
+using base::Mat4f;
+
 class Camera : public DictLike {
 public:
     Camera()
@@ -32,7 +36,7 @@ public:
         Film* const film)
         : position(p)
         , lookat(l)
-        , up(u.normalized())
+        , up(normalize(u))
         , near_plane(near_plane)
         , far_plane(near_plane)
         , fov(fov)
@@ -60,14 +64,14 @@ public:
         */
         
         auto aspect = static_cast<float>(film->width) / static_cast<float>(film->height);
-        auto z_axis = (position - lookat).normalized();
-        auto x_axis = cross(up, z_axis).normalized();
+        auto z_axis = normalize(position - lookat);
+        auto x_axis = normalize(cross(up, z_axis));
         auto y_axis = cross(z_axis, x_axis);
         camera_to_world = Mat4f{
-            Vec4f{x_axis, 0.f},
-            Vec4f{y_axis, 0.f},
-            Vec4f{z_axis, 0.f},
-            Vec4f{position, 1}
+            concat(x_axis, 0.f),
+            concat(y_axis, 0.f),
+            concat(z_axis, 0.f),
+            concat(position, 1.f)
         };
 
         float recip = 1.f / (far_plane - near_plane);
@@ -79,8 +83,8 @@ public:
             0, 0, 1, 0
         };
 
-        sample_to_camera = proj_matrix.inverse() * Mat4f::translate(Vec4f(-1.f, 1.f / aspect, 0.f, 1.f)) *
-            Mat4f::scale(Vec4f(2.f, -2.f / aspect, 1.f, 1.f));
+        sample_to_camera = base::inverse(proj_matrix) * base::translate3f(Vec3f(-1.f, 1.f / aspect, 0.f)) *
+            base::scale3f(Vec3f(2.f, -2.f / aspect, 1.f));
     }
 
     Ray generate_ray(uint x, uint y);
@@ -88,7 +92,7 @@ public:
     void scale(const Vec3f& s) {
         //horizontal *= s[0];
         //vertical *= s[1];
-        camera_to_world *= Mat4f::scale(Vec4f{s, 1.f});
+        camera_to_world *= base::scale3f(s);
     }
 
     void* address_of(const std::string& name) override;

@@ -134,7 +134,7 @@ public:
     }
 
     virtual void compute_pdfs(const OSL::ShaderGlobals& sg, const RGBSpectrum& beta, bool cut_off) {
-        float w = 1.f / beta.sum();
+        float w = 1.f / base::sum(beta);
         float weight_sum = 0;
         for (int i = 0; i < bsdf_count; i++) {
             //pdfs[i] = dot(weights[i], beta) * bsdfs[i]->albedo(sg) * w;

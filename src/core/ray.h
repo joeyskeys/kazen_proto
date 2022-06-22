@@ -5,6 +5,8 @@
 #include "base/basic_types.h"
 #include "base/vec.h"
 
+using base::Vec3f;
+
 class Ray {
 public:
     Ray(Vec3f o, Vec3f d, const float time=0.f, const float tmin=epsilon<float>, const float tmax=std::numeric_limits<float>::max())
