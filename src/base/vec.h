@@ -168,9 +168,9 @@ template <typename T, uint N>
 class Vec {
 public:
 
-    using ValueType = T;
+    using Scalar = T;
 
-    static constexpr uint dimension = N;
+    static constexpr uint Size = N;
 
     Vec() {
         std::fill(arr.begin(), arr.end(), static_cast<T>(0));
@@ -351,11 +351,24 @@ public:
             tmp.arr[i] *= inv;
         return tmp;
     }
+
+    auto operator /(const Vec<T, N>& v) const {
+        Vec tmp = *this;
+        for (int i = 0; i < N; i++)
+            tmp[i] = arr[i] / v[i];
+        return tmp;
+    }
     
     auto operator /=(const T s) {
         auto inv = static_cast<T>(1) / s;
         for (int i = 0; i < N; i++)
             arr[i] *= inv;
+        return *this;
+    }
+
+    auto operator /=(const Vec<T, N>& v) {
+        for (int i = 0; i < N; i++) 
+            arr[i] /= v[i];
         return *this;
     }
 
@@ -366,7 +379,7 @@ public:
         return tmp;
     }
 
-    bool operator ==(const Vec& rhs) {
+    bool operator ==(const Vec& rhs) const {
         bool eq = true;
         for (int i = 0; i < N; i++)
             eq &= arr[i] == rhs.arr[i];
@@ -383,7 +396,6 @@ public:
         return arr[idx];
     }
 
-    /*
     template <uint M>
     Vec<T, M> head() const {
         static_assert(M > 1 && M < N, "Invalid component number");
@@ -487,7 +499,6 @@ public:
     inline auto min_component() const {
         return *std::min_element(arr.begin(), arr.end());
     }
-    */
 
     std::string to_str() const {
         std::string ret = std::to_string(arr[0]);
@@ -514,75 +525,6 @@ public:
     std::array<T, N> arr;
 };
 
-//template <typename T, uint N>
-//inline T dot(const Vec<T, N>& a, const Vec<T, N>& b) {
-template <template<typename, uint> class C, typename T, uint N, typename = std::enable_if_t<std::is_base_of_v<Vec<T, N>, C<T, N>>>>
-inline T dot(const C<T, N>& a, const C<T, N>& b) {
-    //return a.dot(b);
-    T tmp{0};
-    for (int i = 0; i < N; i++)
-        tmp += a.arr[i] * b.arr[i];
-    return tmp;
-}
-
-template <template<typename, uint> class C, typename D, typename T, uint N,
-    typename = std::enable_if_t<std::is_base_of_v<Vec<T, N>, C<T, N>>>, typename = std::enable_if_t<std::is_convertible_v<D, C<T, N>>>>
-inline T dot(const C<T, N>& a, const D& b) {
-    //return a.dot(static_cast<C<T, N>>(b));
-    return dot(a, static_cast<C<T, N>>(b));
-}
-
-template <typename T, uint N>
-inline auto cross(const Vec<T, N>& a, const Vec<T, N>& b) {
-    //return a.cross(b);
-    static_assert(N > 1 && N < 4);
-    if constexpr (N == 2) {
-        return arr[0] * rhs.arr[1] - arr[1] * rhs.arr[0];
-    }
-    else {
-        Vec tmp;
-        tmp[0] = arr[1] * rhs.arr[2] - arr[2] * rhs.arr[1];
-        tmp[1] = arr[2] * rhs.arr[0] - arr[0] * rhs.arr[2];
-        tmp[2] = arr[0] * rhs.arr[1] - arr[1] * rhs.arr[0];
-        return tmp;
-    }
-}
-
-template <typename T, uint N>
-inline bool is_zero(const Vec<T, N>& v) {
-    for (int i = 0; i < N; i++)
-        if (std::abs(v.arr[i]) >= epsilon<T>)
-            return false;
-    return true;
-}
-
-template <typename T, uint N>
-inline Vec<T, N> normalize(const Vec<T, N>& w) {
-    //return w.normalized();
-    T sum{0};
-    for (auto& e : arr)
-        sum += e * e;
-    T rcp = 1. / std::sqrt(static_cast<double>(sum));
-    for (auto& e : arr)
-        e *= rcp;
-}
-
-template <typename T, uint N>
-inline Vec<T, N> vec_min(const Vec<T, N>& a, const Vec<T, N>& b) {
-    Vec<T, N> tmp;
-    for (int i = 0; i < N; i++)
-        tmp[i] = std::min(a[i], b[i]);
-    return tmp;
-}
-
-template <typename T, uint N>
-inline Vec<T, N> vec_max(const Vec<T, N>& a, const Vec<T, N>& b) {
-    Vec<T, N> tmp;
-    for (int i = 0; i < N; i++)
-        tmp[i] = std::max(a[i], b[i]);
-    return tmp;
-}
-
 template <typename T>
 using Vec2 = Vec<T, 2>;
 
@@ -601,6 +543,175 @@ using Vec3i = Vec3<int>;
 using Vec4f = Vec4<float>;
 using Vec4d = Vec4<double>;
 using Vec4i = Vec4<int>;
+
+// Construct funcs
+template <typename T, uint N>
+inline Vec<T, N + 1> concat(const Vec<T, N>& v, const typename Vec<T, N>::Scalar& s) {
+    return Vec<T, N + 1>{v, s};
+}
+
+template <typename T, uint N, uint M>
+inline Vec<T, N + M> concat(const Vec<T, N>& v1, const Vec<T, M>& v2) {
+    return Vec<T, N + M>{v1, v2};
+}
+
+template <uint M, typename T, uint N>
+inline Vec<T, M> head(const Vec<T, N>& v) {
+    static_assert(N > M && M > 1, "Invalid component number");
+    Vec<T, M> tmp;
+    for (int i = 0; i < M; i++)
+        tmp[i] = v.arr[i];
+
+    return tmp;
+    //return v.head<M>();
+}
+
+// Horizontal funcs
+template <typename T, uint N>
+inline T max_component(const Vec<T, N>& v) {
+    //return *std::max_element(arr.begin(), arr.end());
+    return v.max_component();
+}
+
+template <typename T, uint N>
+inline T min_component(const Vec<T, N>& v) {
+    //return *std::min_element(arr.begin(), arr.end());
+    return v.min_component();
+}
+
+template <typename T, uint N>
+inline T sum(const Vec<T, N>& v) {
+    //return std::accumulate(arr.begin(), arr.end(), T{0});
+    return v.sum();
+}
+
+template <typename T, uint N>
+inline T length(const Vec<T, N>& v) {
+    return v.length();
+}
+
+template <typename T, uint N>
+inline T length_squared(const Vec<T, N>& v) {
+    return v.length_squared();
+}
+
+// Dot & cross
+template <template<typename, uint> class C, typename T, uint N, typename = std::enable_if_t<std::is_base_of_v<Vec<T, N>, C<T, N>>>>
+inline T dot(const C<T, N>& a, const C<T, N>& b) {
+    return a.dot(b);
+    /*
+    T tmp{0};
+    for (int i = 0; i < N; i++)
+        tmp += a.arr[i] * b.arr[i];
+    return tmp;
+    */
+}
+
+template <template<typename, uint> class C, typename D, typename T, uint N,
+    typename = std::enable_if_t<std::is_base_of_v<Vec<T, N>, C<T, N>>>, typename = std::enable_if_t<std::is_convertible_v<D, C<T, N>>>>
+inline T dot(const C<T, N>& a, const D& b) {
+    //return a.dot(static_cast<C<T, N>>(b));
+    return dot(a, static_cast<C<T, N>>(b));
+}
+
+template <typename T, uint N>
+inline auto cross(const Vec<T, N>& a, const Vec<T, N>& b) {
+    return a.cross(b);
+    /*
+    static_assert(N > 1 && N < 4);
+    if constexpr (N == 2) {
+        return a.arr[0] * b.arr[1] - a.arr[1] * b.arr[0];
+    }
+    else {
+        Vec tmp;
+        tmp[0] = a.arr[1] * b.arr[2] - a.arr[2] * b.arr[1];
+        tmp[1] = a.arr[2] * b.arr[0] - a.arr[0] * b.arr[2];
+        tmp[2] = a.arr[0] * b.arr[1] - a.arr[1] * b.arr[0];
+        return tmp;
+    }
+    */
+}
+
+// Normalize
+template <typename T, uint N>
+inline Vec<T, N> normalize(const Vec<T, N>& w) {
+    return w.normalized();
+    /*
+    T sum{0};
+    for (auto& e : arr)
+        sum += e * e;
+    T rcp = 1. / std::sqrt(static_cast<double>(sum));
+    for (auto& e : arr)
+        e *= rcp;
+    */
+}
+
+// Misc
+template <typename T, uint N>
+inline Vec<T, N> abs(const Vec<T, N>& v) {
+    return v.abs();
+}
+
+// Comparison
+template <typename T, uint N>
+inline bool is_zero(const Vec<T, N>& v) {
+    /*
+    for (int i = 0; i < N; i++)
+        if (std::abs(v.arr[i]) >= epsilon<T>)
+            return false;
+    return true;
+    */
+    return v.is_zero();
+}
+
+template <typename T, uint N>
+inline Vec<T, N> vec_min(const Vec<T, N>& a, const Vec<T, N>& b) {
+    Vec<T, N> tmp;
+    for (int i = 0; i < N; i++)
+        tmp[i] = std::min(a[i], b[i]);
+    return tmp;
+}
+
+template <typename T, uint N>
+inline Vec<T, N> vec_max(const Vec<T, N>& a, const Vec<T, N>& b) {
+    Vec<T, N> tmp;
+    for (int i = 0; i < N; i++)
+        tmp[i] = std::max(a[i], b[i]);
+    return tmp;
+}
+
+// Type conversion
+template <typename T, uint N>
+OSL::Vec2 to_osl_vec2(const Vec<T, N>& v) {
+    OSL::Vec2 ret;
+    ret.x = v[0];
+    ret.y = v[1];
+    return ret;
+}
+
+template <typename T, uint N>
+OSL::Vec3 to_osl_vec3(const Vec<T, N>& v) {
+    static_assert(N > 2);
+    OSL::Vec3 ret;
+    ret.x = v[0];
+    ret.y = v[1];
+    ret.z = v[2];
+    return ret;
+}
+
+inline Vec2f to_vec2(const OSL::Vec2& v) {
+    return Vec2f{v.x, v.y};
+}
+
+inline Vec3f to_vec3(const OSL::Vec3& v) {
+    return Vec3f{v.x, v.y, v.z};
+}
+
+// Stringify
+template <typename T, uint N>
+inline std::string to_string(const Vec<T, N>& v) {
+    return v.to_str();
+}
 
 #endif
 

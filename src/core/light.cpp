@@ -10,7 +10,7 @@ Vec3f LightRecord::get_light_dir() {
     return base::normalize(shading_pt - lighting_pt);
 }
 
-LightRecord PointLight::sample() const {
+void PointLight::sample(LightRecord& lrec) const {
     // Not implemented yet
     throw std::runtime_error("Not implemented");
 }
@@ -43,12 +43,10 @@ void* PointLight::address_of(const std::string& name) {
     return nullptr;
 }
 
-LightRecord GeometryLight::sample() const {
-    LightRecord lrec;
+void GeometryLight::sample(LightRecord& lrec) const {
     geometry->sample(lrec.lighting_pt, lrec.n, lrec.uv, lrec.pdf);
-    lrec.pdf *= base::length_squared(lrec.shading_pt - lrec.lighting_pt) / dot(lrec.get_light_dir(), lrec.n);
+    lrec.pdf *= base::length_squared(lrec.shading_pt - lrec.lighting_pt) / base::dot(lrec.get_light_dir(), lrec.n);
     lrec.area = geometry->area();
-    return lrec;
 }
 
 RGBSpectrum GeometryLight::sample(const Intersection& isect, Vec3f& light_dir, float& pdf, const HitablePtr scene) const {

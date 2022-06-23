@@ -105,6 +105,23 @@ public:
         return data[idx];
     }
 
+    void operator +=(const Vec<T, N>& v) {
+        for (int i = 0; i < N; i++)
+            data[i] += v[i];
+    }
+
+    void operator -=(const Vec<T, N>& v) {
+        for (int i = 0; i < N; i++)
+            data[i] -= v[i];
+    }
+
+    bool operator ==(const Vec<T, N>& v) const {
+        bool ret = true;
+        for (int i = 0; i < N; i++)
+            ret &= std::abs(v[i] - data[i]) < epsilon<T>;
+        return ret;
+    }
+
 private:
     T* data;
 };
@@ -177,6 +194,16 @@ public:
     }
 
     auto operator *(const Vec<T, N>& vec) const {
+        Vec<T, N> ret;
+        for (int i = 0; i < N; i++)
+            for (int j = 0; j < N; j++)
+                ret[i] += arr[j * N + i] * vec[j];
+        
+        return ret;
+    }
+
+    auto operator *(const Vec<T, N - 1>& vec) const {
+        Vec<T, N> tmp{vec, 0};
         Vec<T, N> ret;
         for (int i = 0; i < N; i++)
             for (int j = 0; j < N; j++)
@@ -360,6 +387,48 @@ using Mat3f = Mat3<float>;
 using Mat3d = Mat3<double>;
 using Mat4f = Mat4<float>;
 using Mat4d = Mat4<double>;
+
+template <typename T, uint N>
+inline Mat<T, N> identity() {
+    return Mat<T, N>::identity();
+}
+
+template <typename T, uint N>
+inline Mat<T, N> transpose(const Mat<T, N>& m) {
+    return m.transpose();
+}
+
+template <typename T, uint N>
+inline Mat<T, N> inverse(const Mat<T, N>& m) {
+    return m.inverse();
+}
+
+template <typename T, uint N>
+inline Mat<T, N> translate(const Vec<T, N - 1>& v) {
+    return Mat<T, N>::translate(Vec<T, N>{v, 0});
+}
+
+const auto translate3f = translate<float, 4>;
+
+template <typename T, uint N>
+inline Mat<T, N> rotate(const Vec<T, N - 1>& axis, const T& angle) {
+    // FIXME : add rotate matrix calculation
+    return Mat<T, N>::identity();
+}
+
+const auto rotate3f = rotate<float, 4>;
+
+template <typename T, uint N>
+inline Mat<T, N> scale(const Vec<T, N - 1>& v) {
+    return Mat<T, N>::scale(Vec<T, N>{v, 1});
+}
+
+const auto scale3f = scale<float, 4>;
+
+template <typename T>
+OSL::Matrix44 to_osl_mat4(const Mat4<T>& m) {
+    return static_cast<OSL::Matrix44>(m);
+}
 
 #endif
 

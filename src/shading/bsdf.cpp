@@ -14,7 +14,7 @@ using OSL::TypeDesc;
 
 RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, BSDFSample& sample) const {
     float acc = 0;
-    RGBSpectrum ret;
+    RGBSpectrum ret{0};
 
     /*
         * The mixture bsdf implementation differs between renderers.
@@ -49,7 +49,7 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, BSDFSample& s
 };
 
 RGBSpectrum CompositeClosure::eval(const OSL::ShaderGlobals& sg, BSDFSample& sample) const {
-    RGBSpectrum ret;
+    RGBSpectrum ret{0};
     float pdf = 0;
     for (int i = 0; i < bsdf_count; i++) {
         auto id = bsdf_ids[i];

@@ -117,7 +117,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
 
     while (true) {
         if (!accel_ptr->intersect(ray, isect)) {
-            p.record(EBackground, isect, RGBSpectrum{0}, Li);
+            p.record(EBackground, isect, throughput, Li);
             return Li;
         }
 
@@ -147,7 +147,8 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             Vec3f light_dir;
             float light_pdf, bsdf_pdf;
 
-            auto lrec = light_ptr->sample();
+            LightRecord lrec{isect.P};
+            light_ptr->sample(lrec);
             lrec.shading_pt = isect.P;
             light_dir = -lrec.get_light_dir();
             KazenRenderServices::globals_from_lightrec(lighting_sg, lrec);
@@ -167,7 +168,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
                 float cos_theta_v = dot(light_dir, isect.shading_normal);
                 sample.wo = isect.to_local(light_dir);
                 auto f = ret.surface.eval(sg, sample);
-                recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
+                //recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
                 Li += throughput * (f * Ls * cos_theta_v) * lights->size();
             }
 

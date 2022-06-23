@@ -184,7 +184,7 @@ struct ShadingResult {
     // put it into the composite closure. The Le will be set
     // when processing the closure tree and a diffuse EDF will
     // be added into the closure stack for future sampling.
-    RGBSpectrum             Le;
+    RGBSpectrum             Le = RGBSpectrum{0};
     SurfaceCompositeClosure surface;
 };
 

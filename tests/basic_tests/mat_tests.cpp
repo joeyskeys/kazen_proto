@@ -45,6 +45,27 @@ TEST_CASE("Matrix multiplication", "multiplication") {
     Vec3f v1 = {1, 2, 3};
     auto m4 = m1 * v1;
     REQUIRE(m4 == Vec3f{11, 18, 8});
+
+    m1 = Mat3f{
+        1, 2, 3,
+        2, 3, 4,
+        1, 2, 3
+    };
+    m2 = Mat3f{
+        Vec3f{1, 2, 3},
+        Vec3f{2, 3, 4},
+        Vec3f{1, 2, 3}
+    };
+    v1 = Vec3f{
+        1, 1, 1
+    };
+    auto v2 = m1 * v1;
+    auto v3 = m2 * v1;
+    Vec3f v4{
+        4, 7, 10
+    };
+    REQUIRE(v2 == v4);
+    REQUIRE(v3 == v4);
 }
 
 TEST_CASE("Matrix transform", "transform") {

@@ -33,7 +33,7 @@ int main(int argc, const char **argv) {
     //scene.parse_from_file("../resource/scene/veach_mi/veach_mats.xml");
     scene.parse_from_file(filename);
 
-    constexpr static int sample_count = 5;
+    constexpr static int sample_count = 100;
             
     scene.recorder.x_min = 480;
     scene.recorder.x_max = 482;
@@ -106,7 +106,7 @@ int main(int argc, const char **argv) {
     std::cout << "render duration : " << render_duration.count() << " ms\n";
 
     scene.film->write_tiles();
-    scene.recorder.output(std::cout);
+    //scene.recorder.output(std::cout);
 
     return 0;
 }

@@ -77,10 +77,10 @@ public:
         float recip = 1.f / (far_plane - near_plane);
         float cot = 1.f / std::tan(to_radian(fov / 2.f));
         auto proj_matrix = Mat4f{
-            cot, 0, 0, 0,
-            0, cot, 0, 0,
-            0, 0, far_plane * recip, -near_plane * far_plane * recip,
-            0, 0, 1, 0
+            Vec4f{cot, 0, 0, 0},
+            Vec4f{0, cot, 0, 0},
+            Vec4f{0, 0, far_plane * recip, -near_plane * far_plane * recip},
+            Vec4f{0, 0, 1, 0}
         };
 
         sample_to_camera = base::inverse(proj_matrix) * base::translate3f(Vec3f(-1.f, 1.f / aspect, 0.f)) *
