@@ -25,25 +25,6 @@ namespace base
 template <typename T, size_t N>
 using Vec = enoki::Array<T, N>;
 
-template <typename T>
-using Vec2 = enoki::Array<T, 2>;
-
-template <typename T>
-using Vec3 = enoki::Array<T, 3>;
-
-template <typename T>
-using Vec4 = enoki::Array<T, 4>;
-
-using Vec2f = Vec2<float>;
-using Vec2d = Vec2<double>;
-using Vec2i = Vec2<int>;
-using Vec3f = Vec3<float>;
-using Vec3d = Vec3<double>;
-using Vec3i = Vec3<int>;
-using Vec4f = Vec4<float>;
-using Vec4d = Vec4<double>;
-using Vec4i = Vec4<int>;
-
 // Construct funcs
 template <typename T, size_t N>
 inline Vec<T, N + 1> concat(const Vec<T, N>& v, const typename Vec<T, N>::Scalar& s) {
@@ -145,14 +126,6 @@ OSL::Vec3 to_osl_vec3(const Vec<T, N>& v) {
     return ret;
 }
 
-inline Vec2f to_vec2(const OSL::Vec2& v) {
-    return Vec2f{v.x, v.y};
-}
-
-inline Vec3f to_vec3(const OSL::Vec3& v) {
-    return Vec3f{v.x, v.y, v.z};
-}
-
 // stringify
 template <typename T, size_t N>
 std::string to_string(const Vec<T, N>& v) {
@@ -161,6 +134,37 @@ std::string to_string(const Vec<T, N>& v) {
         ret += " " + std::to_string(v[i]);
     return ret;
 }
+
+#elif defined USE_EIGEN
+
+template <typename T, int N>
+class Vec : public Eigen::Matrix<T, N, 1> {
+public:
+    using Scalar = T;
+    using Base = Eigen::Matrix<T, N, 1>;
+    static constexpr int Size = N;
+
+    Vec(T v=static_cast<T>(0)) {
+        Base::setConstant(v);
+    }
+
+    template <typename ...Ts, typename = std::enable_if_t<(... && std::is_arithmetic_v<Ts>)>>
+    Vec(Ts... args) : Base(static_cast<T>(args)...) {}
+
+    template <typename Derived>
+    Vec(const Eigen::MatrixBase<Derived>& p) : Base(p) {}
+
+    template <typename Derived>
+    Vec &operator=(const Eigen::MatrixBase<Derived>& p) {
+        this->Base::operator=(p);
+        return *this;
+    }
+
+    inline auto operator/=(const Vec<T, N>& v) {
+        *this = this->array().template cast<T>() / v.array().template cast<T>();
+        return *this;
+    }
+};
 
 #else
 
@@ -525,25 +529,6 @@ public:
     std::array<T, N> arr;
 };
 
-template <typename T>
-using Vec2 = Vec<T, 2>;
-
-template <typename T>
-using Vec3 = Vec<T, 3>;
-
-template <typename T>
-using Vec4 = Vec<T, 4>;
-
-using Vec2f = Vec2<float>;
-using Vec2d = Vec2<double>;
-using Vec2i = Vec2<int>;
-using Vec3f = Vec3<float>;
-using Vec3d = Vec3<double>;
-using Vec3i = Vec3<int>;
-using Vec4f = Vec4<float>;
-using Vec4d = Vec4<double>;
-using Vec4i = Vec4<int>;
-
 // Construct funcs
 template <typename T, uint N>
 inline Vec<T, N + 1> concat(const Vec<T, N>& v, const typename Vec<T, N>::Scalar& s) {
@@ -557,13 +542,15 @@ inline Vec<T, N + M> concat(const Vec<T, N>& v1, const Vec<T, M>& v2) {
 
 template <uint M, typename T, uint N>
 inline Vec<T, M> head(const Vec<T, N>& v) {
+    /*
     static_assert(N > M && M > 1, "Invalid component number");
     Vec<T, M> tmp;
     for (int i = 0; i < M; i++)
         tmp[i] = v.arr[i];
 
     return tmp;
-    //return v.head<M>();
+    */
+    return v.template head<M>();
 }
 
 // Horizontal funcs
@@ -699,14 +686,6 @@ OSL::Vec3 to_osl_vec3(const Vec<T, N>& v) {
     return ret;
 }
 
-inline Vec2f to_vec2(const OSL::Vec2& v) {
-    return Vec2f{v.x, v.y};
-}
-
-inline Vec3f to_vec3(const OSL::Vec3& v) {
-    return Vec3f{v.x, v.y, v.z};
-}
-
 // Stringify
 template <typename T, uint N>
 inline std::string to_string(const Vec<T, N>& v) {
@@ -714,5 +693,32 @@ inline std::string to_string(const Vec<T, N>& v) {
 }
 
 #endif
+
+template <typename T>
+using Vec2 = Vec<T, 2>;
+
+template <typename T>
+using Vec3 = Vec<T, 3>;
+
+template <typename T>
+using Vec4 = Vec<T, 4>;
+
+using Vec2f = Vec2<float>;
+using Vec2d = Vec2<double>;
+using Vec2i = Vec2<int>;
+using Vec3f = Vec3<float>;
+using Vec3d = Vec3<double>;
+using Vec3i = Vec3<int>;
+using Vec4f = Vec4<float>;
+using Vec4d = Vec4<double>;
+using Vec4i = Vec4<int>;
+
+inline Vec2f to_vec2(const OSL::Vec2& v) {
+    return Vec2f{v.x, v.y};
+}
+
+inline Vec3f to_vec3(const OSL::Vec3& v) {
+    return Vec3f{v.x, v.y, v.z};
+}
 
 } // namspace base

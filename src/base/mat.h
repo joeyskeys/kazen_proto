@@ -16,22 +16,6 @@ namespace base
 template <typename T, size_t N>
 using Mat = enoki::Matrix<T, N>;
 
-template <typename T>
-using Mat2 = enoki::Matrix<T, 2>;
-
-template <typename T>
-using Mat3 = enoki::Matrix<T, 3>;
-
-template <typename T>
-using Mat4 = enoki::Matrix<T, 4>;
-
-using Mat2f = Mat2<float>;
-using Mat2d = Mat2<double>;
-using Mat3f = Mat3<float>;
-using Mat3d = Mat3<double>;
-using Mat4f = Mat4<float>;
-using Mat4d = Mat4<double>;
-
 template <typename T, size_t N>
 inline Mat<T, N> identity() {
     return enoki::identity<Mat<T, N>>(N);
@@ -85,6 +69,16 @@ OSL::Matrix44 to_osl_mat4(const Mat4<T>& m) {
             ret[i][j] = m[j][i];
     return ret;
 }
+
+#elif defined USE_EIGEN
+
+template <typename T, int N>
+class Mat : public Eigen::Matrix<T, N, N> {
+public:
+    using Scalar = T;
+    using Base = Eigen::Matrix<T, N, N>;
+    static constexpr int Size = N;
+};
 
 #else
 
@@ -372,22 +366,6 @@ public:
     std::array<T, N * N> arr;
 };
 
-template <typename T>
-using Mat2 = Mat<T, 2>;
-
-template <typename T>
-using Mat3 = Mat<T, 3>;
-
-template <typename T>
-using Mat4 = Mat<T, 4>;
-
-using Mat2f = Mat2<float>;
-using Mat2d = Mat2<double>;
-using Mat3f = Mat3<float>;
-using Mat3d = Mat3<double>;
-using Mat4f = Mat4<float>;
-using Mat4d = Mat4<double>;
-
 template <typename T, uint N>
 inline Mat<T, N> identity() {
     return Mat<T, N>::identity();
@@ -431,5 +409,21 @@ OSL::Matrix44 to_osl_mat4(const Mat4<T>& m) {
 }
 
 #endif
+
+template <typename T>
+using Mat2 = Mat<T, 2>;
+
+template <typename T>
+using Mat3 = Mat<T, 3>;
+
+template <typename T>
+using Mat4 = Mat<T, 4>;
+
+using Mat2f = Mat2<float>;
+using Mat2d = Mat2<double>;
+using Mat3f = Mat3<float>;
+using Mat3d = Mat3<double>;
+using Mat4f = Mat4<float>;
+using Mat4d = Mat4<double>;
 
 }

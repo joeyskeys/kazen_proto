@@ -4,7 +4,15 @@
 #cmakedefine USE_EIGEN
 
 #ifdef USE_ENOKI
+
 #include <enoki/array.h>
 #include <enoki/matrix.h>
 #include <enoki/transform.h>
+
+#elif defined USE_EIGEN
+
+#include <Eigen/Core>
+
+#else
+
 #endif
