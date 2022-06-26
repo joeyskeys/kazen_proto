@@ -166,6 +166,120 @@ public:
     }
 };
 
+// Construct funcs
+template <typename T, int N>
+inline Vec<T, N + 1> concat(const Vec<T, N>& v, const typename Vec<T, N>::Scalar& s) {
+    Vec<T, N + 1> ret;
+    ret << v, s;
+    return ret;
+}
+
+template <typename T, int N>
+inline Vec<T, N + M> concat(const Vec<T, N>& v1, const Vec<T, M>& v2) {
+    Vec<T, N + M> ret;
+    ret << v1, v2;
+    return ret;
+}
+
+template <int M, typename T, int N>
+inline Vec<T, M> head(const Vec<T, N>& v) {
+    static_cast(N > M);
+    return v.head<M>();
+}
+
+// Horizontal funcs
+template <typename T, int N>
+inline T max_component(const Vec<T, N>& v) {
+    return v.maxCoeff();
+}
+
+template <typename T, int N>
+inline T min_component(const Vec<T, N>& v) {
+    return v.minCoeff();
+}
+
+template <typename T, int N>
+inline T sum(const Vec<T, N>& v) {
+    return v.sum();
+}
+
+template <typename T, int N>
+inline T length(const Vec<T, N>& v) {
+    return v.norm();
+}
+
+template <typename T, int N>
+inline T length_squared(const Vec<T, N>& v) {
+    return v.squaredNorm();
+}
+
+// Dot & cross
+template <typename T, int N>
+inline T dot(const Vec<T, N>& v1, const Vec<T, N>& v2) {
+    return v1.dot(v2);
+}
+
+template <typename T, int N>
+inline Vec<T, N> cross(const Vec<T, N>& v1, const Vec<T, N>& v2) {
+    return v1.cross(v2);
+}
+
+// Normalize
+template <typename T, int N>
+inline Vec<T, N> normalize(const Vec<T, N>& v) {
+    return v.normalized();
+}
+
+// Misc
+template <typename T, int N>
+inline Vec<T, N> abs(const Vec<T, N>& v) {
+    return v.abs();
+}
+
+// Comparison
+template <typename T, int N>
+inline bool is_zero(const Vec<T, N>& v, const T& epsilon=1e-5) {
+    return v.isZero(epsilon);
+}
+
+template <typename T, int N>
+inline Vec<T, N> vec_min(const Vec<T, N>& a, const Vec<T, N>& b) {
+    return a.cwiseMin(b);
+}
+
+template <typename T, int N>
+inline Vec<T, N> vec_max(const Vec<T, N>& a, const Vec<T, N>& b) {
+    return a.cwiseMax(b);
+}
+
+// Type conversion
+template <typename T, int N>
+OSL::Vec2 to_osl_vec2(const Vec<T, N>& v) {
+    OSL::Vec2 ret;
+    ret.x = v(0, 0);
+    ret.y = v(1, 0);
+    return ret;
+}
+
+template <typename T, int N>
+OSL::Vec3 to_osl_vec3(const Vec<T, N>& v) {
+    static_assert(N > 2);
+    OSL::Vec3 ret;
+    ret.x = v(0, 0);
+    ret.y = v(1, 0);
+    ret.z = v(2, 0);
+    return ret;
+}
+
+// Stringify
+template <typename T, int N>
+std::string to_string(const Vec<T, N>& v) {
+    std::string ret = std::to_string(v(0, 0));
+    for (int i = 0; i < N; i++)
+        ret += " " + std::to_string(v(0, ));
+    return ret;
+}
+
 #else
 
 template <typename T, uint N>
