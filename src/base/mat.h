@@ -78,7 +78,71 @@ public:
     using Scalar = T;
     using Base = Eigen::Matrix<T, N, N>;
     static constexpr int Size = N;
+
+    template <typename ...Ts>
+    Mat(Ts... args)
+        : Eigen::Matrix<T, N, N>(args...)
+    {
+        static_assert(
+            (sizeof...(Ts) == N * N && (true && ... && std::is_arithmetic_v<Ts>)) ||
+            (sizeof...(Ts) == N &&
+                ((true && ... && std::is_same_v<Ts, Vec<float, N>>) ||
+                (true && ... && std::is_same_v<Ts, Vec<double, N>>))) ||
+            (sizeof...(Ts) == 1 && 
+                (true && ... && std::is_base_of_v<Ts, Mat<T, N>>)));
+    }
+
+    auto operator [](const uint32_t idx) {
+        return this->col(idx);
+    }
+
+    auto operator [](const uint32_t idx) const {
+        return this->col(idx);
+    }
+
+    Mat<T, N> operator *(const Mat<T, N>& b) const {
+        return *this * b;
+    }
 };
+
+template <typename T, int N>
+inline Mat<T, N> identity() {
+    return Mat<T, N>::Identity(N, N);
+}
+
+template <typename T, int N>
+inline Mat<T, N> transpose(const Mat<T, N>& m) {
+    return m.transpose();
+}
+
+template <typename T, int N>
+inline Mat<T, N> inverse(const Mat<T, N>& m) {
+    return m.inverse();
+}
+
+template <typename T, int N>
+inline Mat<T, N> translate(const Vec<T, N - 1>& v) {
+    Eigen::Transform<T, N, Eigen::Affine> t;
+    return t.translate(v).matrix();
+}
+
+const auto translate3f = translate<float, 4>;
+
+template <typename T, int N>
+inline Mat<T, N> rotate(const Vec<T, N - 1>& axis, const T& angle) {
+    Eigen::Transform<T, N, Eigen::Affine> t;
+    return t.rotate(Eigen::AngleAxis(degree_to_radians(angle), axis)).matrix();
+}
+
+const auto rotate3f = rotate<float, 4>;
+
+template <typename T, int N>
+inline Mat<T, N> scale(const Vec<T, N - 1>& v) {
+    Eigen::Transform<T, N, Eigen::Affine> t;
+    return t.scale(v).matrix();
+}
+
+const auto scale3f = scale<float, 4>;
 
 #else
 

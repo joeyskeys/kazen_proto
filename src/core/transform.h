@@ -39,9 +39,8 @@ public:
         }
         */
 
-        Vec4f v{t[0], t[1], t[2], 0};
-        mat[3] += v;
-        mat_inv[3] -= v;
+        mat *= base::translate3f(-t);
+        mat_inv *= base::translate3f(-t);
 
         return *this;
     }

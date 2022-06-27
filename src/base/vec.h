@@ -155,13 +155,23 @@ public:
     Vec(const Eigen::MatrixBase<Derived>& p) : Base(p) {}
 
     template <typename Derived>
-    Vec &operator=(const Eigen::MatrixBase<Derived>& p) {
+    inline Vec &operator =(const Eigen::MatrixBase<Derived>& p) {
         this->Base::operator=(p);
         return *this;
     }
 
-    inline auto operator/=(const Vec<T, N>& v) {
-        *this = this->array().template cast<T>() / v.array().template cast<T>();
+    inline Vec<T, N> operator *(const T s) const {
+        auto ret = *this * s;
+        return ret;
+    }
+
+    inline Vec<T, N> operator *(const Vec<T, N>& v) const {
+        auto ret = this->colwise() * v;
+        return ret;
+    }
+
+    inline Vec<T, N> operator /=(const Vec<T, N>& v) {
+        *this = this->colwise() / v;
         return *this;
     }
 };
@@ -174,7 +184,7 @@ inline Vec<T, N + 1> concat(const Vec<T, N>& v, const typename Vec<T, N>::Scalar
     return ret;
 }
 
-template <typename T, int N>
+template <typename T, int N, int M>
 inline Vec<T, N + M> concat(const Vec<T, N>& v1, const Vec<T, M>& v2) {
     Vec<T, N + M> ret;
     ret << v1, v2;
@@ -183,8 +193,8 @@ inline Vec<T, N + M> concat(const Vec<T, N>& v1, const Vec<T, M>& v2) {
 
 template <int M, typename T, int N>
 inline Vec<T, M> head(const Vec<T, N>& v) {
-    static_cast(N > M);
-    return v.head<M>();
+    static_assert(N > M && M > 1, "Invalid component number");
+    return v.template head<M>();
 }
 
 // Horizontal funcs
@@ -233,7 +243,7 @@ inline Vec<T, N> normalize(const Vec<T, N>& v) {
 // Misc
 template <typename T, int N>
 inline Vec<T, N> abs(const Vec<T, N>& v) {
-    return v.abs();
+    return v.cwiseAbs();
 }
 
 // Comparison
@@ -276,7 +286,7 @@ template <typename T, int N>
 std::string to_string(const Vec<T, N>& v) {
     std::string ret = std::to_string(v(0, 0));
     for (int i = 0; i < N; i++)
-        ret += " " + std::to_string(v(0, ));
+        ret += " " + std::to_string(v(0, i));
     return ret;
 }
 

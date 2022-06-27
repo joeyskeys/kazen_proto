@@ -127,7 +127,7 @@ public:
         verts[0] = Vec3f(0, 0, 0);
         verts[1] = Vec3f(1, 0, 0);
         verts[2] = Vec3f(0, 0, -1);
-        normal = normalize(cross(verts[1] - verts[0], verts[2] - verts[0]));
+        normal = base::normalize(base::cross(verts[1] - verts[0], verts[2] - verts[0]));
     }
 
     Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c, const std::string m="", bool is_l=false)
@@ -136,7 +136,7 @@ public:
         verts[0] = a;
         verts[1] = b;
         verts[2] = c;
-        normal = normalize(cross(verts[1] - verts[0], verts[2] - verts[0]));
+        normal = base::normalize(base::cross(verts[1] - verts[0], verts[2] - verts[0]));
     }
 
     bool intersect(const Ray& r, Intersection& isect) const override;

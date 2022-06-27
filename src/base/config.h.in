@@ -12,6 +12,19 @@
 #elif defined USE_EIGEN
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
+
+#include <boost/math/constants/constants.hpp>
+
+namespace constants = boost::math::constants;
+
+auto degree_to_radians = [](float d) {
+    return d / 180.f * constants::pi<float>();
+};
+
+auto radians_to_degree = [](float r) {
+    return r / constants::pi<float>() * 180.f;
+};
 
 #else
 

@@ -64,14 +64,14 @@ public:
         */
         
         auto aspect = static_cast<float>(film->width) / static_cast<float>(film->height);
-        auto z_axis = normalize(position - lookat);
-        auto x_axis = normalize(cross(up, z_axis));
-        auto y_axis = cross(z_axis, x_axis);
+        auto z_axis = base::normalize(position - lookat);
+        auto x_axis = base::normalize(base::cross(up, z_axis));
+        auto y_axis = base::cross(z_axis, x_axis);
         camera_to_world = Mat4f{
-            concat(x_axis, 0.f),
-            concat(y_axis, 0.f),
-            concat(z_axis, 0.f),
-            concat(position, 1.f)
+            base::concat(x_axis, 0.f),
+            base::concat(y_axis, 0.f),
+            base::concat(z_axis, 0.f),
+            base::concat(position, 1.f)
         };
 
         float recip = 1.f / (far_plane - near_plane);

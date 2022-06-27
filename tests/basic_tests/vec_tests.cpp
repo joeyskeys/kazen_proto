@@ -22,7 +22,7 @@ TEST_CASE("Vector operations", "[single-file]") {
     REQUIRE(v4 == v1);
 
     Vec3f v5{2, 2, 0};
-    auto v6 = v3 * 2;
+    auto v6 = v3 * 2.f;
     REQUIRE(v5 == v6);
     v6 *= 2;
     Vec3f v7{4, 4, 0};
