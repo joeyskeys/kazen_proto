@@ -79,30 +79,65 @@ public:
     using Base = Eigen::Matrix<T, N, N>;
     static constexpr int Size = N;
 
-    template <typename ...Ts>
-    Mat(Ts... args)
-        : Eigen::Matrix<T, N, N>(args...)
+    Mat() {
+        *this = Mat<T, N>::Identity(N, N);
+    }
+
+    template <typename ...Ts, typename = std::enable_if_t<
+        (sizeof...(Ts) == N * N && (... && std::is_arithmetic_v<Ts>))>>
+    Mat(Ts... args) {
+        *this << ((args), ...);
+    }
+
+    template <typename Derived>
+    Mat(const Eigen::MatrixBase<Derived>& v1,
+        const Eigen::MatrixBase<Derived>& v2)
     {
-        static_assert(
-            (sizeof...(Ts) == N * N && (true && ... && std::is_arithmetic_v<Ts>)) ||
-            (sizeof...(Ts) == N &&
-                ((true && ... && std::is_same_v<Ts, Vec<float, N>>) ||
-                (true && ... && std::is_same_v<Ts, Vec<double, N>>))) ||
-            (sizeof...(Ts) == 1 && 
-                (true && ... && std::is_base_of_v<Ts, Mat<T, N>>)));
+        static_assert(N == 2);
+        *this << v1, v2;
     }
 
-    auto operator [](const uint32_t idx) {
+    template <typename Derived>
+    Mat(const Eigen::MatrixBase<Derived>& v1,
+        const Eigen::MatrixBase<Derived>& v2,
+        const Eigen::MatrixBase<Derived>& v3)
+    {
+        static_assert(N == 3);
+        *this << v1, v2, v3;
+    }
+
+    template <typename Derived>
+    Mat(const Eigen::MatrixBase<Derived>& v1,
+        const Eigen::MatrixBase<Derived>& v2,
+        const Eigen::MatrixBase<Derived>& v3,
+        const Eigen::MatrixBase<Derived>& v4)
+    {
+        static_assert(N == 4);
+        *this << v1, v2, v3, v4;
+    }
+
+    template <typename Derived>
+    Mat(const Eigen::MatrixBase<Derived>& p) : Base(p) {}
+
+    template <typename Derived>
+    inline Mat &operator =(const Eigen::MatrixBase<Derived>& p) {
+        this->Base::operator=(p);
+        return *this;
+    }
+
+    Vec<T, N> operator [](const uint32_t idx) {
         return this->col(idx);
     }
 
-    auto operator [](const uint32_t idx) const {
+    const Vec<T, N> operator [](const uint32_t idx) const {
         return this->col(idx);
     }
 
+    /*
     Mat<T, N> operator *(const Mat<T, N>& b) const {
         return *this * b;
     }
+    */
 };
 
 template <typename T, int N>
@@ -121,7 +156,9 @@ inline Mat<T, N> inverse(const Mat<T, N>& m) {
 }
 
 template <typename T, int N>
+//template <typename Derived>
 inline Mat<T, N> translate(const Vec<T, N - 1>& v) {
+//inline auto translate(const Eigen::MatrixBase<Derived>& v)
     Eigen::Transform<T, N, Eigen::Affine> t;
     return t.translate(v).matrix();
 }

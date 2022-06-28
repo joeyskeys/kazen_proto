@@ -19,7 +19,7 @@ Ray Camera::generate_ray(uint x, uint y) {
         (static_cast<float>(x) + randomf()) / film->width,
         (static_cast<float>(y) + randomf()) / film->height,
         0.f, 1.f));
-    auto d = concat(base::normalize(near_p), 0.f);
+    auto d = base::concat(base::normalize(near_p), 0.f);
     float inv_z = 1.f / d.z();
 
     return Ray(base::head<3>(camera_to_world * Vec4f{0.f, 0.f, 0.f, 1.f}), base::head<3>(camera_to_world * d));

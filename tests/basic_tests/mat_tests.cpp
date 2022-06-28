@@ -39,7 +39,7 @@ TEST_CASE("Matrix multiplication", "multiplication") {
         5, 7, 3,
         8, 1, 0
     };
-    auto m3 = m1 * m2;
+    Mat3f m3 = m1 * m2;
     REQUIRE(m3[0] == Vec3f{41, 91, 79});
 
     Vec3f v1 = {1, 2, 3};

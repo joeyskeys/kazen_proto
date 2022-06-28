@@ -41,13 +41,13 @@ public:
 
         mat *= base::translate3f(-t);
         mat_inv *= base::translate3f(-t);
-
         return *this;
     }
 
     //void translate(const T& x, const T& y, const T& z);
 
     Transform& rotate(const Vec3f& axis, const float& angle) {
+        /*
         auto a = base::normalize(axis);
         auto angle_in_radian = to_radian<float>(angle);
         auto sin_theta = std::sin(angle_in_radian);
@@ -76,6 +76,11 @@ public:
         mat_inv = rot_inv * mat_inv;
 
         return *this;
+        */
+
+        mat *= base::rotate3f(axis, angle);
+        mat_inv *= base::rotate3f(axis, -angle);
+        return *this;
     }
 
     inline Transform& scale(const Vec3f& s) {
@@ -86,14 +91,13 @@ public:
         }
         */
         mat *= base::scale3f(s);
-        mat *= base::scale3f(1 / s);
-        
+        mat_inv *= base::scale3f(1 / s);
         return *this;
     }
 
     inline Vec3f apply(const Vec3f& v, bool is_vector=false) const {
         //return (mat * Vec4f(v, is_vector ? 0.f : 1.f)).reduct<3>();
-        return head<3>((mat * concat(v, is_vector ? 0.f : 1.f)));
+        return base::head<3>((mat * concat(v, is_vector ? 0.f : 1.f)));
     }
 
     inline Vec4f apply(const Vec4f& v) const {
@@ -101,7 +105,7 @@ public:
     }
 
     inline Vec3f apply_normal(const Vec3f& v) const {
-        return head<3>(transpose(mat_inv) * concat(v, 0.f));
+        return base::head<3>(transpose(mat_inv) * concat(v, 0.f));
     }
 
     Intersection apply(const Intersection& isect) const {

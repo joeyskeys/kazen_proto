@@ -13,7 +13,7 @@ public:
     virtual bool intersect(const Ray& r, float& t) const = 0;
 
     inline bool occluded(const Vec3f& p1, const Vec3f& p2) const {
-        auto vec_p1p2 = normalize(p2 - p1);
+        auto vec_p1p2 = base::normalize(p2 - p1);
         Ray r(p1 + vec_p1p2 * 0.00001f, vec_p1p2);
         float ray_t;
 

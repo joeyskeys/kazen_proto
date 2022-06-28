@@ -165,36 +165,55 @@ public:
         return ret;
     }
 
-    inline Vec<T, N> operator *(const Vec<T, N>& v) const {
-        auto ret = this->colwise() * v;
+    template <typename Derived>
+    inline Vec<T, N> operator *(const Eigen::MatrixBase<Derived>& v) const {
+        auto ret = this->colwise() * v.array();
         return ret;
     }
 
-    inline Vec<T, N> operator /=(const Vec<T, N>& v) {
+    template <typename Derived>
+    inline Vec<T, N> operator /=(const Eigen::MatrixBase<Derived>& v) {
         *this = this->colwise() / v;
         return *this;
     }
 };
 
+// Checkout this page for information for the signature of following functions:
+// https://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html#:~:text=Eigen's%20use%20of%20expression%20templates,be%20passed%20to%20the%20function.
+
+// Operators
+template <typename S, typename Derived, typename = std::enable_if_t<std::is_arithmetic_v<S>>>
+auto operator /(const S s, const Eigen::MatrixBase<Derived>& rhs) {
+    return rhs.inverse() * static_cast<typename Eigen::MatrixBase<Derived>::Scalar>(s);
+}
+
+/*
+template <typename Derived1, typename Derived2>
+bool operator ==(const Eigen::MatrixBase<Derived1>& v1, const Eigen::MatrixBase<Derived2>& v2) {
+    return (v1 - v2).abs().isZero();
+}
+*/
+
 // Construct funcs
-template <typename T, int N>
-inline Vec<T, N + 1> concat(const Vec<T, N>& v, const typename Vec<T, N>::Scalar& s) {
-    Vec<T, N + 1> ret;
+template <typename Derived>
+inline auto concat(const Eigen::MatrixBase<Derived>& v, const typename Eigen::MatrixBase<Derived>::Scalar& s) {
+    Eigen::Matrix<typename Eigen::MatrixBase<Derived>::Scalar, Eigen::Dynamic, 1> ret;
+    ret.resize(v.rows() + 1, 1);
     ret << v, s;
     return ret;
 }
 
-template <typename T, int N, int M>
-inline Vec<T, N + M> concat(const Vec<T, N>& v1, const Vec<T, M>& v2) {
-    Vec<T, N + M> ret;
+template <typename Derived1, typename Derived2>
+inline auto concat(const Eigen::MatrixBase<Derived1>& v1, const Eigen::MatrixBase<Derived2>& v2) {
+    Eigen::Matrix<typename Eigen::MatrixBase<Derived1>::Scalar, Eigen::Dynamic, 1> ret;
+    ret.resize(v1.rows() + v2.rows(), 1);
     ret << v1, v2;
     return ret;
 }
 
-template <int M, typename T, int N>
-inline Vec<T, M> head(const Vec<T, N>& v) {
-    static_assert(N > M && M > 1, "Invalid component number");
-    return v.template head<M>();
+template <int M, typename Derived>
+inline auto head(const Eigen::MatrixBase<Derived>& v) {
+    return v.head(M);
 }
 
 // Horizontal funcs
@@ -213,30 +232,30 @@ inline T sum(const Vec<T, N>& v) {
     return v.sum();
 }
 
-template <typename T, int N>
-inline T length(const Vec<T, N>& v) {
+template <typename Derived>
+inline Eigen::MatrixBase<Derived>::Scalar length(const Eigen::MatrixBase<Derived>& v) {
     return v.norm();
 }
 
-template <typename T, int N>
-inline T length_squared(const Vec<T, N>& v) {
+template <typename Derived>
+inline Eigen::MatrixBase<Derived>::Scalar length_squared(const Eigen::MatrixBase<Derived>& v) {
     return v.squaredNorm();
 }
 
 // Dot & cross
-template <typename T, int N>
-inline T dot(const Vec<T, N>& v1, const Vec<T, N>& v2) {
+template <typename Derived>
+inline auto dot(const Eigen::MatrixBase<Derived>& v1, const Eigen::MatrixBase<Derived>& v2) {
     return v1.dot(v2);
 }
 
-template <typename T, int N>
-inline Vec<T, N> cross(const Vec<T, N>& v1, const Vec<T, N>& v2) {
+template <typename Derived>
+inline auto cross(const Eigen::MatrixBase<Derived>& v1, const Eigen::MatrixBase<Derived>& v2) {
     return v1.cross(v2);
 }
 
 // Normalize
-template <typename T, int N>
-inline Vec<T, N> normalize(const Vec<T, N>& v) {
+template <typename Derived>
+inline auto normalize(const Eigen::MatrixBase<Derived>& v) {
     return v.normalized();
 }
 
