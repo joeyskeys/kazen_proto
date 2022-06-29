@@ -18,11 +18,11 @@
 
 namespace constants = boost::math::constants;
 
-auto degree_to_radians = [](float d) {
+inline auto degree_to_radians = [](float d) {
     return d / 180.f * constants::pi<float>();
 };
 
-auto radians_to_degree = [](float r) {
+inline auto radians_to_degree = [](float r) {
     return r / constants::pi<float>() * 180.f;
 };
 

@@ -189,8 +189,8 @@ public:
     // cannot pass compilation...
     // So be very explicit about vector operations here
     inline Vec<T, N> operator *(const T s) const {
-        auto ret = *this * s;
-        return ret;
+        auto ret = this->array() * s;
+        return ret.matrix();
     }
 
     template <typename Derived>
