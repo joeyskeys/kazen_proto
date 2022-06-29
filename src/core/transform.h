@@ -91,7 +91,7 @@ public:
         }
         */
         mat *= base::scale3f(s);
-        mat_inv *= base::scale3f(1 / s);
+        mat_inv *= base::scale3f(1.f / s);
         return *this;
     }
 
@@ -100,9 +100,11 @@ public:
         return base::head<3>((mat * concat(v, is_vector ? 0.f : 1.f)));
     }
 
+    /*
     inline Vec4f apply(const Vec4f& v) const {
         return mat * v;
     }
+    */
 
     inline Vec3f apply_normal(const Vec3f& v) const {
         return base::head<3>(transpose(mat_inv) * concat(v, 0.f));

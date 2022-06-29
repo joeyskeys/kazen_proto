@@ -62,7 +62,7 @@ OSL::Matrix33 to_osl_mat3(const Mat<T, N>& m) {
 }
 
 template <typename T>
-OSL::Matrix44 to_osl_mat4(const Mat4<T>& m) {
+OSL::Matrix44 to_osl_mat4(const Mat<T, 4>& m) {
     OSL::Matrix44 ret;
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
@@ -125,8 +125,8 @@ public:
         return *this;
     }
 
-    Vec<T, N> operator [](const uint32_t idx) {
-        return this->col(idx);
+    auto operator [](const uint32_t idx) {
+        return Eigen::Ref<Eigen::Matrix<T, N, 1>>(this->col(idx));
     }
 
     const Vec<T, N> operator [](const uint32_t idx) const {
@@ -156,30 +156,52 @@ inline Mat<T, N> inverse(const Mat<T, N>& m) {
 }
 
 template <typename T, int N>
-//template <typename Derived>
-inline Mat<T, N> translate(const Vec<T, N - 1>& v) {
-//inline auto translate(const Eigen::MatrixBase<Derived>& v)
-    Eigen::Transform<T, N, Eigen::Affine> t;
-    return t.translate(v).matrix();
+inline Mat<T, N> translate(const Eigen::Matrix<T, N - 1, 1>& v) {
+    Eigen::Transform<T, N - 1, Eigen::Affine> t;
+    t.pretranslate(v);
+    return t.matrix();
 }
 
 const auto translate3f = translate<float, 4>;
 
 template <typename T, int N>
 inline Mat<T, N> rotate(const Vec<T, N - 1>& axis, const T& angle) {
-    Eigen::Transform<T, N, Eigen::Affine> t;
-    return t.rotate(Eigen::AngleAxis(degree_to_radians(angle), axis)).matrix();
+    Eigen::Transform<T, N - 1, Eigen::Affine> t;
+    t.rotate(Eigen::AngleAxis(degree_to_radians(angle), axis));
+    Mat<T, N> ret = Eigen::Matrix<T, N, N>::Identity();
+    ret.block(0, 0, N - 1, N - 1) = t.matrix();
+    return ret;
 }
 
 const auto rotate3f = rotate<float, 4>;
 
 template <typename T, int N>
 inline Mat<T, N> scale(const Vec<T, N - 1>& v) {
-    Eigen::Transform<T, N, Eigen::Affine> t;
+    Eigen::Transform<T, N - 1, Eigen::Affine> t;
     return t.scale(v).matrix();
 }
 
 const auto scale3f = scale<float, 4>;
+
+// Type conversion
+template <typename T, int N>
+OSL::Matrix33 to_osl_mat3(const Mat<T, N>& m) {
+    OSL::Matrix33 ret;
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+            ret[i][j] = m(j, i);
+    return ret;
+}
+
+template <typename T>
+OSL::Matrix44 to_osl_mat4(const Mat<T, 4>& m) {
+    OSL::Matrix44 ret;
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            ret[i][j] = m(j, i);
+
+    return ret;
+}
 
 #else
 
@@ -505,7 +527,7 @@ inline Mat<T, N> scale(const Vec<T, N - 1>& v) {
 const auto scale3f = scale<float, 4>;
 
 template <typename T>
-OSL::Matrix44 to_osl_mat4(const Mat4<T>& m) {
+OSL::Matrix44 to_osl_mat4(const Mat<T, 4>& m) {
     return static_cast<OSL::Matrix44>(m);
 }
 

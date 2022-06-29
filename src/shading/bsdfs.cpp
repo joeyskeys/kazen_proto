@@ -166,7 +166,7 @@ float MicrofacetAniso::eval(const void* data, const OSL::ShaderGlobals& sg, BSDF
     if (cos_theta_i <= 0 || cos_theta_o <= 0)
         return 0;
 
-    auto wh = normalize(wo + wi);
+    auto wh = base::normalize(wo + wi);
     auto D = BeckmannPDF(wh, params->xalpha);
     //auto Jh = 1. / (4. * dot(wh, wo));
     auto F = fresnel(base::dot(wh, wi), 1, params->eta);

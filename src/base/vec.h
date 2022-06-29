@@ -137,6 +137,17 @@ std::string to_string(const Vec<T, N>& v) {
 
 #elif defined USE_EIGEN
 
+// The problem of using Eigen is that, in order to provide consistent constructor
+// we have to extend it by inheriting it.
+// But creating new class is hard to play nice with the eigen types even if you
+// provide proper copy ctor and copy assign coz if you use the inherited operators
+// it return eigen types.
+// If you use auto when operating on your own class object then at some point you
+// fallback to the defaut eigen types and there're some types just don't get alone
+// well...
+// I choose to overload all possible operators to do type conversion when using my
+// own class object which is a lot of work, hope it will worth it..
+
 template <typename T, int N>
 class Vec : public Eigen::Matrix<T, N, 1> {
 public:
@@ -148,7 +159,7 @@ public:
         Base::setConstant(v);
     }
 
-    template <typename ...Ts, typename = std::enable_if_t<(... && std::is_arithmetic_v<Ts>)>>
+    template <typename ...Ts, typename = std::enable_if_t<sizeof...(Ts) == N && (... && std::is_arithmetic_v<Ts>)>>
     Vec(Ts... args) : Base(static_cast<T>(args)...) {}
 
     template <typename Derived>
@@ -160,6 +171,23 @@ public:
         return *this;
     }
 
+    auto& operator [](const uint32_t idx) {
+        return this->coeffRef(idx, 0);
+    }
+
+    auto operator [](const uint32_t idx) const {
+        return this->coeff(idx, 0);
+    }
+
+    // Operator override here is kinda weird..
+    // Inside eigen Vector and Matrix are the same type or category, the inherited
+    // operators performs the standard Matrix&Vector operation.
+    // But in this project, multiplications between vectors are cwise operations in
+    // eigen but matrix multiplications stays the same.
+    // Notice the comments above, use of auto will unconciously bring in the eigen
+    // types and coz multiplications between vectors work in the wrong way or just
+    // cannot pass compilation...
+    // So be very explicit about vector operations here
     inline Vec<T, N> operator *(const T s) const {
         auto ret = *this * s;
         return ret;
@@ -167,13 +195,23 @@ public:
 
     template <typename Derived>
     inline Vec<T, N> operator *(const Eigen::MatrixBase<Derived>& v) const {
-        auto ret = this->colwise() * v.array();
-        return ret;
+        auto ret = this->array() * v.array();
+        return ret.matrix();
+    }
+
+    inline Vec<T, N>& operator *=(const Vec<T, N>& v) {
+        *this = (this->array() * v.array()).matrix();
+        return *this;
+    }
+
+    template <typename S, typename = std::enable_if_t<std::is_arithmetic_v<S>>>
+    inline Vec<T, N> operator /=(const S s) {
+        return Base::operator /=(static_cast<Base::Scalar>(s));
     }
 
     template <typename Derived>
     inline Vec<T, N> operator /=(const Eigen::MatrixBase<Derived>& v) {
-        *this = this->colwise() / v;
+        *this = (this->array() / v.array()).matrix();
         return *this;
     }
 };
@@ -182,31 +220,28 @@ public:
 // https://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html#:~:text=Eigen's%20use%20of%20expression%20templates,be%20passed%20to%20the%20function.
 
 // Operators
-template <typename S, typename Derived, typename = std::enable_if_t<std::is_arithmetic_v<S>>>
-auto operator /(const S s, const Eigen::MatrixBase<Derived>& rhs) {
-    return rhs.inverse() * static_cast<typename Eigen::MatrixBase<Derived>::Scalar>(s);
+template <typename T, typename S, int N, typename = std::enable_if_t<std::is_arithmetic_v<S>>>
+Vec<T, N> operator *(const S s, const Vec<T, N>& v) {
+    return v * static_cast<T>(s);
 }
 
-/*
-template <typename Derived1, typename Derived2>
-bool operator ==(const Eigen::MatrixBase<Derived1>& v1, const Eigen::MatrixBase<Derived2>& v2) {
-    return (v1 - v2).abs().isZero();
+template <typename S, typename Derived, typename = std::enable_if_t<std::is_arithmetic_v<S>>>
+Vec<typename Eigen::MatrixBase<Derived>::Scalar, Eigen::MatrixBase<Derived>::RowsAtCompileTime> operator /(const S s, const Eigen::MatrixBase<Derived>& rhs) {
+    return rhs.cwiseInverse() * static_cast<typename Eigen::MatrixBase<Derived>::Scalar>(s);
 }
-*/
 
 // Construct funcs
 template <typename Derived>
 inline auto concat(const Eigen::MatrixBase<Derived>& v, const typename Eigen::MatrixBase<Derived>::Scalar& s) {
-    Eigen::Matrix<typename Eigen::MatrixBase<Derived>::Scalar, Eigen::Dynamic, 1> ret;
-    ret.resize(v.rows() + 1, 1);
+    Eigen::Matrix<typename Eigen::MatrixBase<Derived>::Scalar, Eigen::MatrixBase<Derived>::RowsAtCompileTime + 1, 1> ret;
     ret << v, s;
     return ret;
 }
 
 template <typename Derived1, typename Derived2>
 inline auto concat(const Eigen::MatrixBase<Derived1>& v1, const Eigen::MatrixBase<Derived2>& v2) {
-    Eigen::Matrix<typename Eigen::MatrixBase<Derived1>::Scalar, Eigen::Dynamic, 1> ret;
-    ret.resize(v1.rows() + v2.rows(), 1);
+    Eigen::Matrix<typename Eigen::MatrixBase<Derived1>::Scalar, Eigen::MatrixBase<Derived1>::RowsAtCompileTime +
+        Eigen::MatrixBase<Derived2>::RowsAtCompileTime, 1> ret;
     ret << v1, v2;
     return ret;
 }
@@ -243,8 +278,8 @@ inline Eigen::MatrixBase<Derived>::Scalar length_squared(const Eigen::MatrixBase
 }
 
 // Dot & cross
-template <typename Derived>
-inline auto dot(const Eigen::MatrixBase<Derived>& v1, const Eigen::MatrixBase<Derived>& v2) {
+template <typename Derived1, typename Derived2>
+inline auto dot(const Eigen::MatrixBase<Derived1>& v1, const Eigen::MatrixBase<Derived2>& v2) {
     return v1.dot(v2);
 }
 
@@ -266,8 +301,10 @@ inline Vec<T, N> abs(const Vec<T, N>& v) {
 }
 
 // Comparison
-template <typename T, int N>
-inline bool is_zero(const Vec<T, N>& v, const T& epsilon=1e-5) {
+template <typename Derived>
+inline bool is_zero(const Eigen::MatrixBase<Derived>& v,
+    const typename Eigen::MatrixBase<Derived>::Scalar& epsilon=1e-5)
+{
     return v.isZero(epsilon);
 }
 
