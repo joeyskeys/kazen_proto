@@ -157,6 +157,7 @@ inline Mat<T, N> inverse(const Mat<T, N>& m) {
 template <typename T, int N>
 inline Mat<T, N> translate(const Eigen::Matrix<T, N - 1, 1>& v) {
     Eigen::Transform<T, N - 1, Eigen::Affine> t;
+    t.setIdentity();
     t.pretranslate(v);
     return t.matrix();
 }
@@ -166,6 +167,7 @@ const auto translate3f = translate<float, 4>;
 template <typename T, int N>
 inline Mat<T, N> rotate(const Vec<T, N - 1>& axis, const T& angle) {
     Eigen::Transform<T, N - 1, Eigen::Affine> t;
+    t.setIdentity();
     t.rotate(Eigen::AngleAxis(degree_to_radians(angle), axis));
     return t.matrix();
 }
@@ -175,9 +177,11 @@ const auto rotate3f = rotate<float, 4>;
 template <typename T, int N>
 inline Mat<T, N> scale(const Vec<T, N - 1>& v) {
     Eigen::Transform<T, N - 1, Eigen::Affine> t;
-    Mat<T, N> ret = Eigen::Matrix<T, N, N>::Identity();
-    ret.block(0, 0, N - 1, N - 1) = t.scale(v).matrix();
-    return ret;
+    t.setIdentity();
+    //Mat<T, N> ret = Eigen::Matrix<T, N, N>::Identity();
+    //ret.block(0, 0, N - 1, N - 1) = t.scale(v).matrix();
+    //return ret;
+    return t.scale(v).matrix();
 }
 
 const auto scale3f = scale<float, 4>;
