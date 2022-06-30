@@ -83,11 +83,16 @@ public:
         *this = Mat<T, N>::Identity(N, N);
     }
 
+    template <typename T1, typename ...Ts, typename = std::enable_if_t<
+        (sizeof...(Ts) + 1 == N * N && (... && std::is_arithmetic_v<Ts>))>>
+    Mat(T1 arg1, Ts... args) {
+        Eigen::CommaInitializer comma_initializer(*this, arg1);
+        ((comma_initializer , args), ...);
+    }
+
     template <typename ...Ts, typename = std::enable_if_t<
         (sizeof...(Ts) == N * N && (... && std::is_arithmetic_v<Ts>))>>
-    Mat(Ts... args) {
-        *this << ((args), ...);
-    }
+    Mat(Ts... args) : Base(args...) {}
 
     template <typename Derived>
     Mat(const Eigen::MatrixBase<Derived>& v1,
@@ -132,12 +137,6 @@ public:
     const Vec<T, N> operator [](const uint32_t idx) const {
         return this->col(idx);
     }
-
-    /*
-    Mat<T, N> operator *(const Mat<T, N>& b) const {
-        return *this * b;
-    }
-    */
 };
 
 template <typename T, int N>
