@@ -6,5 +6,5 @@ surface emitter
             float UImin = 0, float UImax = 1 ]]
 )
 {
-    Ci = kp_emitter(0.5);
+    Ci = Cs * kp_emitter(0.5);
 }

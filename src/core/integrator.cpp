@@ -21,7 +21,7 @@ void Integrator::setup(Scene* scene) {
     lights = &scene->lights;
 }
 
-const Light* Integrator::get_random_light(const float& xi, float& pdf) const {
+Light* Integrator::get_random_light(const float& xi, float& pdf) const {
     const auto cnt = lights->size();
     if (cnt == 0)
         return nullptr;
@@ -224,8 +224,10 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) cons
             Li += throughput * Ls;
         }
 
-        float prob = std::min(base::max_component(throughput) * eta * eta, 0.99f);
-        if (randomf() >= prob)
+        //float prob = std::min(base::max_component(throughput) * eta * eta, 0.99f);
+        float prob = 0.98f;
+        auto rand = randomf();
+        if (rand >= prob)
             return Li;
         throughput /= prob;
 
@@ -282,6 +284,13 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
                 return RGBSpectrum(0.f);
 
             auto light_ptr = get_random_light(randomf(), pdf);
+            auto light_shader_ptr = (*shaders)[light_ptr->shader_name];
+            ShadingResult light_ret;
+            shadingsys->execute(*ctx, *light_shader_ptr, sg);
+            process_closure(light_ret, sg.Ci, RGBSpectrum{1}, false);
+            light_ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
+            light_ptr->prepare(light_ret.Le);
+
             Vec3f light_dir;
             auto Ls = light_ptr->sample(its, light_dir, light_pdf, accel_ptr);
 
@@ -290,7 +299,7 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
                 float cos_theta_v = dot(light_dir, its.shading_normal);
                 sample.wo = its.to_local(light_dir);
                 auto f = ret.surface.eval(sg, sample);
-                recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
+                //recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
                 Li += throughput * f * Ls * cos_theta_v / pdf;
             }
         }
