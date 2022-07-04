@@ -137,7 +137,8 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                     case KpMicrofacetID:    status = ret.surface.add_bsdf<KpMicrofacetParams>(KpMicrofacetID, cw, comp->as<KpMicrofacetParams>());
                         break;
 
-                    case KpEmitterID:       status = ret.surface.add_bsdf<KpEmitterParams>(KpEmitterID, cw, comp->as<KpEmitterParams>());
+                    // Weight for emission is different
+                    case KpEmitterID:       status = ret.surface.add_bsdf<KpEmitterParams>(KpEmitterID, RGBSpectrum{1}, comp->as<KpEmitterParams>());
                         break;
                 }
                 //OSL_ASSERT(status && "Invalid closure invoked");
