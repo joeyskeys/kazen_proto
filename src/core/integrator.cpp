@@ -307,11 +307,14 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             is_specular = true;
         }
 
-        float prob = std::min(base::max_component(throughput) * eta * eta, 0.99f);
-        if (randomf() >= prob)
-            return Li;
-        throughput /= prob;
+        if (depth >= 3) {
+            float prob = std::min(base::max_component(throughput) * eta * eta, 0.99f);
+            if (randomf() >= prob)
+                return Li;
+            throughput /= prob;
+        }
 
+        // sampled incorrect bsdf value when hitting light
         throughput *= sampled_f;
         eta *= 0.9;
         ray = Ray(its.P, its.to_world(sample.wo));

@@ -15,7 +15,6 @@ bool ShaderCompiler::compile_buffer(
 {
     OSL::OSLCompiler compiler{};
 
-    std::string buf;
     const bool ok =
         compiler.compile_buffer(
             source_code,
