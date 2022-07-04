@@ -26,6 +26,10 @@ inline auto radians_to_degree = [](float r) {
     return r / constants::pi<float>() * 180.f;
 };
 
-#else
+#endif
 
+#cmakedefine USE_PCG
+
+#ifdef USE_PCG
+#include <pcg32.h>
 #endif

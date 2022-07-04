@@ -15,10 +15,10 @@ int main() {
     scene.recorder.setup();
 
     RecordContext rctx;
-    rctx.pixel_x = 400;
+    rctx.pixel_x = 710;
     rctx.pixel_y = 300;
 
-    auto ray = scene.camera->generate_ray(381, 330);
+    auto ray = scene.camera->generate_ray(710, 330);
     auto radiance = integrator_ptr->Li(ray, rctx);
 
     scene.recorder.output(std::cout);

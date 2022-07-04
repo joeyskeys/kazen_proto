@@ -26,7 +26,8 @@ float Diffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const DiffuseParams*>(data);
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
-    return 1.f;
+    //return 1.f;
+    return constants::one_div_pi<float>();
 }
 
 float Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {

@@ -26,6 +26,8 @@ elseif(${VECTORIZATION} STREQUAL "Eigen")
     message(STATUS "Eigen include dirs : ${EIGEN3_INCLUDE_DIRS}")
 endif()
 
+option(USE_PCG "Whether to use pcg random numbers" OFF)
+
 configure_file(resource/shader/kp_extension.h.in shader/kp_extension.h @ONLY)
 configure_file(src/base/config.h.in include/config.h @ONLY)
 include_directories(${CMAKE_BINARY_DIR}/include)
