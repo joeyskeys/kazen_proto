@@ -35,7 +35,8 @@ float Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
     auto params = reinterpret_cast<const DiffuseParams*>(data);
     sample.wo = sample_hemisphere();
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
-    return 1.f;
+    //return 1.f;
+    return constants::one_div_pi<float>();
 }
 
 float Phong::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
