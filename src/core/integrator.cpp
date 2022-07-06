@@ -396,7 +396,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         shadingsys->execute(*ctx, *shader_ptr, sg);
         ShadingResult ret, light_ret;
         process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
-        ret.surface.compute_pdfs(sg, throughput, depth >= min_depth);
+        ret.surface.compute_pdfs(sg, throughput, false);
 
         float pdf;
         auto light_ptr = get_random_light(randomf(), pdf);
@@ -425,7 +425,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
             //Li += throughput * ret.Le;
         }
 
-        auto sampled_f = ret.surface.sample(sg, bsdf_sample);
+        //auto sampled_f = ret.surface.sample(sg, bsdf_sample);
 
         /* *********************************************
         * 2. Sampling light to get direct light contribution
