@@ -215,7 +215,7 @@ float KpMirror::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSampl
 }
 
 float KpDielectric::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    sample.mode = ScatteringMode::Specular;
+    //sample.mode = ScatteringMode::Specular;
     sample.pdf = 0.f;
     return 0.f;
 }
@@ -224,22 +224,22 @@ float KpDielectric::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFS
     sample.mode = ScatteringMode::Specular;
     sample.pdf = 1.f;
     auto params = reinterpret_cast<const KpDielectricParams*>(data);
-    auto cos_theta_i = cos_theta(base::to_vec3(sg.I));
+    auto cos_theta_i = cos_theta(base::to_vec3(-sg.I));
     auto f = fresnel(cos_theta_i, params->ext_ior, params->int_ior);
 
     auto sp = random3f();
     if (sp.x() < f) {
-        sample.wo = reflect(base::to_vec3(sg.I));
+        sample.wo = reflect(base::to_vec3(-sg.I));
     }
     else {
-        auto n = Vec3f(0.f, 1.f, 0.f);
+        auto n = base::to_vec3(sg.N);
         auto fac = params->int_ior / params->ext_ior;
         if (cos_theta_i < 0.f) {
             fac = params->ext_ior / params->int_ior;
-            n[1] = -1.f;
+            n = -n;
         }
 
-        refract(base::to_vec3(-sg.I), n, fac);
+        sample.wo = refract(base::to_vec3(sg.I), n, fac);
     }
     return 1.f;
 }

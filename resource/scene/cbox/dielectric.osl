@@ -12,5 +12,6 @@ surface dielectric
     float r, t;
     vector rv, tv;
     //fresnel(-I, N, eta, r, t, rv, tv);
-    Ci = Cs * refraction(N, eta);
+    //Ci = Cs * refraction(N, eta);
+    Ci = Cs * kp_dielectric(1.5046, 1.000277);
 }
