@@ -1,7 +1,8 @@
 #include "core/camera.h"
 #include "core/sampling.h"
 
-Ray Camera::generate_ray(uint x, uint y) {
+//Ray Camera::generate_ray(uint x, uint y) {
+Ray Camera::generate_ray(const Vec2f pixel_sample) const {
     // Default to perspective camera for now
     // fov denotes the vertical fov
     /*
@@ -15,10 +16,12 @@ Ray Camera::generate_ray(uint x, uint y) {
     return Ray(position, direction.normalized());
     */
     
+    //Vec3f near_p = base::head<3>(sample_to_camera * Vec4f(
+        //(static_cast<float>(x) + randomf()) / film->width,
+        //(static_cast<float>(y) + randomf()) / film->height,
+        //0.f, 1.f));
     Vec3f near_p = base::head<3>(sample_to_camera * Vec4f(
-        (static_cast<float>(x) + randomf()) / film->width,
-        (static_cast<float>(y) + randomf()) / film->height,
-        0.f, 1.f));
+        pixel_sample[0] / film->width, pixel_sample[1] / film->height, 0.f, 1.f));
     auto d = base::concat(base::normalize(near_p), 0.f);
     float inv_z = 1.f / d.z();
 

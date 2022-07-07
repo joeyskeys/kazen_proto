@@ -2,6 +2,7 @@
 #include <tbb/tbb.h>
 #include <OpenImageIO/argparse.h>
 
+#include "core/sampler.h"
 #include "core/scene.h"
 #include "core/state.h"
 
@@ -63,6 +64,10 @@ int main(int argc, const char **argv) {
 
             auto tile_start = get_time();
             Tile& tile = scene.film->tiles[t];
+
+            Sampler sampler;
+            sampler.seed(tile.origin_x, tile.origin_y);
+            
             auto integrator_ptr = scene.integrator_fac.create(scene.camera.get(), scene.film.get(), &scene.recorder);
             integrator_ptr->setup(&scene);
 
@@ -79,7 +84,8 @@ int main(int argc, const char **argv) {
                         rctx.pixel_x = x;
                         rctx.pixel_y = y;
 
-                        auto ray = scene.camera->generate_ray(x, y);
+                        //auto ray = scene.camera->generate_ray(x, y);
+                        auto ray = scene.camera->generate_ray(Vec2f(x, y) + sampler.random2f());
                         pixel_radiance += integrator_ptr->Li(ray, rctx);
                         if (!base::is_zero(pixel_radiance))
                             hit = true;

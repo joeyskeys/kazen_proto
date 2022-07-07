@@ -87,7 +87,8 @@ public:
             base::scale3f(Vec3f(2.f, -2.f / aspect, 1.f));
     }
 
-    Ray generate_ray(uint x, uint y);
+    //Ray generate_ray(uint x, uint y);
+    Ray generate_ray(const Vec2f pixel_sample) const;
 
     void scale(const Vec3f& s) {
         //horizontal *= s[0];
