@@ -68,7 +68,7 @@ int main(int argc, const char **argv) {
             Sampler sampler;
             sampler.seed(tile.origin_x, tile.origin_y);
             
-            auto integrator_ptr = scene.integrator_fac.create(scene.camera.get(), scene.film.get(), &scene.recorder);
+            auto integrator_ptr = scene.integrator_fac.create(scene.camera.get(), scene.film.get(), &sampler, &scene.recorder);
             integrator_ptr->setup(&scene);
 
             RecordContext rctx;

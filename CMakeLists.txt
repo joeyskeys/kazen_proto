@@ -70,6 +70,9 @@ include_directories(${FMT_INCLUDE_DIRS})
 find_package(embree 3.13.0 REQUIRED)
 include_directories(${EMBREE_INCLUDE_DIRS})
 
+find_package(PCG32 REQUIRED)
+include_directories(${PCG32_INCLUDE_DIRS})
+
 include_directories("./src")
 
 set(BASE_HEADERS
@@ -90,6 +93,7 @@ set(CORE_HEADERS
     src/core/light_path.h
     src/core/material.h
     src/core/ray.h
+    src/core/sampler.h
     src/core/scene.h
     src/core/shape.h
     src/core/spectrum.h
@@ -110,6 +114,7 @@ set(CORE_SOURCES
     src/core/light_path.cpp
     src/core/material.cpp
     src/core/ray.cpp
+    src/core/sampler.cpp
     src/core/scene.cpp
     src/core/shape.cpp
     src/shading/bsdf.cpp

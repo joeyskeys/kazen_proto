@@ -1,11 +1,18 @@
 #pragma once
 
+#include <random>
+
 #include "base/basic_types.h"
 #include "base/vec.h"
 #include "config.h"
 
+using base::Vec2f;
+using base::Vec3f;
+
 class Sampler {
 public:
+    Sampler();
+
     void    seed(uint x, uint y);
     float   randomf();
     Vec2f   random2f();
@@ -16,8 +23,8 @@ private:
 #ifdef USE_PCG
     pcg32 m_random;
 #else
-    std::uniform_real_distribution<double> m_f_dist(0., 1.);
-    std::uniform_int_distribution<> m_i_dist(0);
+    std::uniform_real_distribution<double> m_f_dist;
+    std::uniform_int_distribution<> m_i_dist;
     std::mt19937 m_gen;
 #endif
 };

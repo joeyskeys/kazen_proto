@@ -14,6 +14,7 @@ Integrator::Integrator()
     : accel_ptr(nullptr)
     , camera_ptr(nullptr)
     , film_ptr(nullptr)
+    , sampler_ptr(nullptr)
 {}
 
 void Integrator::setup(Scene* scene) {
@@ -31,9 +32,10 @@ Light* Integrator::get_random_light(const float& xi, float& pdf) const {
     return lights->at(idx).get();
 }
 
-Integrator::Integrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
+Integrator::Integrator(Camera* cam_ptr, Film* flm_ptr, Sampler* spl_ptr, Recorder* rec)
     : camera_ptr(cam_ptr)
     , film_ptr(flm_ptr)
+    , sampler_ptr(spl_ptr)
     , recorder(rec)
 {}
 
@@ -41,8 +43,8 @@ NormalIntegrator::NormalIntegrator()
     : Integrator()
 {}
 
-NormalIntegrator::NormalIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
-    : Integrator(cam_ptr, flm_ptr, rec)
+NormalIntegrator::NormalIntegrator(Camera* cam_ptr, Film* flm_ptr, Sampler* spl_ptr, Recorder* rec)
+    : Integrator(cam_ptr, flm_ptr, spl_ptr, rec)
 {}
 
 RGBSpectrum NormalIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
@@ -61,8 +63,8 @@ AmbientOcclusionIntegrator::AmbientOcclusionIntegrator()
 {}
 
 AmbientOcclusionIntegrator::AmbientOcclusionIntegrator(Camera* cam_ptr,
-    Film* flm_ptr, Recorder* rec)
-    : Integrator(cam_ptr, flm_ptr, rec)
+    Film* flm_ptr, Sampler* spl_ptr, Recorder* rec)
+    : Integrator(cam_ptr, flm_ptr, spl_ptr, rec)
 {}
 
 RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
@@ -96,8 +98,8 @@ WhittedIntegrator::WhittedIntegrator()
     : OSLBasedIntegrator()
 {}
 
-WhittedIntegrator::WhittedIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
-    : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
+WhittedIntegrator::WhittedIntegrator(Camera* cam_ptr, Film* flm_ptr, Sampler* spl_ptr, Recorder* rec)
+    : OSLBasedIntegrator(cam_ptr, flm_ptr, spl_ptr, rec)
 {}
 
 RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
@@ -141,7 +143,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             auto light_cnt = lights->size();
             if (light_cnt == 0)
                 return RGBSpectrum(0.f);
-            int sampled_light_idx = std::min(static_cast<size_t>(randomf() * light_cnt), light_cnt - 1);
+            int sampled_light_idx = std::min(static_cast<size_t>(sampler_ptr->randomf() * light_cnt), light_cnt - 1);
 
             auto light_ptr = lights->at(sampled_light_idx).get();
             Vec3f light_dir;
@@ -161,7 +163,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             lighting_ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
             light_ptr->prepare(lighting_ret.Le);
 
-            auto Ls = light_ptr->eval(isect, lrec.get_light_dir(), random3f()) / lrec.pdf;
+            auto Ls = light_ptr->eval(isect, lrec.get_light_dir(), sampler_ptr->random3f()) / lrec.pdf;
 
             if (!base::is_zero(Ls)) {
                 //float cos_theta_v = dot(light_dir, isect.N);
@@ -175,7 +177,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             break;
         }
         else {
-            if (randomf() < 0.99f) {
+            if (sampler_ptr->randomf() < 0.99f) {
                 throughput *= sampled_f;
                 ray = Ray(isect.P, isect.to_world(sample.wo));
             }
@@ -194,8 +196,8 @@ PathMatsIntegrator::PathMatsIntegrator()
     : OSLBasedIntegrator()
 {}
 
-PathMatsIntegrator::PathMatsIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
-    : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
+PathMatsIntegrator::PathMatsIntegrator(Camera* cam_ptr, Film* flm_ptr, Sampler* spl_ptr, Recorder* rec)
+    : OSLBasedIntegrator(cam_ptr, flm_ptr, spl_ptr, rec)
 {}
 
 RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
@@ -220,13 +222,13 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) cons
 
         if (its.is_light) {
             //Li += throughput * ret.Le;
-            auto Ls = lights->at(its.light_id)->eval(its, -ray.direction, random3f());
+            auto Ls = lights->at(its.light_id)->eval(its, -ray.direction, sampler_ptr->random3f());
             Li += throughput * Ls;
         }
 
         //float prob = std::min(base::max_component(throughput) * eta * eta, 0.99f);
         float prob = 0.98f;
-        auto rand = randomf();
+        auto rand = sampler_ptr->randomf();
         if (rand >= prob)
             return Li;
         throughput /= prob;
@@ -243,8 +245,8 @@ PathEmsIntegrator::PathEmsIntegrator()
     : OSLBasedIntegrator()
 {}
 
-PathEmsIntegrator::PathEmsIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
-    : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
+PathEmsIntegrator::PathEmsIntegrator(Camera* cam_ptr, Film* flm_ptr, Sampler* spl_ptr, Recorder* rec)
+    : OSLBasedIntegrator(cam_ptr, flm_ptr, spl_ptr, rec)
 {}
 
 RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
@@ -274,7 +276,7 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
 
         if (its.is_light) {
             //Li += throughput * ret.Le * is_specular;
-            auto Ls = lights->at(its.light_id)->eval(its, -ray.direction, random3f());
+            auto Ls = lights->at(its.light_id)->eval(its, -ray.direction, sampler_ptr->random3f());
             Li += throughput * Ls * is_specular;
             p.record(EEmission, its, throughput, Li);
         }
@@ -286,7 +288,7 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             if (light_cnt == 0)
                 return RGBSpectrum(0.f);
 
-            auto light_ptr = get_random_light(randomf(), pdf);
+            auto light_ptr = get_random_light(sampler_ptr->randomf(), pdf);
             auto light_shader_ptr = (*shaders)[light_ptr->shader_name];
             ShadingResult light_ret;
             shadingsys->execute(*ctx, *light_shader_ptr, sg);
@@ -312,7 +314,7 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
 
         if (depth >= 3) {
             float prob = std::min(base::max_component(throughput) * eta * eta, 0.99f);
-            if (randomf() >= prob) {
+            if (sampler_ptr->randomf() >= prob) {
                 p.record(ERouletteCut, its, throughput, Li);
                 break;
             }
@@ -340,8 +342,8 @@ PathIntegrator::PathIntegrator()
     : OSLBasedIntegrator()
 {}
 
-PathIntegrator::PathIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
-    : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
+PathIntegrator::PathIntegrator(Camera* cam_ptr, Film* flm_ptr, Sampler* spl_ptr, Recorder* rec)
+    : OSLBasedIntegrator(cam_ptr, flm_ptr, spl_ptr, rec)
 {}
 
 RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
@@ -399,7 +401,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         ret.surface.compute_pdfs(sg, throughput, false);
 
         float pdf;
-        auto light_ptr = get_random_light(randomf(), pdf);
+        auto light_ptr = get_random_light(sampler_ptr->randomf(), pdf);
         auto light_shader = (*shaders)[light_ptr->shader_name];
         if (light_shader == nullptr)
             throw std::runtime_error(fmt::format("Light shader for name : {} does not existj..", light_ptr->shader_name));
@@ -450,7 +452,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         // discard the L_direct & L_indirect on condition.
         if (depth >= min_depth) {
             auto prob = std::min(base::max_component(throughput) * eta * eta, 0.99f);
-            if (prob < randomf()) {
+            if (prob < sampler_ptr->randomf()) {
                 p.record(ERouletteCut, its, throughput, Li);
                 return Li;
             }
@@ -483,125 +485,3 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     
     return Li;
 }
-
-/*
-OldPathIntegrator::OldPathIntegrator()
-    : OSLBasedIntegrator()
-{}
-
-OldPathIntegrator::OldPathIntegrator(Camera* cam_ptr, Film* flm_ptr, Recorder* rec)
-    : OSLBasedIntegrator(cam_ptr, flm_ptr, rec)
-{}
-
-void OldPathIntegrator::setup(Scene* scene) {
-    Integrator::setup(scene);
-    shadingsys = scene->shadingsys.get();
-    shaders = &scene->shaders;
-    thread_info = shadingsys->create_thread_info();
-    ctx = shadingsys->get_context(thread_info);
-}
-
-RGBSpectrum OldPathIntegrator::Li (const Ray& r, const RecordContext& rctx) const {
-    Ray ray(r);
-    Intersection isect;
-
-    RGBSpectrum Li{0}, throughput{1};
-    float eta = 1.f;
-    float direct_weight;
-    float indirect_weight = 1.f;
-    float light_pdf, bsdf_pdf;
-
-    constexpr int min_depth = 3;
-    constexpr int max_depth = 6;
-    RGBSpectrum f{1};
-
-    for (int depth = 0; depth <= max_depth; ++depth) {
-        OSL::ShaderGlobals sg;
-        BSDFSample bsdf_sample;
-
-        if (accel_ptr->intersect(ray, isect)) {
-            KazenRenderServices::globals_from_hit(sg, ray, isect);
-            auto shader_ptr = (*shaders)[isect.shader_name];
-            if (shader_ptr == nullptr)
-                throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", isect.shader_name));
-            shadingsys->execute(*ctx, *shader_ptr, sg);
-            ShadingResult ret;
-            //bool last_bounce = depth == max_depth;
-            process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
-
-            if (isect.is_light && depth > 0) {
-                //light_pdf = 1.f / isect.shape->area();
-                light_pdf = 1.f;
-                indirect_weight = power_heuristic(1, bsdf_pdf, 1, light_pdf);
-                //auto cos_theta_v = dot(-ray.direction, isect.N);
-                auto cos_theta_v = dot(-ray.direction, isect.shading_normal);
-                Li += throughput * ret.Le * f * cos_theta_v * indirect_weight / bsdf_pdf;
-            }
-
-            throughput *= f;
-            if (throughput.is_zero())
-                return Li;
-            eta *= 0.95f;
-
-            // Russian roulette
-            if (depth >= min_depth) {
-                auto prob = std::min(throughput.max_component() * eta * eta, 0.95f);
-                if (prob <= randomf())
-                    break;
-                throughput /= prob;
-            }
-
-            // Intersection with lights
-            if (isect.is_light)
-                Li += throughput * ret.Le;
-
-            // Sampling light to get direct distribution
-            ret.surface.compute_pdfs(sg, throughput, false);
-            int light_sample_range = lights->size();
-
-            // Avoid sampling itself if we've hit a geometry light
-            if (isect.is_light)
-                --light_sample_range;
-
-            if (light_sample_range > 0) {
-                int sampled_light_idx = randomf() * 0.99999 * light_sample_range;
-
-                // Shift the index if we happen to sampled itself
-                if (isect.is_light && sampled_light_idx >= isect.light_id)
-                    ++sampled_light_idx;
-
-                auto light_ptr = lights->at(sampled_light_idx).get();
-                Vec3f light_dir;
-                auto Ls = light_ptr->sample(isect, light_dir, light_pdf, accel_ptr);
-                if (isect.is_light)
-                    isect.wi = light_dir;
-                if (!Ls.is_zero()) {
-                    //float cos_theta_v = dot(light_dir, isect.N);
-                    float cos_theta_v = dot(light_dir, isect.shading_normal);
-                    BSDFSample tmp_sample;
-                    tmp_sample.wo = light_dir;
-                    auto f = ret.surface.eval(sg, tmp_sample);
-                    direct_weight = power_heuristic(1, light_pdf, 1, tmp_sample.pdf);
-                    Li += throughput * Ls * f * cos_theta_v * direct_weight / light_pdf;
-                }
-            }
-
-            // Sampling bsdf to get next direction
-            f = ret.surface.sample(sg, bsdf_sample);
-
-            // Construct next ray
-            ray.direction = bsdf_sample.wo;
-            isect.refined_point = isect.P;
-            ray.origin = isect.refined_point;
-            ray.tmin = epsilon<float>;
-            ray.tmax = std::numeric_limits<float>::max();
-            isect.ray_t = std::numeric_limits<float>::max();
-        }
-        else {
-            break;
-        }
-    }
-
-    return Li;
-}
-*/

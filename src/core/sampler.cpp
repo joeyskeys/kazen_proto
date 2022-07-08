@@ -2,6 +2,15 @@
 
 #include "sampler.h"
 
+Sampler::Sampler()
+#ifdef USE_PCG
+{}
+#else
+    : m_f_dist(0., 1.)
+    , m_i_dist(0)
+{}
+#endif
+
 void Sampler::seed(uint x, uint y) {
 #ifdef USE_PCG
     m_random.seed(x, y);

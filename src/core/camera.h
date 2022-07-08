@@ -11,6 +11,7 @@
 #include "core/film.h"
 #include "core/ray.h"
 
+using base::Vec2f;
 using base::Vec3f;
 using base::Vec4f;
 using base::Mat4f;
