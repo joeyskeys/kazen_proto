@@ -69,3 +69,66 @@ Vec3f BeckmannMDF(const Vec2f& sample, float alpha);
 float BeckmannPDF(const Vec3f& m, float alpha);
 
 float G1(const Vec3f& wh, const Vec3f& wv, float alpha);
+
+/***********************************************************
+ * Some understanding about microfacet related stuffs:
+ * 
+ * 1. Distruction function used to sample the direction of 
+ *    microfacet normal. Two major distribution functions
+ *    are Beckmann distribution and Trowbridge-Reitz distribution
+ *    (a.k.a GGX, checkout
+ *    https://pharr.org/matt/blog/2022/05/06/trowbridge-reitz).
+ *    Both of these two model came from physics related fields and
+ *    then applied in CG(GGX was a unintentional reinvention).
+ * 
+ * 2. Shadowing & masking function is decided by the nature of
+ *    microfacet. Two major microfacet models are v-cavity mmodel
+ *    and smith model. Currently the popular implementation of 4
+ *    steps:
+ *    i. stretch
+ *    ii. sample p22
+ *    iii. rotate
+ *    iiii. unstretch
+ *    v. compute normal
+ *    is for smith model, which seems more popular among the community.
+ *    checkout https://hal.inria.fr/hal-00996995v2/document
+ * 
+ * 3. G1 stands for masking function, and the G term in the microfacet
+ *    formula stands for shadowing-masking function. If we're using smith
+ *    model then shadowing masking are non-correlated and G = G1(wi) * G1(wo).
+ * 
+ * 4. Lambda function is an auxiliary function which measures invisible
+ *    masked microfacet area per visible microfacet area(from
+ *    https://pbr-book.org/3ed-2018/Reflection_Models/Microfacet_Models).
+ *    Shadowing-masking functions are expressed in terms of it. In the
+ *    implementation: G1 = 1 / (1 + lambda(w))
+ * 
+ ***********************************************************/
+
+struct GGXDist {
+    static float F(const float m2) {
+
+    }
+
+    static float lambda(const float a2) {
+
+    }
+
+    static Vec2f sample_slope(const float cos_theta, const Vec2f sample) {
+
+    }
+};
+
+struct BeckmannDist {
+    static float F(const float m2) {
+
+    }
+
+    static float lambda(const float a2) {
+
+    }
+
+    static Vec2f sample_slope(const float cos_theta, const Vec2f sample) {
+
+    }
+};
