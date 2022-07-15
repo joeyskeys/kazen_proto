@@ -105,6 +105,11 @@ float G1(const Vec3f& wh, const Vec3f& wv, float alpha);
  *    Shadowing-masking functions are expressed in terms of it. In the
  *    implementation: G1 = 1 / (1 + lambda(w))
  * 
+ * 5. http://hal.inria.fr/hal-00996995/en
+ *    https://hal.inria.fr/hal-00996995v2/file/supplemental1.pdf
+ *    https://hal.inria.fr/hal-00996995v2/file/supplemental2.pdf are must
+ *    read!
+ * 
  ***********************************************************/
 
 struct GGXDist {
@@ -134,7 +139,7 @@ struct GGXDist {
         slope[0] = num / den;
 
         // sample slope y
-        float Ru = 1 - 2 * randv;
+        float Ru = 1 - 2 * sample[1];
         float u2 = fabsf(Ru);
         float z = (u2 * (u2 * (u2 * 0.27385f - 0.73369f) + 0.46341f)) /
                   (u2 * (u2 * (u2 * 0.093073f + 0.309420f) - 1.0f) + 0.597999f);
