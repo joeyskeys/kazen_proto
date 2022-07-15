@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 #include <boost/math/constants/constants.hpp>
 
 #include "base/utils.h"
@@ -106,29 +108,53 @@ float G1(const Vec3f& wh, const Vec3f& wv, float alpha);
  ***********************************************************/
 
 struct GGXDist {
-    static float F(const float m2) {
-
+    static float D(const float tan2m) {
+        // Impl here are copied from OpenShadingLanguage testrender,
+        // identical to the impl in pbrt-v3.
+        // Appleseed have a extra stretched_roughness in it, need to
+        // do some further investigate.
+        auto tmp = 1 + tan2m;
+        return 1.f / (constants::pi<float>() * tmp * tmp);
     }
 
     static float lambda(const float a2) {
-
+        return 0.5f * (-1.f + sqrtf(1.f + 1.f / a2));
     }
 
-    static Vec2f sample_slope(const float cos_theta, const Vec2f sample) {
+    static Vec2f sample_slope(const float cos_theta, const Vec2f& sample) {
+        Vec2f slope;
 
+        // sample slope x
+        float c = cos_theta < 1e-6f ? 1e-6f : cos_theta;
+        float Q = (1 + c) * sample[0] - c;
+        float num = c * sqrtf((1 - c) * (1 + c)) - Q * sqrtf((1 - Q) * (1 + Q));
+        float den = (Q - c) * (Q + c);
+        float eps = 1.f / 4294967296.0f;
+        den = fabsf(den) < eps ? copysignf(eps, den) : den;
+        slope[0] = num / den;
+
+        // sample slope y
+        float Ru = 1 - 2 * randv;
+        float u2 = fabsf(Ru);
+        float z = (u2 * (u2 * (u2 * 0.27385f - 0.73369f) + 0.46341f)) /
+                  (u2 * (u2 * (u2 * 0.093073f + 0.309420f) - 1.0f) + 0.597999f);
+        slope[1] = copysignf(1.0f, Ru) * z * sqrtf(1.0f + slope.x * slope.x);
+
+        return slope;
     }
 };
 
 struct BeckmannDist {
-    static float F(const float m2) {
-
+    static float D(const float tan2m) {
+        return 1.f / constants::pi<float>() * std::exp(-tan2m);
     }
 
     static float lambda(const float a2) {
-
+        const float a = sqrtf(a2);
+        return a < 1.6f ? (1.f - 1.259f * a + 0.396f * a2) / (3.535f * a + 2.181f * a2) : 0.f;
     }
 
-    static Vec2f sample_slope(const float cos_theta, const Vec2f sample) {
+    static Vec2f sample_slope(const float cos_theta, const Vec2f& sample) {
 
     }
 };
