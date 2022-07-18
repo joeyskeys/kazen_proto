@@ -91,6 +91,7 @@ struct Phong {
     }
 };
 
+template <typename Dist, int Refract, int Profile>
 struct Microfacet {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);

@@ -159,7 +159,44 @@ struct BeckmannDist {
         return a < 1.6f ? (1.f - 1.259f * a + 0.396f * a2) / (3.535f * a + 2.181f * a2) : 0.f;
     }
 
-    static Vec2f sample_slope(const float cos_theta, const Vec2f& sample) {
+    static Vec2f sample_slope(const float cos_theta_i, const Vec2f& sample) {
+        // Impl here are copied from OpenShadingLanguage testrender,
+        float ct = cos_theta_i < 1e-6f? 1e-6f : cos_theta_i;
+        float tan_theta_i = sqrtf(1 - ct * ct) / ct;
+        float cot_theta_i = 1 / tan_theta_i;
 
+        // sample slope x
+        // compute a coarse approximation using the approximation:
+        // exp(-ierf(x)^2) ~= 1 - x * x
+        // solve y = 1 + b + K * (1 - b * b)
+        float c = std::erf(cot_theta_i);
+        float K = tan_theta_i * constants::one_div_root_pi<float>();
+        float y_approx = sample[0] * (1.f + c + K * (1 - c * c));
+        float y_exact = sample[0] * (1.f + c + K * std::exp(-cot_theta_i * cot_theta_i));
+        float b = K > 0 ? (0.5f - sqrtf(K * (K - y_approx + 1.f) + 0.25f)) / K : y_approx - 1.f;
+
+        // perform newton step to refine toward the true root
+        float inv_erf = 1.f / std::erf(b);
+        float value = 1.f + b + K * std::exp(-inv_erf * inv_erf) - y_exact;
+
+        // check if we are close enough already
+        // this also avoids NaNs as we get close to the root
+        Vec2f slope;
+        if (fabsf(value) > 1e-6f) {
+            b -= value / (1 - inv_erf * tan_theta_i); // newton step 1
+            inv_erf = 1.f / std::erf(b);
+            value  = 1.0f + b + K * OIIO::fast_exp(-inv_erf * inv_erf) - y_exact;
+            b -= value / (1 - inv_erf * tan_theta_i); // newton step 2
+            // compute the slope from the refined value
+            slope[0] = 1.f / std::erf(b);
+        } else {
+            // we are close enough already
+            slope[0] = invErf;
+        }
+
+        /* sample slope Y */
+        slope[1] = 1.f / std::erf(2.0f * sample[1] - 1.0f);
+
+        return slope;
     }
 };
