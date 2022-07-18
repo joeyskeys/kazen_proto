@@ -22,3 +22,16 @@
       2. cpp self introspection;
       3. partial derivatives and dual number.
   4. Discussion and quick revisit of light path transport, importance sampling, MIS etc..
+
+  ### Kazen Con 2022.7.18 Briefing
+
+   1. Features developed this season:
+      1. OSL compile at runtime, add support for self defined closure.
+      2. A walk through of enoki alike integrator practices.
+      3. Configurable math library integration, enoki and eigen support added.
+      4. Refractoring microfacet part and adding closure impls.
+   2. Plans:
+      1. Implement all the closure defined in the specification.
+      2. Write a principled shader in OSL and add a demonstrating scene.
+      3. Better benchmark to get a overall perspective of the performance.
+      4. Add a formal PT integrator with volume and participating medium calculation.
