@@ -158,6 +158,7 @@ float Microfacet::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
     return f;
 }
 
+/*
 float MicrofacetAniso::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const MicrofacetAnisoParams*>(data);
     auto wo = sample.wo;
@@ -187,6 +188,7 @@ float MicrofacetAniso::sample(const void* data, const OSL::ShaderGlobals& sg, BS
     auto f = eval(data, sg, sample);
     return f;
 }
+*/
 
 float Emission::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.mode = ScatteringMode::Diffuse;

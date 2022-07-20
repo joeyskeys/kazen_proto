@@ -143,7 +143,7 @@ struct GGXDist {
         float u2 = fabsf(Ru);
         float z = (u2 * (u2 * (u2 * 0.27385f - 0.73369f) + 0.46341f)) /
                   (u2 * (u2 * (u2 * 0.093073f + 0.309420f) - 1.0f) + 0.597999f);
-        slope[1] = copysignf(1.0f, Ru) * z * sqrtf(1.0f + slope.x * slope.x);
+        slope[1] = copysignf(1.0f, Ru) * z * sqrtf(1.0f + slope.x() * slope.x());
 
         return slope;
     }
@@ -191,7 +191,7 @@ struct BeckmannDist {
             slope[0] = 1.f / std::erf(b);
         } else {
             // we are close enough already
-            slope[0] = invErf;
+            slope[0] = inv_erf;
         }
 
         /* sample slope Y */

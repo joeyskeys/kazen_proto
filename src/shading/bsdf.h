@@ -27,7 +27,14 @@ enum ClosureID {
 
     // Microfacet closures
     MicrofacetID,
-    MicrofacetAnisoID,
+    // Sub tags for dispatching in process_closures function
+    MicrofacetGGXReflID,
+    MicrofacetGGXRefrID,
+    MicrofacetGGXBothID,
+    MicrofacetBeckmannReflID,
+    MicrofacetBeckmannRefrID,
+    MicrofacetBeckmannBothID,
+    //MicrofacetAnisoID,
 
     // BSSRDF closures
     SubsurfaceID,
@@ -154,7 +161,7 @@ public:
         }
     }
 
-    virtual RGBSpectrum sample(const OSL::ShaderGlobals& sg, BSDFSample& sample) const;
+    virtual RGBSpectrum sample(const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f rand) const;
     virtual RGBSpectrum eval(const OSL::ShaderGlobals& sg, BSDFSample& sample) const;
 
 private:

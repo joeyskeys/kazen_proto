@@ -12,7 +12,7 @@
 
 using OSL::TypeDesc;
 
-RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, BSDFSample& sample) const {
+RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f sp) const {
     float acc = 0;
     RGBSpectrum ret{0};
 
@@ -25,8 +25,8 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, BSDFSample& s
         */
 
     // An extra 0.9999999 to ensure sampled index don't overflow
-    auto sp = random3f();
-    uint idx = sp[0] * 0.9999999f * bsdf_count;
+    //auto sp = random3f();
+    //uint idx = sp[0] * 0.9999999f * bsdf_count;
     auto id = bsdf_ids[idx];
     if (get_sample_func(id) == nullptr)
         return ret;
@@ -73,8 +73,24 @@ void register_closures(OSL::ShadingSystem *shadingsys) {
     register_closure<Diffuse>(*shadingsys);
     register_closure<Reflection>(*shadingsys);
     register_closure<Refraction>(*shadingsys);
-    register_closure<Microfacet>(*shadingsys);
-    register_closure<MicrofacetAniso>(*shadingsys);
+    //register_closure<Microfacet>(*shadingsys);
+    //register_closure<MicrofacetAniso>(*shadingsys);
+
+    // Microfacet closure is a little bit different
+    // FIXME : found a more consistent way to organize the code
+    const OSL::ClosureParam params[] = {
+        CLOSURE_STRING_PARAM(MicrofacetParams, dist),
+        CLOSURE_VECTOR_PARAM(MicrofacetParams, N),
+        CLOSURE_VECTOR_PARAM(MicrofacetParams, U),
+        CLOSURE_FLOAT_PARAM(MicrofacetParams, xalpha),
+        CLOSURE_FLOAT_PARAM(MicrofacetParams, yalpha),
+        CLOSURE_FLOAT_PARAM(MicrofacetParams, eta),
+        CLOSURE_INT_PARAM(MicrofacetParams, refract),
+        CLOSURE_FINISH_PARAM(MicrofacetParams)
+    };
+    shadingsys.register_closure("microfacet", MicrofacetID, params, nullptr, nullptr);
+
+
     register_closure<Emission>(*shadingsys);
     register_closure<KpMirror>(*shadingsys);
     register_closure<KpDielectric>(*shadingsys);
@@ -83,6 +99,9 @@ void register_closures(OSL::ShadingSystem *shadingsys) {
 }
 
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only) {
+    static constexpr ustring u_ggx("ggx");
+    static constexpr ustring u_beckmann("beckmann");
+    static constexpr ustring u_default("default");
     if (!closure)
         return;
 
@@ -119,11 +138,24 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                     case RefractionID:      status = ret.surface.add_bsdf<RefractionParams>(RefractionID, cw, comp->as<RefractionParams>());
                         break;
 
-                    case MicrofacetID:      status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetID, cw, comp->as<MicrofacetParams>());
+                    case MicrofacetID: {
+                        const MicrofacetParams* params = comp->as<MicrofacetParams>();
+                        if (params->dist == u_ggx) {
+                            switch (params->refract) {
+                                case 0: ok = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXReflID, cw, params); break;
+                                case 1: ok = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXRefrID, cw, params); break;
+                                case 2: ok = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXBothID, cw, params); break;
+                            }
+                        }
+                        else if (param->dist == u_beckmann || param->dist == u_default) {
+                            switch (params->refract) {
+                                case 0: ok = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetBeckmannReflID, cw, params); break;
+                                case 1: ok = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetBeckmannRefrID, cw, params); break;
+                                case 2: ok = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetBeckmannBothID, cw, params); break;
+                            }
+                        }
                         break;
-
-                    case MicrofacetAnisoID: status = ret.surface.add_bsdf<MicrofacetAnisoParams>(MicrofacetAnisoID, cw, comp->as<MicrofacetAnisoParams>());
-                        break;
+                    }
 
                     case EmissionID:        status = ret.surface.add_bsdf<EmptyParams>(EmissionID, cw, comp->as<EmptyParams>());
                         break;

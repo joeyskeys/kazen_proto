@@ -138,7 +138,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             Li += throughput * ret.Le;
 
         BSDFSample sample;
-        auto sampled_f = ret.surface.sample(sg, sample);
+        auto sampled_f = ret.surface.sample(sg, sample, sampler_ptr->random3f());
         if (sample.mode != ScatteringMode::Specular) {
             auto light_cnt = lights->size();
             if (light_cnt == 0)
@@ -233,7 +233,7 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) cons
             return Li;
         throughput /= prob;
 
-        auto f = ret.surface.sample(sg, sample);
+        auto f = ret.surface.sample(sg, sample, sampler->random3f());
         throughput *= f;
         ray = Ray(its.P, its.to_world(sample.wo));
         if (!accel_ptr->intersect(ray, its))
@@ -281,7 +281,7 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const
             p.record(EEmission, its, throughput, Li);
         }
 
-        auto sampled_f = ret.surface.sample(sg, sample);
+        auto sampled_f = ret.surface.sample(sg, sample, sampler_ptr->random3f());
         if (sample.mode != ScatteringMode::Specular) {
             is_specular = false;
             auto light_cnt = lights->size();
@@ -463,7 +463,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         * 3. Sampling material to get next direction
         * *********************************************/
         float cos_theta_v = dot(bsdf_sample.wo, its.shading_normal);
-        auto f = ret.surface.sample(sg, bsdf_sample);
+        auto f = ret.surface.sample(sg, bsdf_sample, sampler_ptr->random3f());
         last_bounce_specular = bsdf_sample.mode == ScatteringMode::Specular;
         throughput *= f;
         mpdf = bsdf_sample.pdf;
