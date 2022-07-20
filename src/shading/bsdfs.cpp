@@ -30,10 +30,10 @@ float Diffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
     return constants::one_div_pi<float>();
 }
 
-float Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const DiffuseParams*>(data);
-    sample.wo = sample_hemisphere();
+    sample.wo = sample_hemisphere(Vec2f(rand[0], rand[1]));
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     //return 1.f;
     return constants::one_div_pi<float>();
@@ -57,13 +57,13 @@ float Phong::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sa
     return sample.pdf = 0;
 }
 
-float Phong::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float Phong::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const PhongParams*>(data);
     float cos_no = base::dot(base::to_vec3(-params->N), base::to_vec3(sg.I));
     if (cos_no > 0) {
         Vec3f R = base::to_vec3((2 * cos_no) * params->N + sg.I);
-        sample.wo = sample_hemisphere_with_exponent(params->exponent);
+        sample.wo = sample_hemisphere_with_exponent(Vec2f(rand[0], rand[1]), params->exponent);
         auto v_cos_theta = sample.wo.y();
         sample.wo = local_to_world(sample.wo, R);
         float cos_ni = dot(base::to_vec3(params->N), sample.wo);
@@ -83,7 +83,7 @@ float Reflection::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSampl
     return 0;
 }
 
-float Reflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float Reflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Specular;
     auto params = reinterpret_cast<const ReflectionParams*>(data);
     auto cos_theta_i = -cos_theta(base::to_vec3(sg.I));
@@ -106,7 +106,7 @@ float Refraction::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSampl
     return 0;
 }
 
-float Refraction::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float Refraction::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Specular;
     auto params = reinterpret_cast<const RefractionParams*>(data);
     auto cos_theta_i = -cos_theta(base::to_vec3(sg.I));
@@ -128,6 +128,7 @@ float Refraction::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
     return 1.f;
 }
 
+/*
 float Microfacet::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const MicrofacetAnisoParams*>(data);
     auto wo = sample.wo;
@@ -149,7 +150,7 @@ float Microfacet::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSampl
     return D * F * G / (4. * cos_theta_i * cos_theta_o * cos_theta(wh));
 }
 
-float Microfacet::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float Microfacet::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const MicrofacetParams*>(data);
     auto wh = BeckmannMDF(random2f(), params->alpha);
@@ -157,6 +158,7 @@ float Microfacet::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
     auto f = eval(data, sg, sample);
     return f;
 }
+*/
 
 /*
 float MicrofacetAniso::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
@@ -196,7 +198,7 @@ float Emission::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample&
     return 1.f;
 }
 
-float Emission::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float Emission::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     sample.wo = sample_hemisphere();
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
@@ -208,7 +210,7 @@ float KpMirror::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample&
     return 0.f;
 }
 
-float KpMirror::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float KpMirror::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Specular;
 
     sample.wo = reflect(base::to_vec3(-sg.I));
@@ -222,7 +224,7 @@ float KpDielectric::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
     return 0.f;
 }
 
-float KpDielectric::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float KpDielectric::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Specular;
     sample.pdf = 1.f;
     auto params = reinterpret_cast<const KpDielectricParams*>(data);
@@ -266,7 +268,7 @@ float KpMicrofacet::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
         ks * D * F * G / (4. * cos_theta_i * cos_theta_o * cos_theta(wh));
 }
 
-float KpMicrofacet::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float KpMicrofacet::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     auto params = reinterpret_cast<const KpMicrofacetParams*>(data);
     auto ks = 1. - params->kd;
     auto wi = base::to_vec3(-sg.I);
@@ -288,7 +290,7 @@ float KpEmitter::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
     return params->albedo;
 }
 
-float KpEmitter::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float KpEmitter::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     sample.pdf = 1;
     auto params = reinterpret_cast<const KpEmitterParams*>(data);

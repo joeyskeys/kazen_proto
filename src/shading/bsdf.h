@@ -161,7 +161,7 @@ public:
         }
     }
 
-    virtual RGBSpectrum sample(const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f rand) const;
+    virtual RGBSpectrum sample(const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec4f& rand) const;
     virtual RGBSpectrum eval(const OSL::ShaderGlobals& sg, BSDFSample& sample) const;
 
 private:

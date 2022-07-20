@@ -8,6 +8,7 @@
 
 using base::Vec2f;
 using base::Vec3f;
+using base::Vec4f;
 
 class Sampler {
 public:
@@ -17,6 +18,7 @@ public:
     float   randomf();
     Vec2f   random2f();
     Vec3f   random3f();
+    Vec4f   random4f();
     int     randomi(int);
 
 private:

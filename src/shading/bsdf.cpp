@@ -12,7 +12,7 @@
 
 using OSL::TypeDesc;
 
-RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f sp) const {
+RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec4f& sp) const {
     float acc = 0;
     RGBSpectrum ret{0};
 
@@ -26,13 +26,13 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, BSDFSample& s
 
     // An extra 0.9999999 to ensure sampled index don't overflow
     //auto sp = random3f();
-    //uint idx = sp[0] * 0.9999999f * bsdf_count;
+    uint idx = sp[3] * 0.9999999f * bsdf_count;
     auto id = bsdf_ids[idx];
     if (get_sample_func(id) == nullptr)
         return ret;
 
     ret = weights[idx] * get_sample_func(id)(bsdf_params[idx], sg,
-        sample) / pdfs[idx];
+        sample, base::head<3>(sp)) / pdfs[idx];
     sample.pdf *= pdfs[idx];
 
     // Add up contributions from other bsdfs
@@ -88,8 +88,7 @@ void register_closures(OSL::ShadingSystem *shadingsys) {
         CLOSURE_INT_PARAM(MicrofacetParams, refract),
         CLOSURE_FINISH_PARAM(MicrofacetParams)
     };
-    shadingsys.register_closure("microfacet", MicrofacetID, params, nullptr, nullptr);
-
+    shadingsys->register_closure("microfacet", MicrofacetID, params, nullptr, nullptr);
 
     register_closure<Emission>(*shadingsys);
     register_closure<KpMirror>(*shadingsys);
@@ -99,9 +98,9 @@ void register_closures(OSL::ShadingSystem *shadingsys) {
 }
 
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only) {
-    static constexpr ustring u_ggx("ggx");
-    static constexpr ustring u_beckmann("beckmann");
-    static constexpr ustring u_default("default");
+    static const OSL::ustring u_ggx("ggx");
+    static const OSL::ustring u_beckmann("beckmann");
+    static const OSL::ustring u_default("default");
     if (!closure)
         return;
 
@@ -142,16 +141,16 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                         const MicrofacetParams* params = comp->as<MicrofacetParams>();
                         if (params->dist == u_ggx) {
                             switch (params->refract) {
-                                case 0: ok = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXReflID, cw, params); break;
-                                case 1: ok = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXRefrID, cw, params); break;
-                                case 2: ok = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXBothID, cw, params); break;
+                                case 0: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXReflID, cw, params); break;
+                                case 1: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXRefrID, cw, params); break;
+                                case 2: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXBothID, cw, params); break;
                             }
                         }
-                        else if (param->dist == u_beckmann || param->dist == u_default) {
+                        else if (params->dist == u_beckmann || params->dist == u_default) {
                             switch (params->refract) {
-                                case 0: ok = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetBeckmannReflID, cw, params); break;
-                                case 1: ok = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetBeckmannRefrID, cw, params); break;
-                                case 2: ok = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetBeckmannBothID, cw, params); break;
+                                case 0: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetBeckmannReflID, cw, params); break;
+                                case 1: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetBeckmannRefrID, cw, params); break;
+                                case 2: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetBeckmannBothID, cw, params); break;
                             }
                         }
                         break;

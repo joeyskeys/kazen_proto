@@ -43,6 +43,14 @@ Vec3f Sampler::random3f() {
 #endif
 }
 
+Vec4f Sampler::random4f() {
+#ifdef USE_PCG
+    return Vec4f{m_random.nextFloat(), m_random.nextFloat(), m_random.nextFloat(), m_random.nextFloat()};
+#else
+    return Vec4f{m_f_dist(m_gen), m_f_dist(m_gen), m_f_dist(m_gen), m_f_dist(m_gen)};
+#endif
+}
+
 int Sampler::randomi(int range) {
 #ifdef USE_PCG
     return m_random.nextUInt(range);
