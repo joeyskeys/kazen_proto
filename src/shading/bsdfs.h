@@ -95,6 +95,7 @@ struct Phong {
 
 // Basically a replication of implementation in OpenShadingLanguage's testrender
 // for now
+// TODO : it's better to unify shading space to a z-up coordinate system
 template <typename Dist, int Refract>
 struct Microfacet {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
@@ -235,7 +236,7 @@ private:
         float cos_theta_m = cos_theta(Hr);
         if (cos_theta_m > 0) {
             float cos_phi_2_st2 = square(Hr.x() / xalpha);
-            float sin_phi_2_st2 = square(Hr.y() / yalpha);
+            float sin_phi_2_st2 = square(Hr.z() / yalpha);
             float cos_theta_m2 = square(cos_theta_m);
             float cos_theta_m4 = square(cos_theta_m2);
             float tan_theta_m2 = (cos_phi_2_st2 + sin_phi_2_st2) / cos_theta_m2;
@@ -263,7 +264,7 @@ private:
         // Stretch by alpha values
         Vec3f stretched_wi = wi;
         stretched_wi[0] *= xalpha;
-        stretched_wi[1] *= yalpha;
+        stretched_wi[2] *= yalpha;
         stretched_wi = base::normalize(stretched_wi);
 
         // Figure out angles for the incoming vector
@@ -274,7 +275,7 @@ private:
         if (cos_theta_i < 0.999999f) {
             float invnorm = 1 / base::length(stretched_wi);
             cos_phi = stretched_wi.x() * invnorm;
-            sin_phi = stretched_wi.y() * invnorm;
+            sin_phi = stretched_wi.z() * invnorm;
         }
 
         Vec2f slope = Dist::sample_slope(cos_theta_i, sample);
@@ -287,8 +288,8 @@ private:
 
         float mlen = sqrtf(s.x() * s.x() + s.y() * s.y() + 1);
         Vec3f m(fabsf(s.x()) < mlen ? -s.x() / mlen : 1.f,
-                fabsf(s.y()) < mlen ? -s.y() / mlen : 1.f,
-                1.f / mlen);
+                1.f / mlen,
+                fabsf(s.y()) < mlen ? -s.y() / mlen : 1.f);
         return m;
     }
 };

@@ -4,7 +4,7 @@
 
 int main() {
     Scene scene;
-    scene.parse_from_file("../resource/scene/cbox/cbox_mis.xml");
+    scene.parse_from_file("../resource/scene/cbox/cbox_microfacet.xml");
     Sampler sampler;
 
     auto integrator_ptr = scene.integrator_fac.create(
@@ -20,7 +20,7 @@ int main() {
     rctx.pixel_x = 160;
     rctx.pixel_y = 100;
 
-    auto ray = scene.camera->generate_ray(Vec2f{250.5, 450.5});
+    auto ray = scene.camera->generate_ray(Vec2f{250.5, 360.5});
     auto radiance = integrator_ptr->Li(ray, rctx);
 
     scene.recorder.output(std::cout);
