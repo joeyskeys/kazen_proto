@@ -370,6 +370,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
     float lpdf, mpdf = 1.f;
     float mis_weight = 1.f;
     BSDFSample bsdf_sample;
+    //bsdf_sample.pdf = 0;
     bool last_bounce_specular = true;
 
     Ray ray(r);
@@ -466,6 +467,9 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         auto f = ret.surface.sample(sg, bsdf_sample, sampler_ptr->random4f());
         last_bounce_specular = bsdf_sample.mode == ScatteringMode::Specular;
         throughput *= f;
+        if (base::is_zero(throughput))
+            return Li;
+
         mpdf = bsdf_sample.pdf;
         ray = Ray(its.P, its.to_world(bsdf_sample.wo));
 
