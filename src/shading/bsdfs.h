@@ -276,7 +276,7 @@ private:
         float sin_phi = 0;
         // Special case gets phi 0
         if (cos_theta_i < 0.999999f) {
-            float invnorm = 1 / base::length(stretched_wi);
+            float invnorm = 1 / sqrtf(square(stretched_wi[0]) + square(stretched_wi[2]));
             cos_phi = stretched_wi.x() * invnorm;
             sin_phi = stretched_wi.z() * invnorm;
         }
@@ -286,14 +286,18 @@ private:
         // Rotate and unstretch
         Vec2f s(cos_phi * slope.x() - sin_phi * slope.y(),
                 sin_phi * slope.x() + cos_phi * slope.y());
+
+        /*
         s[0] *= xalpha;
         s[1] *= yalpha;
-
         float mlen = sqrtf(s.x() * s.x() + s.y() * s.y() + 1);
         Vec3f m(fabsf(s.x()) < mlen ? -s.x() / mlen : 1.f,
                 1.f / mlen,
                 fabsf(s.y()) < mlen ? -s.y() / mlen : 1.f);
-        return m;
+        */
+        Vec3f m{-s[0] * xalpha, 1.f, -s[1] * yalpha};
+
+        return normalize(m);
     }
 };
 
