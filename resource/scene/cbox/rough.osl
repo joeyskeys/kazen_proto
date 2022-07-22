@@ -12,6 +12,7 @@ surface rough
             float UImin = 0, float UImax = 2 ]]
 )
 {
-    //Ci = Cs * 0.5 * (diffuse(N) + microfacet("beckmann", N, alpha, eta, 0));
-    Ci = Cs * microfacet("beckmann", N, alpha, eta, 0);
+    Ci = Cs * 0.5 * (diffuse(N) + microfacet("beckmann", N, alpha, eta, 0));
+    //Ci = Cs * microfacet("beckmann", N, alpha, eta, 0);
+    //Ci = Cs * kp_microfacet(alpha, eta, 1.0, max(max(Cs.r, Cs.g), Cs.b));
 }

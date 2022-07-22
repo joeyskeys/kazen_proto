@@ -463,7 +463,6 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         /* *********************************************
         * 3. Sampling material to get next direction
         * *********************************************/
-        float cos_theta_v = dot(bsdf_sample.wo, its.shading_normal);
         auto f = ret.surface.sample(sg, bsdf_sample, sampler_ptr->random4f());
         last_bounce_specular = bsdf_sample.mode == ScatteringMode::Specular;
         throughput *= f;

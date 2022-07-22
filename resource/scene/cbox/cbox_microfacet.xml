@@ -31,7 +31,7 @@
         <ShaderGroupBegin name="rough"/>
             <Shader name="rough" layer="layer5">
                 <Parameter Cs="float3 1 0.5 0.5"/>
-                <Parameter alpha="float 0.38"/>
+                <Parameter alpha="float 0.08"/>
                 <Parameter eta="float 1.2"/>
             </Shader>
         <ShaderGroupEnd/>

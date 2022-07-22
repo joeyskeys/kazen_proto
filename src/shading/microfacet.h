@@ -122,7 +122,7 @@ struct GGXDist {
         return 1.f / (constants::pi<float>() * tmp * tmp);
     }
 
-    static float lambda(const float a2) {
+    static inline float lambda(const float a2) {
         return 0.5f * (-1.f + sqrtf(1.f + 1.f / a2));
     }
 
@@ -154,7 +154,7 @@ struct BeckmannDist {
         return 1.f / constants::pi<float>() * std::exp(-tan2m);
     }
 
-    static float lambda(const float a2) {
+    static inline float lambda(const float a2) {
         const float a = sqrtf(a2);
         return a < 1.6f ? (1.f - 1.259f * a + 0.396f * a2) / (3.535f * a + 2.181f * a2) : 0.f;
     }

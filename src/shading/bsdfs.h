@@ -114,8 +114,8 @@ struct Microfacet {
                 const float G2 = eval_G2(lambda_o, lambda_i);
                 const float G1 = eval_G1(lambda_i);
 
-                //const float Fr = fresnel_dielectric(base::dot(m, wi), params->eta);
-                const float Fr = fresnel_refl_dielectric(params->eta, base::dot(m, wi));
+                const float Fr = fresnel_dielectric(base::dot(m, wi), params->eta);
+                //const float Fr = fresnel_refl_dielectric(params->eta, base::dot(m, wi));
                 sample.pdf = (G1 * D * 0.25f) / cos_theta_i;
                 float out = G2 / G1;
                 if constexpr (Refract == 2) {
@@ -171,7 +171,7 @@ struct Microfacet {
         const float cos_mo = base::dot(m, wi);
         const float F = fresnel_dielectric(cos_mo, params->eta);
         if (Refract == 0 || (Refract == 2 && rand[2] < F)) {
-            sample.wo = (2.f * cos_mo) * m - wi;
+            sample.wo = reflect(wi, m);
             const float D = eval_D(m, params->xalpha, params->yalpha);
             const float lambda_i = eval_lambda(wi, params->xalpha, params->yalpha);
             const float lambda_o = eval_lambda(sample.wo, params->xalpha, params->yalpha);
@@ -240,7 +240,8 @@ private:
             float sin_phi_2_st2 = square(Hr.z() / yalpha);
             float cos_theta_m2 = square(cos_theta_m);
             float cos_theta_m4 = square(cos_theta_m2);
-            float tan_theta_m2 = (cos_phi_2_st2 + sin_phi_2_st2) / cos_theta_m2;
+            float tan_theta_m2 = (cos_phi_2_st2 + sin_phi_2_st2) * (1 - cos_theta_m2) / cos_theta_m2;
+            //float tan_theta_m2 = (cos_phi_2_st2 + sin_phi_2_st2) / cos_theta_m2;
             return Dist::D(tan_theta_m2) / (xalpha * yalpha * cos_theta_m4);
         }
         return 0;
@@ -250,7 +251,8 @@ private:
         float cos_theta_2 = square(cos_theta(w));
         float cos_phi_2_st2 = square(w.x() * xalpha);
         float sin_phi_2_st2 = square(w.z() * yalpha);
-        return Dist::lambda(cos_theta_2 / (cos_phi_2_st2 + sin_phi_2_st2));
+        //return Dist::lambda(cos_theta_2 / (cos_phi_2_st2 + sin_phi_2_st2));
+        return Dist::lambda(1 / (tan_2_theta(w) * (cos_phi_2_st2 + sin_phi_2_st2)));
     }
 
     static float eval_G2(const float lambda_i, const float lambda_o) {
