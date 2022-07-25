@@ -233,16 +233,18 @@ struct Microfacet {
     */
 
 private:
-    inline static float eval_D(const Vec3f Hr, const float xalpha, const float yalpha) {
-        float cos_theta_m = cos_theta(Hr);
+    inline static float eval_D(const Vec3f m, const float xalpha, const float yalpha) {
+        float cos_theta_m = cos_theta(m);
         if (cos_theta_m > 0) {
-            float cos_phi_2_st2 = square(Hr.x() / xalpha);
-            float sin_phi_2_st2 = square(Hr.z() / yalpha);
+            //float cos_phi_2_st2 = square(Hr.x() / xalpha);
+            //float sin_phi_2_st2 = square(Hr.z() / yalpha);
             float cos_theta_m2 = square(cos_theta_m);
             float cos_theta_m4 = square(cos_theta_m2);
-            float tan_theta_m2 = (cos_phi_2_st2 + sin_phi_2_st2) * (1 - cos_theta_m2) / cos_theta_m2;
+            //float tan_theta_m2 = (cos_phi_2_st2 + sin_phi_2_st2) * (1 - cos_theta_m2) / cos_theta_m2;
             //float tan_theta_m2 = (cos_phi_2_st2 + sin_phi_2_st2) / cos_theta_m2;
-            return Dist::D(tan_theta_m2) / (xalpha * yalpha * cos_theta_m4);
+            const float tan_theta_m2 = (1.f - cos_theta_m2) / cos_theta_m2;
+            const float A = stretch_roughness(m, xalpha, yalpha);
+            return Dist::D(tan_theta_m2 * A) / (xalpha * yalpha * cos_theta_m4);
         }
         return 0;
     }

@@ -10,17 +10,17 @@ int main() {
     auto integrator_ptr = scene.integrator_fac.create(
         scene.camera.get(), scene.film.get(), &sampler, &scene.recorder);
     integrator_ptr->setup(&scene);
-    scene.recorder.x_min = 159;
-    scene.recorder.x_max = 161;
-    scene.recorder.y_min = 99;
-    scene.recorder.y_max = 101;
+    scene.recorder.x_min = 322;
+    scene.recorder.x_max = 323;
+    scene.recorder.y_min = 383;
+    scene.recorder.y_max = 384;
     scene.recorder.setup();
 
     RecordContext rctx;
-    rctx.pixel_x = 160;
-    rctx.pixel_y = 100;
+    rctx.pixel_x = 322;
+    rctx.pixel_y = 383;
 
-    auto ray = scene.camera->generate_ray(Vec2f{305.5, 405.5});
+    auto ray = scene.camera->generate_ray(Vec2f{310.5, 400.5});
     auto radiance = integrator_ptr->Li(ray, rctx);
 
     scene.recorder.output(std::cout);

@@ -112,6 +112,18 @@ float G1(const Vec3f& wh, const Vec3f& wv, float alpha);
  * 
  ***********************************************************/
 
+static inline float stretch_roughness(
+    const Vec3f& m,
+    const float xalpha,
+    const float yalpha)
+{
+    if (xalpha == yalpha)
+        return 1.f / square(xalpha);
+    const float cos_phi_2_ax_2 = square(m.x() / xalpha);
+    const float sin_phi_2_ay_2 = square(m.z() / yalpha);
+    return cos_phi_2_ax_2 + sin_phi_2_ay_2;
+}
+
 struct GGXDist {
     static float D(const float tan2m) {
         // Impl here are copied from OpenShadingLanguage testrender,
@@ -150,8 +162,8 @@ struct GGXDist {
 };
 
 struct BeckmannDist {
-    static float D(const float tan2m) {
-        return 1.f / constants::pi<float>() * std::exp(-tan2m);
+    static float D(const float tan2m_rough) {
+        return constants::one_div_pi<float>() * std::exp(-tan2m_rough);
     }
 
     static inline float lambda(const float a2) {
