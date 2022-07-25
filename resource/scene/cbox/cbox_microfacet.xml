@@ -54,4 +54,5 @@
 
     <EmbreeAccelerator/>
     <PathIntegrator/>
+    <!--PathEmsIntegrator/-->
 </Scene>

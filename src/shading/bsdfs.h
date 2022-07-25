@@ -117,7 +117,7 @@ struct Microfacet {
                 const float Fr = fresnel_dielectric(base::dot(m, wi), params->eta);
                 //const float Fr = fresnel_refl_dielectric(params->eta, base::dot(m, wi));
                 sample.pdf = (G1 * D * 0.25f) / cos_theta_i;
-                float out = G2 / G1;
+                float out = D * G2 / G1;
                 if constexpr (Refract == 2) {
                     sample.pdf *= Fr;
                     return out;

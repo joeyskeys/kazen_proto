@@ -438,7 +438,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         if (!base::is_zero(Ls)) {
             float cos_theta_v = dot(light_dir, its.shading_normal);
             if (cos_theta_v > 0.) {
-                bsdf_sample.wo = light_dir;
+                bsdf_sample.wo = its.to_local(light_dir);
                 auto f = ret.surface.eval(sg, bsdf_sample);
                 mis_weight = power_heuristic(1, lpdf, 1, bsdf_sample.pdf);
                 mis_weight = std::isnan(mis_weight) ? 0.f : mis_weight;
