@@ -212,3 +212,47 @@ struct BeckmannDist {
         return slope;
     }
 };
+
+template <typename MDF, int FresnelType>
+class MicrofacetInterface {
+public:
+    static float eval(
+        const Vec3f& wi,
+        const Vec3f& wo,
+        const float xalpha,
+        const float yalpha,
+        const Vec3f& rand)
+    {
+
+    }
+
+    static Vec3f sample(
+        const Vec3f& wi,
+        const float xalpha,
+        const float yalpha,
+        const Vec3f& rand,
+        float& pdf)
+    {
+        auto cos_theta_v = cos_theta(wi);
+        if (cos_theta_v == 0.f)
+            return;
+
+        const Vec3f m = MDF::sample_slope(wi, xalpha, yalpha, rand.head<2>());
+        const float cos_mi = base::dot(m, wi);
+    }
+
+    inline static float G(const float lambda_i, const float lambda_o) {
+        return 1.f / (lambda_i + lambda_o + 1.f);
+    }
+
+    inline static float G1(const float lambda_v) {
+        return 1.f / (lambda_v + 1.f);
+    }
+
+private:
+    inline static float lambda(const Vec3f& w, const float xalpha, const float yalpha) {
+        float cos_theta_v = cos_theta(w);
+        if (cos_theta_v == 0.f)
+            return 0.f
+    }
+};

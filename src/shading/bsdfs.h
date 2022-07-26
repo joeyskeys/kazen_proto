@@ -66,6 +66,11 @@ struct KpEmitterParams {
     float albedo;
 };
 
+struct KpRoughParams {
+    OSL::Vec3 N;
+    float xalpha, yalpha, eta, f;
+};
+
 struct Diffuse {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
@@ -95,7 +100,7 @@ struct Phong {
 
 // Basically a replication of implementation in OpenShadingLanguage's testrender
 // for now
-// TODO : it's better to unify shading space to a z-up coordinate system
+// Seems this impl isn't helping much...
 template <typename Dist, int Refract>
 struct Microfacet {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
@@ -425,6 +430,40 @@ struct KpEmitter {
         };
 
         shadingsys.register_closure("kp_emitter", KpEmitterID, params, nullptr, nullptr);
+    }
+};
+
+struct KpGloss {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(KpRoughParams, N),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, xalpha),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, yalpha),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, eta),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, f),
+            CLOSURE_FINISH_PARAM(KpRoughParams)
+        };
+
+        shadingsys.register_closure("kp_gloss", KpGlossID, params, nullptr, nullptr);
+    }
+};
+
+struct KpGlass {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(KpRoughParams, N),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, xalpha),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, yalpha),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, eta),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, f),
+            CLOSURE_FINISH_PARAM(KpRoughParams)
+        };
+
+        shadingsys.register_closure("kp_glass", KpGlassID, params, nullptr, nullptr);
     }
 };
 

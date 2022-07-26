@@ -296,3 +296,20 @@ float KpEmitter::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSamp
     auto params = reinterpret_cast<const KpEmitterParams*>(data);
     return params->albedo;
 }
+
+float KpGloss::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    auto params = reinterpret_cast<const KpRoughParams*>(data);
+    auto wi = base_to_vec3(-sg.I);
+    auto cos_theta_i = cos_theta(wi);
+    auto cos_theta_o = cos_theta(wo);
+    if (cos_theta_i <= 0 || cos_theta_o <= 0)
+        return 0.f;
+
+    auto F = fresnel_refl_dielectric(data->eta, cos_theta_i);
+    //auto D = ;
+}
+
+float KpGloss::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    auto params = reinterpret_cast<const KpRoughParams*>(data);
+    
+}

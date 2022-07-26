@@ -54,10 +54,16 @@ enum ClosureID {
     /************
      * Kazen specific
      ************/
+
+    // Replicate Nori
     KpMirrorID,
     KpDielectricID,
     KpMicrofacetID,
     KpEmitterID,
+
+    // intrinsic
+    KpGlossID,
+    KpGlassID,
 
     NumClosureIDs
 };
