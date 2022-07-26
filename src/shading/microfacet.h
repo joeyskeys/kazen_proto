@@ -253,6 +253,6 @@ private:
     inline static float lambda(const Vec3f& w, const float xalpha, const float yalpha) {
         float cos_theta_v = cos_theta(w);
         if (cos_theta_v == 0.f)
-            return 0.f
+            return 0.f;
     }
 };
