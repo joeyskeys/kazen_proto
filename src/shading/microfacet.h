@@ -11,61 +11,6 @@ using base::Vec2f;
 
 namespace constants = boost::math::constants;
 
-/*
-inline float stretch_roughness(
-    const Vec3f&    m,
-    const float     sin_theta_v,
-    const float     ax,
-    const float     ay)
-{
-    if (ax == ay || sin_theta_v == 0.f)
-        return 1.f / square(ax);
-
-    const float cos_phi_2_ax_2 = square(m.x() / (sin_theta_v * ax));
-    const float sin_phi_2_ay_2 = square(m.z() / (sin_theta_v * ay));
-    return cos_phi_2_ax_2 + sin_phi_2_ay_2;
-}
-
-float beckmann_ndf(
-    const Vec3f&    m,
-    const float     ax,
-    const float     ay)
-{
-    const float cos_theta_v = m.y();
-    if (cos_theta_v == 0.f)
-        return 0.f;
-    
-    const float cos_theta_2 = square(cos_theta_v);
-    const float sin_theta_v = std::sqrt(std::max(0.f, 1.f - cos_theta_2));
-    const float cos_theta_4 = square(cos_theta_2);
-    const float tan_theta_2 = (1.f - cos_theta_2) / cos_theta_2;
-
-    const float A = stretch_roughness(m, sin_theta_v, ax, ay);
-
-    return std::exp(-tan_theta_2 * A) / (constants::pi<float>() * ax * ay * cos_theta_4);
-}
-
-float GGX_ndf(
-    const Vec3f&    m,
-    const float     ax,
-    const float     ay)
-{
-    const float cos_theta_v = m.y();
-    if (cos_theta_v == 0.f)
-        return square(ax) * constants::one_div_pi<float>();
-
-    const float cos_theta_2 = square(cos_theta_v);
-    const float sin_theta_v = std::sqrt(std::max(0.f, 1.f - cos_theta_2));
-    const float cos_theta_4 = square(cos_theta_2);
-    const float tan_theta_2 = (1.f - cos_theta_2) / cos_theta_2;
-
-    const float A = stretch_roughness(m, sin_theta_v, ax, ay);
-
-    const float tmp = 1.f + tan_theta_2 * A;
-    return 1.f / (constants::pi<float>() * ax * ay * cos_theta_4 * square(tmp));
-}
-*/
-
 Vec3f BeckmannMDF(const Vec2f& sample, float alpha);
 
 float BeckmannPDF(const Vec3f& m, float alpha);
@@ -241,17 +186,31 @@ struct BeckmannDist {
     }
 };
 
-template <typename MDF, int FresnelType>
+template <typename MDF>
 class MicrofacetInterface {
 public:
+    template <typename FresnelFunc>
     static float eval(
         const Vec3f& wi,
-        const Vec3f& wo,
         const float xalpha,
         const float yalpha,
-        const Vec3f& rand)
+        FresnelFunc f,
+        const Vec3f& rand,
+        BSDFSample& sample)
     {
+        auto cos_theta_i = cos_theta(wi);
+        auto cos_theta_o = cos_theta(sample.wo);
 
+        const Vec3f m = base::normalize(wi + sample.wo);
+        auto cos_om = base::dot(sample.wo, m);
+        if (cos_om == 0.f)
+            return 0.f;
+
+        const float D = MDF::D(m, xalpha, yalpha);
+        const float G = MDF::G(wi, sample.wo, xalpha, yalpha);
+        const float F = f(std::abs(base::dot(m, wi)));
+
+        sample.pdf = pdf(wi, m, xalpha, yalpha);
     }
 
     // The design of returning pdf rather than sampled direction is more convinient
@@ -280,8 +239,29 @@ public:
         // f should be a lambda function which captureed eta in previous context
         const float F = f(std::abs(base::dot(m, wi)));
 
-        //sample.pdf = ;
+        sample.pdf = pdf(wi, m, xalpha, yalpha);
         return D * G * F / (4.f * cos_theta_i * cos_theta_o);
+    }
+
+    static float pdf(
+        const Vec3f& wi,
+        const Vec3f& m,
+        const float xalpha,
+        const float yalpha)
+    {
+        // Check "Importance Sampling Microfacet-Based BSDFs using the Distribution
+        // of Visible Normals" page 4 equation 2.
+        // https://hal.inria.fr/hal-00996995v2/document
+        // Code here is mostly copied from appleseed:
+        // https://github.com/appleseedhq/appleseed/blob/master/src/appleseed/foundation/math/microfacet.cpp
+        // Here we use the exact visible normal distribution function as the pdf
+        // function.
+        const float cos_theta_v = cos_theta(wi);
+        if (cos_theta_v == 0.f)
+            return 0.f;
+
+        return G1(wi, xalpha, yalpha) * std::abs(base::dot(wi, m)) *
+            D(m, xalpha, yalpha) / std::abs(cos_theta_v);
     }
 
 private:

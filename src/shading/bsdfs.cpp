@@ -23,7 +23,6 @@ namespace constants = boost::math::constants;
 // code clarity and performance, a unified way of vector calculation must be done
 
 float Diffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const DiffuseParams*>(data);
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     //return 1.f;
@@ -40,7 +39,6 @@ float Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
 }
 
 float Phong::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const PhongParams*>(data);
     float cos_ni = cos_theta(sample.wo);
     float cos_no = base::dot(base::to_vec3(-params->N), base::to_vec3(sg.I));
@@ -77,8 +75,31 @@ float Phong::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
     return sample.pdf = 0;
 }
 
+float Ward::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    auto params = reinterpret_cast<const WardParams*>(data);
+    auto wi = base::to_vec3(-sg.I);
+    auto cos_theta_i = cos_theta(wi);
+    auto cos_theta_o = cos_theta(sample.wo);
+    if (cos_theta_i <= 0 || cos_theta_o <= 0)
+        return 0.f
+
+    auto m = base::normalize(wi + sample.wo);
+    auto sin_theta_v = sin_theta(wi);
+    auto A = stretched_roughness(m, sin_theta_v, params->xalpha, params->yalpha);
+    auto tmp = std::exp(-tan_2_theta(m) * A) /
+        (4.f * constants::pi<float>() * params->xalpha * params->yalpha);
+
+    // Checkout "Notes on the Ward BRDF" page 1,2 equation 3, 9.
+    // https://www.graphics.cornell.edu/~bjw/wardnotes.pdf
+    sample.pdf = tmp / (base::dot(m, wi) * std::pow(cos_theta(m), 3));
+    return tmp / (std::sqrt(cos_theta_i * cos_theta_o));
+}
+
+float Ward::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+
+} 
+
 float Reflection::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    sample.mode = ScatteringMode::Specular;
     sample.pdf = 0;
     return 0;
 }
@@ -128,72 +149,7 @@ float Refraction::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
     return 1.f;
 }
 
-/*
-float Microfacet::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    auto params = reinterpret_cast<const MicrofacetAnisoParams*>(data);
-    auto wo = sample.wo;
-    auto wi = base::to_vec3(-sg.I);
-
-    auto cos_theta_i = cos_theta(wi);
-    auto cos_theta_o = cos_theta(wo);
-    if (cos_theta_i <= 0 || cos_theta_o)
-        return 0;
-
-    auto wh = base::normalize(wo + wi);
-    auto D = BeckmannPDF(wh, params->xalpha);
-    //auto Jh = 1. / (4. * dot(wh, wo));
-    auto F = fresnel(base::dot(wh, wi), 1, params->eta);
-    auto G = G1(wh, wi, params->xalpha) * G1(wh, wo, params->xalpha);
-    //sample.pdf = D * Jh;
-    sample.pdf = D;
-
-    return D * F * G / (4. * cos_theta_i * cos_theta_o * cos_theta(wh));
-}
-
-float Microfacet::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
-    sample.mode = ScatteringMode::Diffuse;
-    auto params = reinterpret_cast<const MicrofacetParams*>(data);
-    auto wh = BeckmannMDF(random2f(), params->alpha);
-    sample.wo = reflect(base::to_vec3(-sg.I), wh);
-    auto f = eval(data, sg, sample);
-    return f;
-}
-*/
-
-/*
-float MicrofacetAniso::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    auto params = reinterpret_cast<const MicrofacetAnisoParams*>(data);
-    auto wo = sample.wo;
-    auto wi = base::to_vec3(-sg.I);
-
-    auto cos_theta_i = cos_theta(wi);
-    auto cos_theta_o = cos_theta(wo);
-    if (cos_theta_i <= 0 || cos_theta_o <= 0)
-        return 0;
-
-    auto wh = base::normalize(wo + wi);
-    auto D = BeckmannPDF(wh, params->xalpha);
-    //auto Jh = 1. / (4. * dot(wh, wo));
-    auto F = fresnel(base::dot(wh, wi), 1, params->eta);
-    auto G = G1(wh, wi, params->xalpha) * G1(wh, wo, params->xalpha);
-    //sample.pdf = D * Jh;
-    sample.pdf = D;
-
-    return D * F * G / (4. * cos_theta_i * cos_theta_o * cos_theta(wh));
-}
-
-float MicrofacetAniso::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    sample.mode = ScatteringMode::Diffuse;
-    auto params = reinterpret_cast<const MicrofacetAnisoParams*>(data);
-    auto wh = BeckmannMDF(random2f(), params->xalpha);
-    sample.wo = reflect(base::to_vec3(-sg.I), wh);
-    auto f = eval(data, sg, sample);
-    return f;
-}
-*/
-
 float Emission::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    sample.mode = ScatteringMode::Diffuse;
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     return 1.f;
 }

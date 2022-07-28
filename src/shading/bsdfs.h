@@ -26,6 +26,12 @@ struct PhongParams {
     float exponent;
 };
 
+struct WardParams {
+    OSL::Vec3 N;
+    OSL::Vec3 T;
+    float xalpha, yalpha
+};
+
 struct MicrofacetParams {
     OSL::ustring dist;
     OSL::Vec3 N, U;
@@ -95,6 +101,22 @@ struct Phong {
         };
 
         shadingsys.register_closure("phong", PhongID, params, nullptr, nullptr);
+    }
+};
+
+struct Ward {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(WardParams, N),
+            CLOSURE_VECTOR_PARAM(WardParams, T),
+            CLOSURE_FLOAT_PARAM(WardParams, xalpha),
+            CLOSURE_FLOAT_PARAM(WardParams, yalpha),
+            CLOSURE_FINISH_PARAM(WardParams)
+        };
+
+        shadingsys.register_closure("ward", WardID, params, nullptr, nullptr);        
     }
 };
 
@@ -314,29 +336,6 @@ using MicrofacetGGXBoth = Microfacet<GGXDist, 2>;
 using MicrofacetBeckmannRefl = Microfacet<BeckmannDist, 0>;
 using MicrofacetBeckmannRefr = Microfacet<BeckmannDist, 1>;
 using MicrofacetBeckmannBoth = Microfacet<BeckmannDist, 2>;
-
-/*
-// Make it template for different distribution later
-//template <typename Dist, int Refract>
-struct MicrofacetAniso {
-    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static void register_closure(OSL::ShadingSystem& shadingsys) {
-        const OSL::ClosureParam params[] = {
-            CLOSURE_STRING_PARAM(MicrofacetAnisoParams, dist),
-            CLOSURE_VECTOR_PARAM(MicrofacetAnisoParams, N),
-            CLOSURE_VECTOR_PARAM(MicrofacetAnisoParams, U),
-            CLOSURE_FLOAT_PARAM(MicrofacetAnisoParams, xalpha),
-            CLOSURE_FLOAT_PARAM(MicrofacetAnisoParams, yalpha),
-            CLOSURE_FLOAT_PARAM(MicrofacetAnisoParams, eta),
-            CLOSURE_INT_PARAM(MicrofacetAnisoParams, refract),
-            CLOSURE_FINISH_PARAM(MicrofacetAnisoParams)
-        };
-
-        shadingsys.register_closure("microfacet", MicrofacetAnisoID, params, nullptr, nullptr);
-    }
-};
-*/
 
 struct Reflection {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
