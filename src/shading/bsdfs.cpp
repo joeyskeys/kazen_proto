@@ -96,7 +96,36 @@ float Ward::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sam
 }
 
 float Ward::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    auto params = reinterpret_cast<const WardParams*>(data);
+    auto wi = base::to_vec3(-sg.I);
+    auto cos_theta_i = cos_theta(wi);
+    if (cos_theta_i <= 0)
+        return 0.f;
 
+    // Checkout "Notes on the Ward BRDF" page 2 equation 6, 7.
+    float phi, theta, sin_phi_v, cos_phi_v, sin_theta_v, cos_theta_v, A;
+    if (params->xalpha == params->yalpha) {
+        theta = std::atan(params->xalpha * std::sqrt(-std::log(rand[0])));
+        phi = constants::two_pi<float>() * rand[1];
+        sincos(theta, sin_theta_v, cos_theta_v);
+        sincos(phi, sin_phi_v, cos_phi_v);
+    }
+    else {
+        float phi = std::atan(params->yalpha / params->xalpha * std::tan(constants::two_pi<float>() * rand[0]));
+        sincos(phi, sin_phi_v, cos_phi_v);
+        A = square(cos_phi / params->xalpha) + square(sin_phi / params->yalpha);
+        float theta = std::atan(std::sqrt(-std::log(rand[1]) / A));
+        sincos(theta, sin_theta_v, cos_theta_v);
+    }
+
+    Vec3f m{sin_theta_v * cos_phi_v, cos_theta_v, sin_theta_v * sin_phi_v};
+    sample.wo = reflect(wi, m);
+    auto tmp = std::exp(-tan_2_theta(m) * A) /
+        (4.f constants::pi<float>() * params->xalpha * params->yalpha);
+    
+    // Same as above
+    sample.pdf = tmp / (base::dot(m, wi) * std::pow(cos_theta_v, 3));
+    return tmp / (std::sqrt(cos_theta_i * cos_theta_o));
 } 
 
 float Reflection::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
