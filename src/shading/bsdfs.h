@@ -39,13 +39,6 @@ struct MicrofacetParams {
     int refract;
 };
 
-struct MicrofacetAnisoParams {
-    OSL::ustring dist;
-    OSL::Vec3 N, U;
-    float xalpha, yalpha, eta;
-    int refract;
-};
-
 struct ReflectionParams {
     OSL::Vec3 N;
     float eta;
@@ -75,6 +68,7 @@ struct KpEmitterParams {
 struct KpRoughParams {
     OSL::Vec3 N;
     float xalpha, yalpha, eta, f;
+    OSL::ustring dist;
 };
 
 struct Diffuse {
@@ -120,6 +114,7 @@ struct Ward {
     }
 };
 
+/*
 // Basically a replication of implementation in OpenShadingLanguage's testrender
 // for now
 // Seems this impl isn't helping much...
@@ -242,23 +237,6 @@ struct Microfacet {
         return sample.pdf = 0;
     }
 
-    /*
-    static void register_closure(OSL::ShadingSystem& shadingsys) {
-        const OSL::ClosureParam params[] = {
-            CLOSURE_STRING_PARAM(MicrofacetParams, dist),
-            CLOSURE_VECTOR_PARAM(MicrofacetParams, N),
-            CLOSURE_VECTOR_PARAM(MicrofacetParams, U),
-            CLOSURE_FLOAT_PARAM(MicrofacetParams, xalpha),
-            CLOSURE_FLOAT_PARAM(MicrofacetParams, yalpha),
-            CLOSURE_FLOAT_PARAM(MicrofacetParams, eta),
-            CLOSURE_INT_PARAM(MicrofacetParams, refract),
-            CLOSURE_FINISH_PARAM(MicrofacetParams)
-        };
-
-        shadingsys.register_closure("microfacet", MicrofacetID, params, nullptr, nullptr);
-    }
-    */
-
 private:
     inline static float eval_D(const Vec3f m, const float xalpha, const float yalpha) {
         float cos_theta_m = cos_theta(m);
@@ -316,14 +294,6 @@ private:
         Vec2f s(cos_phi * slope.x() - sin_phi * slope.y(),
                 sin_phi * slope.x() + cos_phi * slope.y());
 
-        /*
-        s[0] *= xalpha;
-        s[1] *= yalpha;
-        float mlen = sqrtf(s.x() * s.x() + s.y() * s.y() + 1);
-        Vec3f m(fabsf(s.x()) < mlen ? -s.x() / mlen : 1.f,
-                1.f / mlen,
-                fabsf(s.y()) < mlen ? -s.y() / mlen : 1.f);
-        */
         Vec3f m{-s[0] * xalpha, 1.f, -s[1] * yalpha};
 
         return normalize(m);
@@ -336,6 +306,11 @@ using MicrofacetGGXBoth = Microfacet<GGXDist, 2>;
 using MicrofacetBeckmannRefl = Microfacet<BeckmannDist, 0>;
 using MicrofacetBeckmannRefr = Microfacet<BeckmannDist, 1>;
 using MicrofacetBeckmannBoth = Microfacet<BeckmannDist, 2>;
+*/
+
+// Since now we are using KpGloss & KpGlass to represent the actual Microfacet
+// closure, we don't need a explicit Microfacet struct.
+// Just convert it to KpGloss & KpGlass in process_closures function.
 
 struct Reflection {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);

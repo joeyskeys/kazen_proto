@@ -189,58 +189,42 @@ struct BeckmannDist {
 template <typename MDF>
 class MicrofacetInterface {
 public:
-    template <typename FresnelFunc>
-    static float eval(
-        const Vec3f& wi,
-        const float xalpha,
-        const float yalpha,
-        FresnelFunc f,
-        const Vec3f& rand,
-        BSDFSample& sample)
-    {
-        auto cos_theta_i = cos_theta(wi);
-        auto cos_theta_o = cos_theta(sample.wo);
-
-        const Vec3f m = base::normalize(wi + sample.wo);
-        auto cos_om = base::dot(sample.wo, m);
-        if (cos_om == 0.f)
-            return 0.f;
-
-        const float D = MDF::D(m, xalpha, yalpha);
-        const float G = MDF::G(wi, sample.wo, xalpha, yalpha);
-        const float F = f(std::abs(base::dot(m, wi)));
-
-        sample.pdf = pdf(wi, m, xalpha, yalpha);
-    }
-
     // The design of returning pdf rather than sampled direction is more convinient
     // for error checking
-    template <typename FresnelFunc>
-    static float sample(
+    static float sample_m(
         const Vec3f& wi,
         const float xalpha,
         const float yalpha,
-        FresnelFunc f,
-        const Vec3f& rand,
-        BSDFSample& sample)
+        const Vec3f& rand)
     {
+        // 1. stretch wi
+        Vec3f stretched{wi[0] * xalpha, wi[1], wi[2] * yalpha};
         auto cos_theta_i = cos_theta(wi);
-        if (cos_theta_i == 0.f)
-            return 0.f;
+        if (cos_theta_i < 0.f)
+            stretched = -stretched;
+        // normalize
+        stretched = base::normalize(stretched);
+        // get polar coordinates
+        float theta = 0.f, phi = 0.f;
+        if (cos_theta_i < 0.9999f) {
+            theta = acos(cos_theta_i);
+            phi = atan2(wi[2], wi[0]);
+        }
 
-        const Vec3f m = MDF::sample(wi, xalpha, yalpha, rand.head<2>());
-        sample.wo = reflect(wi, m);
-        auto cos_theta_o = cos_theta_o(wo);
-        if (cos_theta_o == 0.f)
-            return
+        // 2. sample slope
+        const Vec2f slope = MDF::sample_slope(cos_theta_i, rand.head<2>());
 
-        const float D = D(m, xalpha, yalpha);
-        const float G = G(wi, sampel.wo, xalpha, yalpha);
-        // f should be a lambda function which captureed eta in previous context
-        const float F = f(std::abs(base::dot(m, wi)));
+        // 3. rotate
+        const float cos_phi_v = cos(phi);
+        const float sin_phi_v = sin(phi);
+        slope = Vec2f{
+            cos_phi_v * slope[0] - sin_phi_v * slope[1],
+            sin_phi_v * slope[0] + cos_phi_v * slope[1]
+        };
 
-        sample.pdf = pdf(wi, m, xalpha, yalpha);
-        return D * G * F / (4.f * cos_theta_i * cos_theta_o);
+        // 4. unstretch and normalize
+        const Vec3f m{-slope[0] * xalpha, 1.f, -slope[1] * yalpha};
+        return base::normalize(m);
     }
 
     static float pdf(
@@ -264,7 +248,6 @@ public:
             D(m, xalpha, yalpha) / std::abs(cos_theta_v);
     }
 
-private:
     static inline float lambda(const Vec3f& m, const float xalpha, const float yalpha) {
         float cos_theta_v = cos_theta(m);
         if (cos_theta_v == 0.f)

@@ -282,19 +282,121 @@ float KpEmitter::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSamp
     return params->albedo;
 }
 
+static const OSL::ustring u_ggx("ggx");
+static const OSL::ustring u_beckmann("beckmann");
+static const OSL::ustring u_default("default");
+
 float KpGloss::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const KpRoughParams*>(data);
     auto wi = base_to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(wi);
-    auto cos_theta_o = cos_theta(wo);
+    auto cos_theta_o = cos_theta(sample.wo);
     if (cos_theta_i <= 0 || cos_theta_o <= 0)
         return 0.f;
 
-    auto F = fresnel_refl_dielectric(data->eta, cos_theta_i);
-    //auto D = ;
+    //auto f = fresnel_refl_dielectric(data->eta, cos_theta_i);
+    auto f = [&params](const float cos_theta_v) {
+        fresnel_refl_dielectric(params->eta, cos_theta_v);
+    };
+
+    const Vec3f m = base::normalize(wi + sample.wo);
+    auto cos_om = base::dot(sample.wo, m);
+    if (cos_om == 0.f)
+        return 0.f
+
+    float D, G, F;
+    if (params->dist == u_beckmann) {
+        D = MicrofacetInterface<BeckmannDist>::D(m, params->xalpha, params->yalpha);
+        G = MicrofacetInterface<BeckmannDist>::G(wi, sample.wo, params->xalpha, params->yalpha);
+        F = fresnel_refl_dielectric(params->eta, base::dot(m, wi));
+        sample.pdf = MicrofacetInterface<BeckmannDist>::pdf(wi, m, params->xalpha, params->yalpha);
+    }
+    else {
+        D = MicrofacetInterface<GGXDist>::D(m, params->xalpha, params->yalpha);
+        G = MicrofacetInterface<GGXDist>::G(wi, sample.wo, params->xalpha, params->yalpha);
+        F = fresnel_refl_dielectric(params->eta, std::abs(base::dot(m, wi)));
+        sample.pdf = MicrofacetInterface<GGXDist>::pdf(wi, m, params->xalpha, params->yalpha);
+    }
+
+    return D * G * F / (4.f * cos_theta_i * cos_theta_o);
 }
 
 float KpGloss::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     auto params = reinterpret_cast<const KpRoughParams*>(data);
+    auto wi = base_to_vec3(-sg.I);
+    auto cos_theta_i = cos_theta(wi);
+    if (cos_theta_i <= 0)
+        return 0.f;
+
+    float D, G, F;
+    if (params->dist == u_beckmann) {
+        const Vec3f m = MicrofacetInterface<BeckmannDist>::sample_m(wi,
+            params->xalpha, params->yalpha, rand);
+        sample.wo = reflect(wi, m);
+        auto cos_theta_o = cos_theta(sample.wo);
+        if (cos_theta_o == 0.f)
+            return 0.f;
+
+        const float D = MicrofacetInterface<BeckmannDist>::D(m, params->xalpha,
+            params->yalpha);
+        const float G = MicrofacetInterface<BeckmannDist>::G(wi, sample.wo,
+            params->xalpha, params->yalpha);
+        const float F = fresnel_refl_dielectric(params->eta, std::abs(base::dot(m, wi)));
+
+        sample.pdf = MicrofacetInterface<BeckmannDist>::pdf(wi, m, params->xalpha,
+            params->yalpha);
+    }
+    else {
+        const Vec3f m = MicrofacetInterface<GGXDist>::sample_m(wi,
+            params->xalpha, params->yalpha, rand);
+        sample.wo = reflect(wi, m);
+        auto cos_theta_o = cos_theta(sample.wo);
+        if (cos_theta_o == 0.f)
+            return 0.f;
+
+        const float D = MicrofacetInterface<GGXDist>::D(m, params->xalpha,
+            params->yalpha);
+        const float G = MicrofacetInterface<GGXDist>::G(wi, sample.wo,
+            params->xalpha, params->yalpha);
+        const float F = fresnel_refl_dielectric(params->eta, std::abs(base::dot(m, wi)));
+
+        sample.pdf = MicrofacetInterface<GGXDist>::pdf(wi, m, params->xalpha,
+            params->yalpha);
+    }
+
+    return D * G * F / (4.f * cos_theta_i * cos_theta_o);
+}
+
+float KpGlass::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    auto params = reinterpret_cast<const KpRoughParams*>(data);
+    auto wi = base_to_vec3(-sg.I);
+    auto cos_theta_i = cos_theta(wi);
+    auto eta = params->eta;
+    if (eta == 1.f) {
+        sample.pdf = 0.f;
+        return 0.f;
+    }
+    if (cos_theta_i < 0)
+        eta = 1.f / eta;
     
+    if (cos_theta_i * cos_theta_o >= 0.f) {
+        // Reflect
+        auto f = [&params](const float cos_theta_v) {
+            fresnel_refl_dielectric(params->eta, cos_theta_v);
+        };
+
+        if (params->dist == u_beckmann)
+            return MicrofacetInterface<Beckmann>::eval(wi, params->xalpha,
+                params->yalpha, f, sample);
+        else
+            return MicrofacetInterface<GGXDist>::eval(wi, params->xalpha,
+                params->yalpha, f, sample);
+    }
+    else {
+        // Refract
+    }
+}
+
+float KpGloss::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+
 }
