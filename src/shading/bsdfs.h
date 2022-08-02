@@ -439,6 +439,67 @@ struct KpGlass {
 
         shadingsys.register_closure("kp_glass", KpGlassID, params, nullptr, nullptr);
     }
+
+private:
+    template <typename MDF>
+    static inline float eval_reflection(const Vec3f& wi, const Vec3f& wo, const Vec3f& m,
+        const float xalpha, const float yalpha, const float F)
+    {
+        const float denom = std::abs(4.f * wi[1] * wo[1]);
+        if (denom == 0.f)
+            return 0.f;
+
+        const float D = MDF::D(m, xalpha, yalpha);
+        const float G = MDF::G(wo, wi, m, xalpha, yalpha);
+        return F * D * G / denom;
+    }
+
+    template <typename MDF>
+    static inline float reflection_pdf(const Vec3f& wi, const Vec3f& m, const float cos_mi,
+        const float xalpha, const float yalpha)
+    {
+        if (cos_mi == 0.f)
+            return 0.f;
+
+        const float jacobian = 1.f / (4.f * std::abs(cos_mi));
+        return jacobian * MDF::pdf(wi, m, xalpha, yalpha);
+    }
+
+    template <typename MDF>
+    static inline float eval_refraction(const float eta, const Vec3f& wi, const Vec3f& wo,
+        const Vec3f& m, const float xalpha, const float yalpha, const float T)
+    {
+        if (wi[1] == 0.f || wo[1] == 0.f)
+            return 0.f;
+
+        const float cos_mi = base::dot(m, wi);
+        const float cos_mo = base::dot(m, wo);
+        const float c = std::abs((cos_mi * cos_mo) / (wi[1] * wo[1]));
+
+        float denom = cos_mi + eta * cos_mo;
+        denom = square(denom);
+        if (std::abs(denom) < 1.0e-6f)
+            return 0.f;
+
+        const float D = MDF::D(m, xalpha, yalpha);
+        const float G = MDF::G(wi, sample.wo, m, xalpha, yalpha);
+
+        return c * D * G * T * suqare(eta) / square(denom)
+    }
+
+    template <typename MDF>
+    static inline float refraction_pdf(const Vec3f& wi, const Vec3f& wo, const Vec3f& m,
+        const float xalpha, const float yalpha, const float eta)
+    {
+        auto cos_mo = base::dot(m, wo);
+        auto cos_mi = base::dot(m, wi);
+        auto denom = cos_mi + eta * cos_mo;
+        if (std::abs(denom) < 1.0e-6f)
+            return 0.f;
+
+        auto jacobian = std::abs(cos_mo) * square(eta / denom);
+        return jacobian * MDF::pdf(wi, m, xalpha, yalpha);
+    }
 };
 
 using eval_func = std::function<float(const void*, const OSL::ShaderGlobals&,

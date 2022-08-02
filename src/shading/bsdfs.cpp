@@ -371,6 +371,7 @@ float KpGlass::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
     auto params = reinterpret_cast<const KpRoughParams*>(data);
     auto wi = base_to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(wi);
+    auto cos_theta_o = cos_theta(sample.wo);
     auto eta = params->eta;
     if (eta == 1.f) {
         sample.pdf = 0.f;
@@ -381,22 +382,83 @@ float KpGlass::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
     
     if (cos_theta_i * cos_theta_o >= 0.f) {
         // Reflect
-        auto f = [&params](const float cos_theta_v) {
-            fresnel_refl_dielectric(params->eta, cos_theta_v);
-        };
-
-        if (params->dist == u_beckmann)
-            return MicrofacetInterface<Beckmann>::eval(wi, params->xalpha,
-                params->yalpha, f, sample);
-        else
-            return MicrofacetInterface<GGXDist>::eval(wi, params->xalpha,
-                params->yalpha, f, sample);
+        const Vec3f m = normalize(wi + sample.wo);
+        auto cos_mi = base::dot(wi, m);
+        const float F = fresnel_refl_dielectric(eta, cos_mi);
+        if (params->dist == u_beckmann) {
+            sample.pdf = reflection_pdf<BeckmannDist>(wi, m, cos_mi, params->xalpha, params->yalpha);
+            return eval_reflection<BeckmannDist>(wi, sample.wo, m, params->xalpha, params->yalpha, F);
+        }
+        else {
+            sample.pdf = reflection_pdf<GGXDist>(wi, m, cos_mi, params->xalpha, params->yalpha);
+            return eval_reflection<GGXDist>(wi, sample.wo, m, params->xalpha, params->yalpha, F);
+        }
     }
     else {
         // Refract
+        Vec3f m = normalize(wi + eta * sample.wo);
+        if (m[1] < 0.f)
+            m = -m;
+        auto cos_mi = base::dot(wi, m);
+        const float F = fresnel_refl_dielectric(eta, cos_mi);
+        if (params->dist == u_beckmann) {
+            sample.pdf = refraction_pdf<BeckmannDist>(wi, sample.wo, m, params->xalpha, params->yalpha,
+                eta);
+            return eval_refraction<BeckmannDist>(eta, wi, sample.wo, m, params->xalpha, params->yalpha, 1.f - F);
+        }
+        else {
+            sample.pdf = refraction_pdf<GGXDist>(wi, sample.wo, m, params->xalpha, params->yalpha,
+                eta);
+            return eval_refraction<GGXDist>(eta, wi, sample.wo, m, params->xalpha, params->yalpha, 1.f - F);
+        }
     }
 }
 
-float KpGloss::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    auto params = reinterpret_cast<const KpRoughParams*>(data);
+    auto wi = base_to_vec3(-sg.I);
+    auto cos_theta_i = cos_theta(wi);
+    float eta = params->eta;
+    if (eta == 1.f) {
+        sample.pdf = 0.f;
+        return 0.f;
+    }
+    if (cos_theta_i < 0.f)
+        eta = 1.f / eta;
 
+    Vec3f m;
+    if (params->dist == u_beckmann)
+        m = MicrofacetInterface<BeckmannDist>::sample_m(wi, params->xalpha,
+            params->yalpha, rand);
+    else
+        m = MicrofacetInterface<GGXDist>::sample_m(wi, params->xalpha,
+            params->yalpha, rand);
+
+    auto cos_mi = clamp(base::dot(m, wi), -1.f, 1.f);
+    // We need a extra fresnel function which calculates cos_theta_t
+    //float cos_theta_t;
+    auto F = fresnel_refl_dielectric(eta, cos_mi);
+    
+    // Sampling between reflection and refraction
+    if (rand[2] < F) {
+        // Reflection
+        sample.wo = reflect(wi, m);
+        if (wi[1] * sample.wo[1] <= 0.f)
+            return 0.f;
+
+        sample.pdf = F * reflection_pdf(wi, m, cos_mi, params->xalpha, params->yalpha);
+        return eval_reflection(wi, sample.wo, m, params->xalpha, params->yalpha, F);
+    }
+    else {
+        // Refraction
+        // TODO : compute refraction with the result of previous calculation
+        sample.wo = refract(wi, m, eta);
+        if (wi[1] * sample.wo[1] > 0.f)
+            return 0.f;
+
+        sample.pdf = (1.f - F) * refraction_pdf(wi, sample.wo, m, params->xalpha,
+            params->yalpha, eta);
+        return eval_refraction(eta, wi, sample.wo, m, params->xalpha, params->yalpha,
+            1.f - F);
+    }
 }
