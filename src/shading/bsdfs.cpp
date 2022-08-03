@@ -180,6 +180,22 @@ float Refraction::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
     return 1.f;
 }
 
+float Transparent::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+
+}
+
+float Transparent::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+
+}
+
+float Translucent::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+
+}
+
+float Transparent::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+
+}
+
 float Emission::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     return 1.f;

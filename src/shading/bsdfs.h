@@ -340,6 +340,30 @@ struct Refraction {
     }
 };
 
+struct Transparent {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_FINISH_PARAM(EmptyParams)
+        };
+
+        shadingsys.register_closure("transparent", TransparentID, params, nullptr, nullptr);
+    }
+};
+
+struct Translucent {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_FINISH_PARAM(EmptyParams)
+        };
+
+        shadingsys.register_closure("translucent", TranslucentID, params, nullptr, nullptr);
+    }
+};
+
 struct Emission {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
