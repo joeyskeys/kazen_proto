@@ -29,7 +29,7 @@ struct PhongParams {
 struct WardParams {
     OSL::Vec3 N;
     OSL::Vec3 T;
-    float xalpha, yalpha
+    float xalpha, yalpha;
 };
 
 struct MicrofacetParams {
@@ -449,8 +449,8 @@ private:
         if (denom == 0.f)
             return 0.f;
 
-        const float D = MDF::D(m, xalpha, yalpha);
-        const float G = MDF::G(wo, wi, m, xalpha, yalpha);
+        const float D = MicrofacetInterface<MDF>::D(m, xalpha, yalpha);
+        const float G = MicrofacetInterface<MDF>::G(wo, wi, xalpha, yalpha);
         return F * D * G / denom;
     }
 
@@ -462,7 +462,7 @@ private:
             return 0.f;
 
         const float jacobian = 1.f / (4.f * std::abs(cos_mi));
-        return jacobian * MDF::pdf(wi, m, xalpha, yalpha);
+        return jacobian * MicrofacetInterface<MDF>::pdf(wi, m, xalpha, yalpha);
     }
 
     template <typename MDF>
@@ -481,10 +481,10 @@ private:
         if (std::abs(denom) < 1.0e-6f)
             return 0.f;
 
-        const float D = MDF::D(m, xalpha, yalpha);
-        const float G = MDF::G(wi, sample.wo, m, xalpha, yalpha);
+        const float D = MicrofacetInterface<MDF>::D(m, xalpha, yalpha);
+        const float G = MicrofacetInterface<MDF>::G(wi, wo, xalpha, yalpha);
 
-        return c * D * G * T * suqare(eta) / square(denom)
+        return c * D * G * T * square(eta) / square(denom);
     }
 
     template <typename MDF>
@@ -498,7 +498,7 @@ private:
             return 0.f;
 
         auto jacobian = std::abs(cos_mo) * square(eta / denom);
-        return jacobian * MDF::pdf(wi, m, xalpha, yalpha);
+        return jacobian * MicrofacetInterface<MDF>::pdf(wi, m, xalpha, yalpha);
     }
 };
 
@@ -510,7 +510,7 @@ using sample_func = std::function<float(const void*, const OSL::ShaderGlobals&,
 // cpp 17 inlined constexpr variables will have external linkage will
 // have only one copy among all included files
 inline eval_func get_eval_func(ClosureID id) {
-    static std::array<eval_func, 25> eval_functions {
+    static std::array<eval_func, 21> eval_functions {
         Diffuse::eval,
         Phong::eval,
         nullptr,
@@ -521,13 +521,6 @@ inline eval_func get_eval_func(ClosureID id) {
         nullptr,
         //Microfacet::eval,
         nullptr,
-        MicrofacetGGXRefl::eval,
-        MicrofacetGGXRefr::eval,
-        MicrofacetGGXBoth::eval,
-        MicrofacetBeckmannRefl::eval,
-        MicrofacetBeckmannRefr::eval,
-        MicrofacetBeckmannBoth::eval,
-        //MicrofacetAniso::eval,
         nullptr,
         Emission::eval, // emission
         nullptr,
@@ -537,13 +530,15 @@ inline eval_func get_eval_func(ClosureID id) {
         KpDielectric::eval,
         KpMicrofacet::eval,
         KpEmitter::eval,
+        KpGloss::eval,
+        KpGlass::eval,
         nullptr
     };
     return eval_functions[id];
 }
 
 inline sample_func get_sample_func(ClosureID id) {
-    static std::array<sample_func, 25> sample_functions {
+    static std::array<sample_func, 21> sample_functions {
         Diffuse::sample,
         Phong::sample,
         nullptr,
@@ -554,13 +549,6 @@ inline sample_func get_sample_func(ClosureID id) {
         nullptr,
         //Microfacet::sample,
         nullptr,
-        MicrofacetGGXRefl::sample,
-        MicrofacetGGXRefr::sample,
-        MicrofacetGGXBoth::sample,
-        MicrofacetBeckmannRefl::sample,
-        MicrofacetBeckmannRefr::sample,
-        MicrofacetBeckmannBoth::sample,
-        //MicrofacetAniso::sample,
         nullptr,
         Emission::sample, // emission
         nullptr,

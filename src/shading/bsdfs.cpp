@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <boost/math/constants/constants.hpp>
 
 #include "bsdfs.h"
@@ -81,7 +83,7 @@ float Ward::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sam
     auto cos_theta_i = cos_theta(wi);
     auto cos_theta_o = cos_theta(sample.wo);
     if (cos_theta_i <= 0 || cos_theta_o <= 0)
-        return 0.f
+        return 0.f;
 
     auto m = base::normalize(wi + sample.wo);
     auto sin_theta_v = sin_theta(wi);
@@ -107,25 +109,25 @@ float Ward::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& s
     if (params->xalpha == params->yalpha) {
         theta = std::atan(params->xalpha * std::sqrt(-std::log(rand[0])));
         phi = constants::two_pi<float>() * rand[1];
-        sincos(theta, sin_theta_v, cos_theta_v);
-        sincos(phi, sin_phi_v, cos_phi_v);
+        sincosf(theta, &sin_theta_v, &cos_theta_v);
+        sincosf(phi, &sin_phi_v, &cos_phi_v);
     }
     else {
         float phi = std::atan(params->yalpha / params->xalpha * std::tan(constants::two_pi<float>() * rand[0]));
-        sincos(phi, sin_phi_v, cos_phi_v);
-        A = square(cos_phi / params->xalpha) + square(sin_phi / params->yalpha);
+        sincosf(phi, &sin_phi_v, &cos_phi_v);
+        A = square(cos_phi_v / params->xalpha) + square(sin_phi_v / params->yalpha);
         float theta = std::atan(std::sqrt(-std::log(rand[1]) / A));
-        sincos(theta, sin_theta_v, cos_theta_v);
+        sincosf(theta, &sin_theta_v, &cos_theta_v);
     }
 
     Vec3f m{sin_theta_v * cos_phi_v, cos_theta_v, sin_theta_v * sin_phi_v};
     sample.wo = reflect(wi, m);
     auto tmp = std::exp(-tan_2_theta(m) * A) /
-        (4.f constants::pi<float>() * params->xalpha * params->yalpha);
+        (4.f * constants::pi<float>() * params->xalpha * params->yalpha);
     
     // Same as above
     sample.pdf = tmp / (base::dot(m, wi) * std::pow(cos_theta_v, 3));
-    return tmp / (std::sqrt(cos_theta_i * cos_theta_o));
+    return tmp / (std::sqrt(cos_theta_i * cos_theta(sample.wo)));
 } 
 
 float Reflection::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
@@ -287,8 +289,8 @@ static const OSL::ustring u_beckmann("beckmann");
 static const OSL::ustring u_default("default");
 
 float KpGloss::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    auto params = reinterpret_cast<const KpRoughParams*>(data);
-    auto wi = base_to_vec3(-sg.I);
+    auto params = reinterpret_cast<const MicrofacetParams*>(data);
+    auto wi = base::to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(wi);
     auto cos_theta_o = cos_theta(sample.wo);
     if (cos_theta_i <= 0 || cos_theta_o <= 0)
@@ -302,7 +304,7 @@ float KpGloss::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
     const Vec3f m = base::normalize(wi + sample.wo);
     auto cos_om = base::dot(sample.wo, m);
     if (cos_om == 0.f)
-        return 0.f
+        return 0.f;
 
     float D, G, F;
     if (params->dist == u_beckmann) {
@@ -322,8 +324,8 @@ float KpGloss::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
 }
 
 float KpGloss::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
-    auto params = reinterpret_cast<const KpRoughParams*>(data);
-    auto wi = base_to_vec3(-sg.I);
+    auto params = reinterpret_cast<const MicrofacetParams*>(data);
+    auto wi = base::to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(wi);
     if (cos_theta_i <= 0)
         return 0.f;
@@ -364,12 +366,12 @@ float KpGloss::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
             params->yalpha);
     }
 
-    return D * G * F / (4.f * cos_theta_i * cos_theta_o);
+    return D * G * F / (4.f * cos_theta_i * cos_theta(sample.wo));
 }
 
 float KpGlass::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    auto params = reinterpret_cast<const KpRoughParams*>(data);
-    auto wi = base_to_vec3(-sg.I);
+    auto params = reinterpret_cast<const MicrofacetParams*>(data);
+    auto wi = base::to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(wi);
     auto cos_theta_o = cos_theta(sample.wo);
     auto eta = params->eta;
@@ -382,7 +384,7 @@ float KpGlass::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
     
     if (cos_theta_i * cos_theta_o >= 0.f) {
         // Reflect
-        const Vec3f m = normalize(wi + sample.wo);
+        const Vec3f m = base::normalize(wi + sample.wo);
         auto cos_mi = base::dot(wi, m);
         const float F = fresnel_refl_dielectric(eta, cos_mi);
         if (params->dist == u_beckmann) {
@@ -396,7 +398,7 @@ float KpGlass::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
     }
     else {
         // Refract
-        Vec3f m = normalize(wi + eta * sample.wo);
+        Vec3f m = base::normalize(wi + eta * sample.wo);
         if (m[1] < 0.f)
             m = -m;
         auto cos_mi = base::dot(wi, m);
@@ -415,8 +417,8 @@ float KpGlass::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
 }
 
 float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
-    auto params = reinterpret_cast<const KpRoughParams*>(data);
-    auto wi = base_to_vec3(-sg.I);
+    auto params = reinterpret_cast<const MicrofacetParams*>(data);
+    auto wi = base::to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(wi);
     float eta = params->eta;
     if (eta == 1.f) {
@@ -434,7 +436,7 @@ float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
         m = MicrofacetInterface<GGXDist>::sample_m(wi, params->xalpha,
             params->yalpha, rand);
 
-    auto cos_mi = clamp(base::dot(m, wi), -1.f, 1.f);
+    auto cos_mi = std::clamp(base::dot(m, wi), -1.f, 1.f);
     // We need a extra fresnel function which calculates cos_theta_t
     //float cos_theta_t;
     auto F = fresnel_refl_dielectric(eta, cos_mi);
@@ -446,8 +448,14 @@ float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
         if (wi[1] * sample.wo[1] <= 0.f)
             return 0.f;
 
-        sample.pdf = F * reflection_pdf(wi, m, cos_mi, params->xalpha, params->yalpha);
-        return eval_reflection(wi, sample.wo, m, params->xalpha, params->yalpha, F);
+        if (params->dist == u_beckmann) {
+            sample.pdf = F * reflection_pdf<BeckmannDist>(wi, m, cos_mi, params->xalpha, params->yalpha);
+            return eval_reflection<BeckmannDist>(wi, sample.wo, m, params->xalpha, params->yalpha, F);
+        }
+        else {
+            sample.pdf = F * reflection_pdf<GGXDist>(wi, m, cos_mi, params->xalpha, params->yalpha);
+            return eval_reflection<GGXDist>(wi, sample.wo, m, params->xalpha, params->yalpha, F);
+        }
     }
     else {
         // Refraction
@@ -456,9 +464,17 @@ float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
         if (wi[1] * sample.wo[1] > 0.f)
             return 0.f;
 
-        sample.pdf = (1.f - F) * refraction_pdf(wi, sample.wo, m, params->xalpha,
-            params->yalpha, eta);
-        return eval_refraction(eta, wi, sample.wo, m, params->xalpha, params->yalpha,
-            1.f - F);
+        if (params->dist == u_beckmann) {
+            sample.pdf = (1.f - F) * refraction_pdf<BeckmannDist>(wi, sample.wo, m, params->xalpha,
+                params->yalpha, eta);
+            return eval_refraction<BeckmannDist>(eta, wi, sample.wo, m, params->xalpha, params->yalpha,
+                1.f - F);
+        }
+        else {
+            sample.pdf = (1.f - F) * refraction_pdf<GGXDist>(wi, sample.wo, m, params->xalpha,
+                params->yalpha, eta);
+            return eval_refraction<GGXDist>(eta, wi, sample.wo, m, params->xalpha, params->yalpha,
+                1.f - F);
+        }
     }
 }

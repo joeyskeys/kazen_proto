@@ -27,14 +27,6 @@ enum ClosureID {
 
     // Microfacet closures
     MicrofacetID,
-    // Sub tags for dispatching in process_closures function
-    MicrofacetGGXReflID,
-    MicrofacetGGXRefrID,
-    MicrofacetGGXBothID,
-    MicrofacetBeckmannReflID,
-    MicrofacetBeckmannRefrID,
-    MicrofacetBeckmannBothID,
-    //MicrofacetAnisoID,
 
     // BSSRDF closures
     SubsurfaceID,

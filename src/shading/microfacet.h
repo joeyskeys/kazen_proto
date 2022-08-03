@@ -191,7 +191,7 @@ class MicrofacetInterface {
 public:
     // The design of returning pdf rather than sampled direction is more convinient
     // for error checking
-    static float sample_m(
+    static Vec3f sample_m(
         const Vec3f& wi,
         const float xalpha,
         const float yalpha,
@@ -212,7 +212,7 @@ public:
         }
 
         // 2. sample slope
-        const Vec2f slope = MDF::sample_slope(cos_theta_i, rand.head<2>());
+        Vec2f slope = MDF::sample_slope(cos_theta_i, rand.head<2>());
 
         // 3. rotate
         const float cos_phi_v = cos(phi);
@@ -291,7 +291,7 @@ public:
         const float cos_theta_4 = square(cos_theta_2);
         const float tan_theta_2 = (1.f - cos_theta_2) / cos_theta_2;
 
-        const float A = stretch_roughness(m, sin_theta_v, xalpha, yalpha);
+        const float A = stretched_roughness(m, sin_theta_v, xalpha, yalpha);
 
         // Code structure here takes reference from "Understanding the Masking-Shadowing
         // Function in Microfacet-Based BRDFs" page 88 equation 87

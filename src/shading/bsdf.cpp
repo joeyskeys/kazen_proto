@@ -158,11 +158,11 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                         }
                         break;
                         */
-                        const KpRoughParams* params = comp->as<KpRoughParams>();
+                        const MicrofacetParams* params = comp->as<MicrofacetParams>();
                         switch (params->refract) {
-                            case 0: status = ret.surface.add_bsdf<KpRoughParams>(KpGlossID, cw, params); break;
-                            case 1: status = ret.surface.add_bsdf<KpRoughParams>(KpGlassID, cw, params); break;
-                            case 2: status = ret.surface.add_bsdf<KpRoughParams>(KpGlassID, cw, params); break;
+                            case 0: status = ret.surface.add_bsdf<MicrofacetParams>(KpGlossID, cw, params); break;
+                            case 1: status = ret.surface.add_bsdf<MicrofacetParams>(KpGlassID, cw, params); break;
+                            case 2: status = ret.surface.add_bsdf<MicrofacetParams>(KpGlassID, cw, params); break;
                         }
                         break;
                     }
