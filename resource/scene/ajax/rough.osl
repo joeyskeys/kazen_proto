@@ -6,8 +6,12 @@ surface rough
             float UImin = 0, float UImax = 1 ]],
     float roughness = 0.28
         [[  string description = "Roughness",
-            float UImin = 0, float UImax = 1 ]]
+            float UImin = 0, float UImax = 1 ]],
+    float eta = 1.5
+        [[  string description = "index of refraction",
+            float UImin = 0, float UImax = 2 ]]
 )
 {
-    Ci = Cs * kp_microfacet(roughness, 1.5, 1.004, max(max(Cs.r, Cs.g), Cs.b));
+    //Ci = Cs * kp_microfacet(roughness, 1.5, 1.004, max(max(Cs.r, Cs.g), Cs.b));
+    Ci = Cs * 0.1 * microfacet("beckmann", N, roughness, eta, 0) + Cs * diffuse(N);
 }

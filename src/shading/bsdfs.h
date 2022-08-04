@@ -26,14 +26,13 @@ struct PhongParams {
     float exponent;
 };
 
-struct MicrofacetParams {
-    OSL::ustring dist;
-    OSL::Vec3 N, U;
-    float xalpha, yalpha, eta;
-    int refract;
+struct WardParams {
+    OSL::Vec3 N;
+    OSL::Vec3 T;
+    float xalpha, yalpha;
 };
 
-struct MicrofacetAnisoParams {
+struct MicrofacetParams {
     OSL::ustring dist;
     OSL::Vec3 N, U;
     float xalpha, yalpha, eta;
@@ -66,6 +65,12 @@ struct KpEmitterParams {
     float albedo;
 };
 
+struct KpRoughParams {
+    OSL::Vec3 N;
+    float xalpha, yalpha, eta, f;
+    OSL::ustring dist;
+};
+
 struct Diffuse {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
@@ -93,9 +98,26 @@ struct Phong {
     }
 };
 
+struct Ward {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(WardParams, N),
+            CLOSURE_VECTOR_PARAM(WardParams, T),
+            CLOSURE_FLOAT_PARAM(WardParams, xalpha),
+            CLOSURE_FLOAT_PARAM(WardParams, yalpha),
+            CLOSURE_FINISH_PARAM(WardParams)
+        };
+
+        shadingsys.register_closure("ward", WardID, params, nullptr, nullptr);        
+    }
+};
+
+/*
 // Basically a replication of implementation in OpenShadingLanguage's testrender
 // for now
-// TODO : it's better to unify shading space to a z-up coordinate system
+// Seems this impl isn't helping much...
 template <typename Dist, int Refract>
 struct Microfacet {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
@@ -117,7 +139,7 @@ struct Microfacet {
                 const float Fr = fresnel_dielectric(base::dot(m, wi), params->eta);
                 //const float Fr = fresnel_refl_dielectric(params->eta, base::dot(m, wi));
                 sample.pdf = (G1 * D * 0.25f) / cos_theta_i;
-                float out = G2 / G1;
+                float out = D * G2 / G1;
                 if constexpr (Refract == 2) {
                     sample.pdf *= Fr;
                     return out;
@@ -215,34 +237,19 @@ struct Microfacet {
         return sample.pdf = 0;
     }
 
-    /*
-    static void register_closure(OSL::ShadingSystem& shadingsys) {
-        const OSL::ClosureParam params[] = {
-            CLOSURE_STRING_PARAM(MicrofacetParams, dist),
-            CLOSURE_VECTOR_PARAM(MicrofacetParams, N),
-            CLOSURE_VECTOR_PARAM(MicrofacetParams, U),
-            CLOSURE_FLOAT_PARAM(MicrofacetParams, xalpha),
-            CLOSURE_FLOAT_PARAM(MicrofacetParams, yalpha),
-            CLOSURE_FLOAT_PARAM(MicrofacetParams, eta),
-            CLOSURE_INT_PARAM(MicrofacetParams, refract),
-            CLOSURE_FINISH_PARAM(MicrofacetParams)
-        };
-
-        shadingsys.register_closure("microfacet", MicrofacetID, params, nullptr, nullptr);
-    }
-    */
-
 private:
-    inline static float eval_D(const Vec3f Hr, const float xalpha, const float yalpha) {
-        float cos_theta_m = cos_theta(Hr);
+    inline static float eval_D(const Vec3f m, const float xalpha, const float yalpha) {
+        float cos_theta_m = cos_theta(m);
         if (cos_theta_m > 0) {
-            float cos_phi_2_st2 = square(Hr.x() / xalpha);
-            float sin_phi_2_st2 = square(Hr.z() / yalpha);
+            //float cos_phi_2_st2 = square(Hr.x() / xalpha);
+            //float sin_phi_2_st2 = square(Hr.z() / yalpha);
             float cos_theta_m2 = square(cos_theta_m);
             float cos_theta_m4 = square(cos_theta_m2);
-            float tan_theta_m2 = (cos_phi_2_st2 + sin_phi_2_st2) * (1 - cos_theta_m2) / cos_theta_m2;
+            //float tan_theta_m2 = (cos_phi_2_st2 + sin_phi_2_st2) * (1 - cos_theta_m2) / cos_theta_m2;
             //float tan_theta_m2 = (cos_phi_2_st2 + sin_phi_2_st2) / cos_theta_m2;
-            return Dist::D(tan_theta_m2) / (xalpha * yalpha * cos_theta_m4);
+            const float tan_theta_m2 = (1.f - cos_theta_m2) / cos_theta_m2;
+            const float A = stretched_roughness(m, xalpha, yalpha);
+            return Dist::D(tan_theta_m2 * A) / (xalpha * yalpha * cos_theta_m4);
         }
         return 0;
     }
@@ -287,14 +294,6 @@ private:
         Vec2f s(cos_phi * slope.x() - sin_phi * slope.y(),
                 sin_phi * slope.x() + cos_phi * slope.y());
 
-        /*
-        s[0] *= xalpha;
-        s[1] *= yalpha;
-        float mlen = sqrtf(s.x() * s.x() + s.y() * s.y() + 1);
-        Vec3f m(fabsf(s.x()) < mlen ? -s.x() / mlen : 1.f,
-                1.f / mlen,
-                fabsf(s.y()) < mlen ? -s.y() / mlen : 1.f);
-        */
         Vec3f m{-s[0] * xalpha, 1.f, -s[1] * yalpha};
 
         return normalize(m);
@@ -307,29 +306,11 @@ using MicrofacetGGXBoth = Microfacet<GGXDist, 2>;
 using MicrofacetBeckmannRefl = Microfacet<BeckmannDist, 0>;
 using MicrofacetBeckmannRefr = Microfacet<BeckmannDist, 1>;
 using MicrofacetBeckmannBoth = Microfacet<BeckmannDist, 2>;
-
-/*
-// Make it template for different distribution later
-//template <typename Dist, int Refract>
-struct MicrofacetAniso {
-    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static void register_closure(OSL::ShadingSystem& shadingsys) {
-        const OSL::ClosureParam params[] = {
-            CLOSURE_STRING_PARAM(MicrofacetAnisoParams, dist),
-            CLOSURE_VECTOR_PARAM(MicrofacetAnisoParams, N),
-            CLOSURE_VECTOR_PARAM(MicrofacetAnisoParams, U),
-            CLOSURE_FLOAT_PARAM(MicrofacetAnisoParams, xalpha),
-            CLOSURE_FLOAT_PARAM(MicrofacetAnisoParams, yalpha),
-            CLOSURE_FLOAT_PARAM(MicrofacetAnisoParams, eta),
-            CLOSURE_INT_PARAM(MicrofacetAnisoParams, refract),
-            CLOSURE_FINISH_PARAM(MicrofacetAnisoParams)
-        };
-
-        shadingsys.register_closure("microfacet", MicrofacetAnisoID, params, nullptr, nullptr);
-    }
-};
 */
+
+// Since now we are using KpGloss & KpGlass to represent the actual Microfacet
+// closure, we don't need a explicit Microfacet struct.
+// Just convert it to KpGloss & KpGlass in process_closures function.
 
 struct Reflection {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
@@ -356,6 +337,30 @@ struct Refraction {
         };
 
         shadingsys.register_closure("refraction", RefractionID, params, nullptr, nullptr);
+    }
+};
+
+struct Transparent {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_FINISH_PARAM(EmptyParams)
+        };
+
+        shadingsys.register_closure("transparent", TransparentID, params, nullptr, nullptr);
+    }
+};
+
+struct Translucent {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_FINISH_PARAM(EmptyParams)
+        };
+
+        shadingsys.register_closure("translucent", TranslucentID, params, nullptr, nullptr);
     }
 };
 
@@ -426,6 +431,101 @@ struct KpEmitter {
     }
 };
 
+struct KpGloss {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(KpRoughParams, N),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, xalpha),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, yalpha),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, eta),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, f),
+            CLOSURE_FINISH_PARAM(KpRoughParams)
+        };
+
+        shadingsys.register_closure("kp_gloss", KpGlossID, params, nullptr, nullptr);
+    }
+};
+
+struct KpGlass {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(KpRoughParams, N),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, xalpha),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, yalpha),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, eta),
+            CLOSURE_FLOAT_PARAM(KpRoughParams, f),
+            CLOSURE_FINISH_PARAM(KpRoughParams)
+        };
+
+        shadingsys.register_closure("kp_glass", KpGlassID, params, nullptr, nullptr);
+    }
+
+private:
+    template <typename MDF>
+    static inline float eval_reflection(const Vec3f& wi, const Vec3f& wo, const Vec3f& m,
+        const float xalpha, const float yalpha, const float F)
+    {
+        const float denom = std::abs(4.f * wi[1] * wo[1]);
+        if (denom == 0.f)
+            return 0.f;
+
+        const float D = MicrofacetInterface<MDF>::D(m, xalpha, yalpha);
+        const float G = MicrofacetInterface<MDF>::G(wo, wi, xalpha, yalpha);
+        return F * D * G / denom;
+    }
+
+    template <typename MDF>
+    static inline float reflection_pdf(const Vec3f& wi, const Vec3f& m, const float cos_mi,
+        const float xalpha, const float yalpha)
+    {
+        if (cos_mi == 0.f)
+            return 0.f;
+
+        const float jacobian = 1.f / (4.f * std::abs(cos_mi));
+        return jacobian * MicrofacetInterface<MDF>::pdf(wi, m, xalpha, yalpha);
+    }
+
+    template <typename MDF>
+    static inline float eval_refraction(const float eta, const Vec3f& wi, const Vec3f& wo,
+        const Vec3f& m, const float xalpha, const float yalpha, const float T)
+    {
+        if (wi[1] == 0.f || wo[1] == 0.f)
+            return 0.f;
+
+        const float cos_mi = base::dot(m, wi);
+        const float cos_mo = base::dot(m, wo);
+        const float c = std::abs((cos_mi * cos_mo) / (wi[1] * wo[1]));
+
+        float denom = cos_mi + eta * cos_mo;
+        denom = square(denom);
+        if (std::abs(denom) < 1.0e-6f)
+            return 0.f;
+
+        const float D = MicrofacetInterface<MDF>::D(m, xalpha, yalpha);
+        const float G = MicrofacetInterface<MDF>::G(wi, wo, xalpha, yalpha);
+
+        return c * D * G * T * square(eta) / square(denom);
+    }
+
+    template <typename MDF>
+    static inline float refraction_pdf(const Vec3f& wi, const Vec3f& wo, const Vec3f& m,
+        const float xalpha, const float yalpha, const float eta)
+    {
+        auto cos_mo = base::dot(m, wo);
+        auto cos_mi = base::dot(m, wi);
+        auto denom = cos_mi + eta * cos_mo;
+        if (std::abs(denom) < 1.0e-6f)
+            return 0.f;
+
+        auto jacobian = std::abs(cos_mo) * square(eta / denom);
+        return jacobian * MicrofacetInterface<MDF>::pdf(wi, m, xalpha, yalpha);
+    }
+};
+
 using eval_func = std::function<float(const void*, const OSL::ShaderGlobals&,
     BSDFSample&)>;
 using sample_func = std::function<float(const void*, const OSL::ShaderGlobals&,
@@ -434,7 +534,7 @@ using sample_func = std::function<float(const void*, const OSL::ShaderGlobals&,
 // cpp 17 inlined constexpr variables will have external linkage will
 // have only one copy among all included files
 inline eval_func get_eval_func(ClosureID id) {
-    static std::array<eval_func, 25> eval_functions {
+    static std::array<eval_func, 21> eval_functions {
         Diffuse::eval,
         Phong::eval,
         nullptr,
@@ -445,13 +545,6 @@ inline eval_func get_eval_func(ClosureID id) {
         nullptr,
         //Microfacet::eval,
         nullptr,
-        MicrofacetGGXRefl::eval,
-        MicrofacetGGXRefr::eval,
-        MicrofacetGGXBoth::eval,
-        MicrofacetBeckmannRefl::eval,
-        MicrofacetBeckmannRefr::eval,
-        MicrofacetBeckmannBoth::eval,
-        //MicrofacetAniso::eval,
         nullptr,
         Emission::eval, // emission
         nullptr,
@@ -461,13 +554,15 @@ inline eval_func get_eval_func(ClosureID id) {
         KpDielectric::eval,
         KpMicrofacet::eval,
         KpEmitter::eval,
+        KpGloss::eval,
+        KpGlass::eval,
         nullptr
     };
     return eval_functions[id];
 }
 
 inline sample_func get_sample_func(ClosureID id) {
-    static std::array<sample_func, 25> sample_functions {
+    static std::array<sample_func, 21> sample_functions {
         Diffuse::sample,
         Phong::sample,
         nullptr,
@@ -478,13 +573,6 @@ inline sample_func get_sample_func(ClosureID id) {
         nullptr,
         //Microfacet::sample,
         nullptr,
-        MicrofacetGGXRefl::sample,
-        MicrofacetGGXRefr::sample,
-        MicrofacetGGXBoth::sample,
-        MicrofacetBeckmannRefl::sample,
-        MicrofacetBeckmannRefr::sample,
-        MicrofacetBeckmannBoth::sample,
-        //MicrofacetAniso::sample,
         nullptr,
         Emission::sample, // emission
         nullptr,

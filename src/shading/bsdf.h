@@ -27,14 +27,6 @@ enum ClosureID {
 
     // Microfacet closures
     MicrofacetID,
-    // Sub tags for dispatching in process_closures function
-    MicrofacetGGXReflID,
-    MicrofacetGGXRefrID,
-    MicrofacetGGXBothID,
-    MicrofacetBeckmannReflID,
-    MicrofacetBeckmannRefrID,
-    MicrofacetBeckmannBothID,
-    //MicrofacetAnisoID,
 
     // BSSRDF closures
     SubsurfaceID,
@@ -54,10 +46,16 @@ enum ClosureID {
     /************
      * Kazen specific
      ************/
+
+    // Replicate Nori
     KpMirrorID,
     KpDielectricID,
     KpMicrofacetID,
     KpEmitterID,
+
+    // intrinsic
+    KpGlossID,
+    KpGlassID,
 
     NumClosureIDs
 };

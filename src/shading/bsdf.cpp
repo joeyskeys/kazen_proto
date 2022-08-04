@@ -139,12 +139,14 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                         break;
 
                     case MicrofacetID: {
+                        /*
                         const MicrofacetParams* params = comp->as<MicrofacetParams>();
                         if (params->dist == u_ggx) {
                             switch (params->refract) {
                                 case 0: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXReflID, cw, params); break;
                                 case 1: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXRefrID, cw, params); break;
                                 case 2: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXBothID, cw, params); break;
+                                case 0: status = ret.surface.add_bsdf<Kp
                             }
                         }
                         else if (params->dist == u_beckmann || params->dist == u_default) {
@@ -153,6 +155,14 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                                 case 1: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetBeckmannRefrID, cw, params); break;
                                 case 2: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetBeckmannBothID, cw, params); break;
                             }
+                        }
+                        break;
+                        */
+                        const MicrofacetParams* params = comp->as<MicrofacetParams>();
+                        switch (params->refract) {
+                            case 0: status = ret.surface.add_bsdf<MicrofacetParams>(KpGlossID, cw, params); break;
+                            case 1: status = ret.surface.add_bsdf<MicrofacetParams>(KpGlassID, cw, params); break;
+                            case 2: status = ret.surface.add_bsdf<MicrofacetParams>(KpGlassID, cw, params); break;
                         }
                         break;
                     }

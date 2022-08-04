@@ -11,61 +11,6 @@ using base::Vec2f;
 
 namespace constants = boost::math::constants;
 
-/*
-inline float stretch_roughness(
-    const Vec3f&    m,
-    const float     sin_theta_v,
-    const float     ax,
-    const float     ay)
-{
-    if (ax == ay || sin_theta_v == 0.f)
-        return 1.f / square(ax);
-
-    const float cos_phi_2_ax_2 = square(m.x() / (sin_theta_v * ax));
-    const float sin_phi_2_ay_2 = square(m.z() / (sin_theta_v * ay));
-    return cos_phi_2_ax_2 + sin_phi_2_ay_2;
-}
-
-float beckmann_ndf(
-    const Vec3f&    m,
-    const float     ax,
-    const float     ay)
-{
-    const float cos_theta_v = m.y();
-    if (cos_theta_v == 0.f)
-        return 0.f;
-    
-    const float cos_theta_2 = square(cos_theta_v);
-    const float sin_theta_v = std::sqrt(std::max(0.f, 1.f - cos_theta_2));
-    const float cos_theta_4 = square(cos_theta_2);
-    const float tan_theta_2 = (1.f - cos_theta_2) / cos_theta_2;
-
-    const float A = stretch_roughness(m, sin_theta_v, ax, ay);
-
-    return std::exp(-tan_theta_2 * A) / (constants::pi<float>() * ax * ay * cos_theta_4);
-}
-
-float GGX_ndf(
-    const Vec3f&    m,
-    const float     ax,
-    const float     ay)
-{
-    const float cos_theta_v = m.y();
-    if (cos_theta_v == 0.f)
-        return square(ax) * constants::one_div_pi<float>();
-
-    const float cos_theta_2 = square(cos_theta_v);
-    const float sin_theta_v = std::sqrt(std::max(0.f, 1.f - cos_theta_2));
-    const float cos_theta_4 = square(cos_theta_2);
-    const float tan_theta_2 = (1.f - cos_theta_2) / cos_theta_2;
-
-    const float A = stretch_roughness(m, sin_theta_v, ax, ay);
-
-    const float tmp = 1.f + tan_theta_2 * A;
-    return 1.f / (constants::pi<float>() * ax * ay * cos_theta_4 * square(tmp));
-}
-*/
-
 Vec3f BeckmannMDF(const Vec2f& sample, float alpha);
 
 float BeckmannPDF(const Vec3f& m, float alpha);
@@ -112,18 +57,54 @@ float G1(const Vec3f& wh, const Vec3f& wv, float alpha);
  * 
  ***********************************************************/
 
+static inline float stretched_roughness(
+    const Vec3f& m,
+    const float sin_theta_v,
+    const float xalpha,
+    const float yalpha)
+{
+    // Check "Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs"
+    // page 88, equation 87.
+    // https://jcgt.org/published/0003/02/03/paper.pdf
+    // Code here is mostly copied from appleseed:
+    // https://github.com/appleseedhq/appleseed/blob/master/src/appleseed/foundation/math/microfacet.cpp
+    if (xalpha == yalpha)
+        return 1.f / square(xalpha);
+    const float cos_phi_2_ax_2 = square(m.x() / (sin_theta_v * xalpha));
+    const float sin_phi_2_ay_2 = square(m.z() / (sin_theta_v * yalpha));
+    return cos_phi_2_ax_2 + sin_phi_2_ay_2;
+}
+
+inline float projected_roughness(
+    const Vec3f&    m,
+    const float     sin_theta_v,
+    const float     xalpha,
+    const float     yalpha)
+{
+    // Check "Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs"
+    // page 86, equation 80, same document as above
+    // Code here is mostly copied from appleseed, same as above
+    if (xalpha == yalpha || sin_theta_v == 0.f)
+        return xalpha;
+
+    const float cos_phi_2_ax_2 = square((m.x() * xalpha) / sin_theta_v);
+    const float sin_phi_2_ay_2 = square((m.z() * yalpha) / sin_theta_v);
+    return std::sqrt(cos_phi_2_ax_2 + sin_phi_2_ay_2);
+}
+
 struct GGXDist {
-    static float D(const float tan2m) {
+    static float D(const float tan2m_a) {
         // Impl here are copied from OpenShadingLanguage testrender,
         // identical to the impl in pbrt-v3.
         // Appleseed have a extra stretched_roughness in it, need to
         // do some further investigate.
-        auto tmp = 1 + tan2m;
+        auto tmp = 1 + tan2m_a;
         return 1.f / (constants::pi<float>() * tmp * tmp);
     }
 
-    static inline float lambda(const float a2) {
-        return 0.5f * (-1.f + sqrtf(1.f + 1.f / a2));
+    static inline float lambda(const float a_rcp) {
+        const float a2_rcp = square(a_rcp);
+        return (-1.f + std::sqrt(1.f + a2_rcp)) * 0.5f;
     }
 
     static Vec2f sample_slope(const float cos_theta, const Vec2f& sample) {
@@ -150,13 +131,17 @@ struct GGXDist {
 };
 
 struct BeckmannDist {
-    static float D(const float tan2m) {
-        return 1.f / constants::pi<float>() * std::exp(-tan2m);
+    static float D(const float tan2m_a) {
+        return constants::one_div_pi<float>() * std::exp(-tan2m_a);
     }
 
-    static inline float lambda(const float a2) {
-        const float a = sqrtf(a2);
-        return a < 1.6f ? (1.f - 1.259f * a + 0.396f * a2) / (3.535f * a + 2.181f * a2) : 0.f;
+    static inline float lambda(const float a_rcp) {
+        const float a = 1.f / a_rcp;
+        if (a < 1.6f) {
+            const float a2 = square(a);
+            return (1.f - 1.259f * a + 0.396f * a2) / (3.535f * a + 2.181f * a2);
+        }
+        return 0.f;
     }
 
     static Vec2f sample_slope(const float cos_theta_i, const Vec2f& sample) {
@@ -198,5 +183,118 @@ struct BeckmannDist {
         slope[1] = 1.f / std::erf(2.0f * sample[1] - 1.0f);
 
         return slope;
+    }
+};
+
+template <typename MDF>
+class MicrofacetInterface {
+public:
+    // The design of returning pdf rather than sampled direction is more convinient
+    // for error checking
+    static Vec3f sample_m(
+        const Vec3f& wi,
+        const float xalpha,
+        const float yalpha,
+        const Vec3f& rand)
+    {
+        // 1. stretch wi
+        Vec3f stretched{wi[0] * xalpha, wi[1], wi[2] * yalpha};
+        auto cos_theta_i = cos_theta(wi);
+        if (cos_theta_i < 0.f)
+            stretched = -stretched;
+        // normalize
+        stretched = base::normalize(stretched);
+        // get polar coordinates
+        float theta = 0.f, phi = 0.f;
+        if (cos_theta_i < 0.9999f) {
+            theta = acos(cos_theta_i);
+            phi = atan2(wi[2], wi[0]);
+        }
+
+        // 2. sample slope
+        Vec2f slope = MDF::sample_slope(cos_theta_i, rand.head<2>());
+
+        // 3. rotate
+        const float cos_phi_v = cos(phi);
+        const float sin_phi_v = sin(phi);
+        slope = Vec2f{
+            cos_phi_v * slope[0] - sin_phi_v * slope[1],
+            sin_phi_v * slope[0] + cos_phi_v * slope[1]
+        };
+
+        // 4. unstretch and normalize
+        const Vec3f m{-slope[0] * xalpha, 1.f, -slope[1] * yalpha};
+        return base::normalize(m);
+    }
+
+    static float pdf(
+        const Vec3f& wi,
+        const Vec3f& m,
+        const float xalpha,
+        const float yalpha)
+    {
+        // Check "Importance Sampling Microfacet-Based BSDFs using the Distribution
+        // of Visible Normals" page 4 equation 2.
+        // https://hal.inria.fr/hal-00996995v2/document
+        // Code here is mostly copied from appleseed:
+        // https://github.com/appleseedhq/appleseed/blob/master/src/appleseed/foundation/math/microfacet.cpp
+        // Here we use the exact visible normal distribution function as the pdf
+        // function.
+        const float cos_theta_v = cos_theta(wi);
+        if (cos_theta_v == 0.f)
+            return 0.f;
+
+        return G1(wi, xalpha, yalpha) * std::abs(base::dot(wi, m)) *
+            D(m, xalpha, yalpha) / std::abs(cos_theta_v);
+    }
+
+    static inline float lambda(const Vec3f& m, const float xalpha, const float yalpha) {
+        float cos_theta_v = cos_theta(m);
+        if (cos_theta_v == 0.f)
+            return 0.f;
+
+        const float sin_theta_v = std::sqrt(std::max(0.f, 1.f - square(cos_theta_v)));
+        if (sin_theta_v == 0.f)
+            return 0.f;
+
+        const float alpha = projected_roughness(m, sin_theta_v, xalpha, yalpha);
+        const float tan_theta_v = std::abs(sin_theta_v / cos_theta_v);
+        const float a_rcp = alpha * tan_theta_v;
+
+        return MDF::lambda(a_rcp);
+    }
+
+    inline static float G(
+        const Vec3f& wi,
+        const Vec3f& wo,
+        const float xalpha,
+        const float yalpha)
+    {
+        return 1.f / (lambda(wi, xalpha, yalpha) + lambda(wo, xalpha, yalpha) + 1.f);
+    }
+
+    inline static float G1(const Vec3f& w, const float xalpha, const float yalpha) {
+        return 1.f / (lambda(w, xalpha, yalpha) + 1.f);
+    }
+
+    static inline float D(const Vec3f& m, const float xalpha, const float yalpha) {
+        const float cos_theta_v = cos_theta(m);
+        if (cos_theta_v == 0.f) {
+            if constexpr (std::is_same_v<MDF, BeckmannDist>)
+                return 0.f;
+            else // currently only two possible distributions: beckmann & trowbridge
+                return square(xalpha) * constants::one_div_pi<float>();
+        }
+        
+        const float cos_theta_2 = square(cos_theta_v);
+        const float sin_theta_v = std::sqrt(std::max(0.f, 1.f - cos_theta_2));
+        const float cos_theta_4 = square(cos_theta_2);
+        const float tan_theta_2 = (1.f - cos_theta_2) / cos_theta_2;
+
+        const float A = stretched_roughness(m, sin_theta_v, xalpha, yalpha);
+
+        // Code structure here takes reference from "Understanding the Masking-Shadowing
+        // Function in Microfacet-Based BRDFs" page 88 equation 87
+        return MDF::D(tan_theta_2 * A) / (cos_theta_4 * xalpha * yalpha);
     }
 };
