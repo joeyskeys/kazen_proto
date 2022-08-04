@@ -344,7 +344,7 @@ OSL::Vec3 to_osl_vec3(const Vec<T, N>& v) {
     return ret;
 }
 
-Vec<float, 3> from_osl_vec3(const OSL::Vec3& v) {
+inline Vec<float, 3> from_osl_vec3(const OSL::Vec3& v) {
     Vec<float, 3> ret;
     memcpy(&ret, &v, sizeof(float) * 3);
     return ret;
@@ -879,7 +879,7 @@ OSL::Vec3 to_osl_vec3(const Vec<T, N>& v) {
     return ret;
 }
 
-Vec<float, 3> from_osl_vec3(const OSL::Vec3& v) {
+inline Vec<float, 3> from_osl_vec3(const OSL::Vec3& v) {
     Vec<float, 3> ret;
     memcpy(&ret, &v, sizeof(float) * 3);
     return ret;

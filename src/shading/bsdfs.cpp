@@ -98,6 +98,7 @@ float Ward::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sam
 }
 
 float Ward::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const WardParams*>(data);
     auto wi = base::to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(wi);
@@ -181,19 +182,27 @@ float Refraction::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
 }
 
 float Transparent::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-
+    sample.pdf = 1.f;
+    return 1.f;
 }
 
 float Transparent::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
-
+    sample.mode = ScatteringMode::Specular;
+    sample.wo = base::to_vec3(sg.I);
+    sample.pdf = 1.f;
+    return 1.f;
 }
 
 float Translucent::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-
+    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
+    return constants::one_div_pi<float>();
 }
 
-float Transparent::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
-
+float Translucent::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    sample.mode = ScatteringMode::Diffuse;
+    sample.wo = -sample_hemisphere(rand.head<2>());
+    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
+    return constants::one_div_pi<float>();
 }
 
 float Emission::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
@@ -272,6 +281,7 @@ float KpMicrofacet::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
 }
 
 float KpMicrofacet::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const KpMicrofacetParams*>(data);
     auto ks = 1. - params->kd;
     auto wi = base::to_vec3(-sg.I);
@@ -340,6 +350,8 @@ float KpGloss::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
 }
 
 float KpGloss::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    // Should we set the mode according to the roughness value?
+    sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const MicrofacetParams*>(data);
     auto wi = base::to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(wi);
@@ -433,6 +445,8 @@ float KpGlass::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
 }
 
 float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    // TODO : sample as KpGloss
+    sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const MicrofacetParams*>(data);
     auto wi = base::to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(wi);
