@@ -2,8 +2,9 @@
 
 #include <array>
 #include <algorithm>
-#include <cmath>
 #include <cassert>
+#include <cmath>
+#include <cstring>
 #include <iostream>
 #include <numeric>
 #include <type_traits>
@@ -123,6 +124,12 @@ OSL::Vec3 to_osl_vec3(const Vec<T, N>& v) {
     ret.x = v[0];
     ret.y = v[1];
     ret.z = v[2];
+    return ret;
+}
+
+inline Vec<float, 3> from_osl_vec3(const OSL::Vec3& v) {
+    Vec<float, 3> ret;
+    memcpy(&ret, &v, sizeof(float) * 3);
     return ret;
 }
 
@@ -334,6 +341,12 @@ OSL::Vec3 to_osl_vec3(const Vec<T, N>& v) {
     ret.x = v(0, 0);
     ret.y = v(1, 0);
     ret.z = v(2, 0);
+    return ret;
+}
+
+Vec<float, 3> from_osl_vec3(const OSL::Vec3& v) {
+    Vec<float, 3> ret;
+    memcpy(&ret, &v, sizeof(float) * 3);
     return ret;
 }
 
@@ -863,6 +876,12 @@ OSL::Vec3 to_osl_vec3(const Vec<T, N>& v) {
     ret.x = v[0];
     ret.y = v[1];
     ret.z = v[2];
+    return ret;
+}
+
+Vec<float, 3> from_osl_vec3(const OSL::Vec3& v) {
+    Vec<float, 3> ret;
+    memcpy(&ret, &v, sizeof(float) * 3);
     return ret;
 }
 

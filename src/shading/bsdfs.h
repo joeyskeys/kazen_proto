@@ -190,7 +190,7 @@ struct Microfacet {
             }
         }
         else {
-            float Ft = fresnel_refraction(sg.I, m, params->eta, sample.wo);
+            float Ft = fresnel_refraction(base::from_osl_vec3(sg.I), m, params->eta, sample.wo);
             const float cos_hi = base::dot(m, wi);
             const float cos_ho = base::dot(m, sample.wo);
             const float D = eval_D(m, params->xalpha, params->yalpha);
