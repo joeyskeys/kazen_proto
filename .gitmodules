@@ -4,6 +4,3 @@
 [submodule "thirdparty/enoki"]
 	path = thirdparty/enoki
 	url = https://github.com/mitsuba-renderer/enoki.git
-[submodule "plugins/blender"]
-	path = plugins/blender
-	url = git@github.com:joeyskeys/bitto.git
