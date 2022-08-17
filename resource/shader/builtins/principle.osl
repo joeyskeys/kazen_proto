@@ -1,0 +1,9 @@
+shader kp_principle
+[[
+    string node_name = "principle",
+    string category = "shader",
+    string help = "standard principle shader"
+]]
+(
+)
+{}

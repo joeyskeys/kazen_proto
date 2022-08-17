@@ -1,0 +1,16 @@
+shader kp_lambert
+[[
+    string node_name = "lambert",
+    string category = "shader",
+    string help = "standard lambert diffuse"
+]]
+(
+    color base_color = color(0.5)
+    [[
+        string label = "Base Color",
+        int connectable = 1
+    ]]
+)
+{
+    Ci = base_color * diffuse(N);
+}
