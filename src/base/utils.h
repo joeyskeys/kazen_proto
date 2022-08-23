@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <filesystem>
 
 #include <boost/math/constants/constants.hpp>
 
@@ -9,6 +10,7 @@
 using base::Vec3f;
 
 namespace constants = boost::math::constants;
+namespace fs = std::filesystem;
 
 template <typename T>
 T to_radian(const T degree) {
@@ -205,3 +207,21 @@ struct Frame {
         return s * v[0] + n * v[1] + t * v[2];
     }
 };
+
+// File IO utilities
+std::string load_file(const fs::path& path) {
+    std::ifstream file(path, std::ios::ate | std::ios::binary);
+
+    if (!file.good()) {
+        std::cerr << "Failed open file : " << path << std::endl;
+        return std::string();
+    }
+
+    size_t file_size = fs::file_size(path);
+    std::string buffer(file_size, 0);
+    file.seekg(0);
+    file.read(buffer.data(), file_size);
+    file.close();
+
+    return buffer;
+}

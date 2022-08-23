@@ -264,14 +264,29 @@ bool Scene::process_shader_node(const pugi::xml_node& node, OSL::ShaderGroupRef 
     if (!name_attr || !layer_attr)
         return false;
 
-    // TODO : Compile raw osl shader in runtime
     auto shader_file_path = working_dir / name_attr.value();
-    shader_file_path += ".osl";
-    if (!fs::exists(shader_file_path))
-        throw std::runtime_error(fmt::format("file {} does not exists", shader_file_path));
-    Shader shader(shader_file_path);
-    shader.compile_shader(&compiler);
-    shadingsys->LoadMemoryCompiledShader(name_attr.value(), shader.m_binary);
+    auto oso_shader_path = shader_file_path += ".oso";
+
+    // This is Unix specific, support for windows is not considered for now
+    auto builtin_path = fs::canonical("/proc/self/exe").remove_filename() /
+        "shader" / name_attr.value() + ".oso";
+
+    if (fs::exists(builtin_path)) {
+        std::string oso_code = load_file(builtin_path);
+        shadingsys->LoadMemoryCompiledShader(name_attr.value(), oso_code);
+    }
+    else if (fs::exists(oso_shader_file_path)) {
+        std::string oso_code = load_file(oso_shader_file_path);
+        shadingsys->LoadMemoryCompiledShader(name_attr.value(), oso_code);
+    }
+    else {
+        shader_file_path += ".osl";
+        if (!fs::exists(shader_file_path))
+            throw std::runtime_error(fmt::format("file {} does not exists", shader_file_path));
+        Shader shader(shader_file_path);
+        shader.compile_shader(&compiler);
+        shadingsys->LoadMemoryCompiledShader(name_attr.value(), shader.m_binary);
+    }
 
     return shadingsys->Shader(*shader_group, type, name_attr.value(), layer_attr.value());
 }

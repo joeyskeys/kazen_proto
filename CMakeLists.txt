@@ -81,7 +81,8 @@ set(BASE_HEADERS
     src/base/dpdf.h
     src/base/mat.h
     src/base/types.h
-    src/base/vec.h)
+    src/base/vec.h
+    src/base/utils.h)
 
 set(CORE_HEADERS
     src/core/accel.h

@@ -3,10 +3,12 @@
 #include <filesystem>
 #include <fstream>
 
+#include "base/utils.h"
 #include "shading/compiler.h"
 
 namespace fs = std::filesystem;
 
+/*
 static std::string load_file(const fs::path& path) {
     std::ifstream file(path, std::ios::ate | std::ios::binary);
 
@@ -23,6 +25,7 @@ static std::string load_file(const fs::path& path) {
 
     return buffer;
 }
+*/
 
 class Shader {
 public:
