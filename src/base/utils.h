@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <fstream>
 
 #include <boost/math/constants/constants.hpp>
 
@@ -209,7 +210,7 @@ struct Frame {
 };
 
 // File IO utilities
-std::string load_file(const fs::path& path) {
+inline std::string load_file(const fs::path& path) {
     std::ifstream file(path, std::ios::ate | std::ios::binary);
 
     if (!file.good()) {

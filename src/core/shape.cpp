@@ -1,10 +1,11 @@
 #include <cmath>
+#include <filesystem>
 #include <functional>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
-#include <boost/filesystem.hpp>
+//#include <boost/filesystem.hpp>
 #include <boost/math/constants/constants.hpp>
 #include <fmt/core.h>
 
@@ -14,7 +15,8 @@
 #include "core/shape.h"
 #include "core/transform.h"
 
-namespace fs = boost::filesystem;
+//namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 namespace constants = boost::math::constants;
 
 static inline AABBf bbox_of_triangle(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) {

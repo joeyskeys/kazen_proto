@@ -268,15 +268,15 @@ bool Scene::process_shader_node(const pugi::xml_node& node, OSL::ShaderGroupRef 
     auto oso_shader_path = shader_file_path += ".oso";
 
     // This is Unix specific, support for windows is not considered for now
-    auto builtin_path = fs::canonical("/proc/self/exe").remove_filename() /
-        "shader" / name_attr.value() + ".oso";
+    auto builtin_path = (fs::canonical("/proc/self/exe").remove_filename() /
+        "shader" / name_attr.value()).concat(".oso");
 
     if (fs::exists(builtin_path)) {
         std::string oso_code = load_file(builtin_path);
         shadingsys->LoadMemoryCompiledShader(name_attr.value(), oso_code);
     }
-    else if (fs::exists(oso_shader_file_path)) {
-        std::string oso_code = load_file(oso_shader_file_path);
+    else if (fs::exists(oso_shader_path)) {
+        std::string oso_code = load_file(oso_shader_path);
         shadingsys->LoadMemoryCompiledShader(name_attr.value(), oso_code);
     }
     else {
