@@ -6,4 +6,6 @@ shader kp_principle
 ]]
 (
 )
-{}
+{
+    Ci = kp_mirror();
+}

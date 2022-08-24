@@ -14,3 +14,6 @@ target_link_libraries(integrator_tests
     PRIVATE
         kazen_proto_lib
         ${OIIO_LIBRARIES})
+
+install(TARGETS scene_parse_tests integrator_tests
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/tests)

@@ -28,7 +28,7 @@ endif()
 
 option(USE_PCG "Whether to use pcg random numbers" ON)
 
-configure_file(resource/shader/kp_extension.h.in shader/kp_extension.h @ONLY)
+configure_file(resource/shader/include/kp_extension.h.in ${CMAKE_SOURCE_DIR}/resource/shader/include/kp_extension.h @ONLY)
 configure_file(src/base/config.h.in include/config.h @ONLY)
 include_directories(${CMAKE_BINARY_DIR}/include)
 
@@ -144,6 +144,56 @@ target_link_libraries(kazen
 add_subdirectory(tests)
 
 set(OSL_HEADERS
-    resource/shader/stdosl.h)
+    resource/shader/include/stdosl.h
+    resource/shader/include/kp_extension.h)
 
-install(FILES ${OSL_HEADERS} DESTINATION ${CMAKE_BINARY_DIR}/shader)
+set(OSL_SOURCES
+    resource/shader/src/lambert.osl
+    resource/shader/src/principle.osl)
+
+# Custom target to trigger all the osl compiling related commands
+add_custom_target(
+    compile_osl_shaders
+    VERBATIM
+)
+
+# Echo a message
+add_custom_command(TARGET compile_osl_shaders PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "Compiling OSL shaders..."
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/shader)
+
+# Compile osl shaders into install directory
+foreach(osl_source ${OSL_SOURCES})
+    get_filename_component(osl_source_we ${osl_source} NAME_WE)
+    set(oso_filename ${osl_source_we}.oso)
+    set(OSLC_OPTIONS -O0 -DDEBUG)
+    add_custom_command(
+        TARGET compile_osl_shaders POST_BUILD
+        COMMAND ${OSL_COMPILER} ${OSLC_OPTIONS}
+            -I${CMAKE_SOURCE_DIR}/resource/shader/include
+            -o ${CMAKE_BINARY_DIR}/shader/${oso_filename}
+            ${CMAKE_SOURCE_DIR}/resource/shader/src/${osl_source}
+        MAIN_DEPENDECY ${CMAKE_SOURCE_DIR}/${osl_source}
+        DEPENDS ${OSL_HEADERS} ${OSL_SOURCES})
+endforeach()
+
+add_custom_target(
+    shaders ALL
+    DEPENDS ${OSL_HEADERS}
+    SOURCES ${OSL_HEADERS} ${OSL_SOURCES}
+    VERBATIM
+)
+
+add_dependencies(shaders compile_osl_shaders)
+
+# Copy oslc into install dir
+add_custom_command(
+    TARGET compile_osl_shaders POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/bin
+    COMMAND ${CMAKE_COMMAND} -E copy ${OSL_COMPILER} ${CMAKE_INSTALL_PREFIX}/bin/)
+
+# Installs
+install(FILES ${OSL_HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/shader/include)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/shader DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(TARGETS kazen DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/)
+install(DIRECTORY resource/scene/ DESTINATION ${CMAKE_INSTALL_PREFIX}/scene)
