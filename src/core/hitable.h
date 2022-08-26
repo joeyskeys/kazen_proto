@@ -62,6 +62,11 @@ public:
         world_to_local.translate(-t);
     }
 
+    void rotate(const Vec4f& r) {
+        local_to_world.rotate(r.head<3>(), r[3]);
+        world_to_local.rotate(r.head<3>(), -r[3]);
+    }
+
     void scale(const Vec3f& s) {
         local_to_world.scale(s);
         world_to_local.scale(1. / s);

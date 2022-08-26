@@ -1,0 +1,12 @@
+surface emissive
+    [[ string description = "Emissive material with lambert reflection" ]]
+(
+    color base_color = color(1)
+    [[
+        string label = "Base Color",
+        int connectable = 1
+    ]]
+)
+{
+    Ci = base_color * kp_emitter(0.5);
+}

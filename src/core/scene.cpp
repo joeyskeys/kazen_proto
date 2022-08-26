@@ -203,6 +203,7 @@ OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
             break;
         }
 
+        // Deprecated, handled in parse_attributes function
         case EFuncTrans: {
             Vec3f trans{};
             //for (int i = 0; i < Vec3f::dimension; i++)
@@ -214,6 +215,7 @@ OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
             break;
         }
 
+        // Same as above
         case EFuncScale: {
             Vec3f scale{};
             //for (int i = 0; i < Vec3f::dimension; ++i)
@@ -236,8 +238,29 @@ OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
 void parse_attributes(const pugi::xml_node& node, DictLike* obj) {
     for (auto& attr : node.attributes()) {
         void* dst = obj->address_of(attr.name());
-        if (dst == nullptr) {
-            //std::cout << "Attribute " << attr.name() << " not directly used.." << std::endl;
+
+        if (dst != nullptr) {
+            [[likely]]
+            parse_attribute(attr, dst);
+        }
+        else {
+            auto hitable_ptr = reinterpret_cast<HitablePtr>(obj);
+            if (attr.name() == "translate") {
+                Vec3f t;
+                parse_attribute(attr, &t);
+                hitable_ptr->translate(t);
+            }
+            else if (attr.name() == "rotate") {
+                Vec4f r;
+                parse_attribute(attr, &r);
+                hitable_ptr->rotate(r);
+            }
+            else if (attr.name() == "scale") {
+                Vec3f s;
+                parse_attribute(attr, &s);
+                hitable_ptr->scale(s);
+            }
+
             continue;
         }
 
@@ -265,11 +288,11 @@ bool Scene::process_shader_node(const pugi::xml_node& node, OSL::ShaderGroupRef 
         return false;
 
     auto shader_file_path = working_dir / name_attr.value();
-    auto oso_shader_path = shader_file_path += ".oso";
+    auto oso_shader_path = shader_file_path.string() + ".oso";
 
     // This is Unix specific, support for windows is not considered for now
     auto builtin_path = (fs::canonical("/proc/self/exe").remove_filename() /
-        "shader" / name_attr.value()).concat(".oso");
+        "../shader" / name_attr.value()).concat(".oso");
 
     if (fs::exists(builtin_path)) {
         std::string oso_code = load_file(builtin_path);
@@ -524,6 +547,11 @@ void Scene::parse_from_file(fs::path filepath) {
                 auto scale_attr = node.attribute("scale");
                 if (scale_attr)
                     parse_attribute(scale_attr, &s);
+
+                auto r = Vec4f(0.f);
+                auto rot_attr = node.attribute("rotate");
+                if (rot_attr)
+                    parse_attribute(rot_attr, &r);
                 
                 for (auto &mesh : meshes) {
                     mesh->is_light = is_light;

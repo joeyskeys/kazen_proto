@@ -24,6 +24,7 @@ void Integrator::setup(Scene* scene) {
 
 Light* Integrator::get_random_light(const float& xi, float& pdf) const {
     const auto cnt = lights->size();
+    assert(cnt > 0);
     if (cnt == 0)
         return nullptr;
 

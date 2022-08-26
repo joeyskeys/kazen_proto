@@ -348,6 +348,10 @@ public:
         return *this;
     }
 
+    auto data() {
+        return arr.data();
+    }
+
     operator OSL::Matrix44() const {
         // We only need this for Mat4
         static_assert(N == 4);

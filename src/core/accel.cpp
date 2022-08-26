@@ -259,6 +259,7 @@ void EmbreeAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
         RTC_FORMAT_FLOAT3, t->verts.data(), 0, sizeof(Vec3f), t->verts.size());
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0,
         RTC_FORMAT_UINT3, t->indice.data(), 0, sizeof(Vec3i), t->indice.size());
+    rtcSetGeometryTransform(geom, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, t->local_to_world.mat.data());
     rtcCommitGeometry(geom);
     rtcAttachGeometryByID(m_scene, geom, hitables->size() - 1);
     rtcReleaseGeometry(geom);

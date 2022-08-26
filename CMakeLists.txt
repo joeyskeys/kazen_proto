@@ -147,9 +147,11 @@ set(OSL_HEADERS
     resource/shader/include/stdosl.h
     resource/shader/include/kp_extension.h)
 
-set(OSL_SOURCES
-    resource/shader/src/lambert.osl
-    resource/shader/src/principle.osl)
+#set(OSL_SOURCES
+    #resource/shader/src/lambert.osl
+    #resource/shader/src/principle.osl)
+
+file(GLOB OSL_SOURCES ${CMAKE_SOURCE_DIR}/resource/shader/src/*)
 
 # Custom target to trigger all the osl compiling related commands
 add_custom_target(
@@ -172,8 +174,8 @@ foreach(osl_source ${OSL_SOURCES})
         COMMAND ${OSL_COMPILER} ${OSLC_OPTIONS}
             -I${CMAKE_SOURCE_DIR}/resource/shader/include
             -o ${CMAKE_BINARY_DIR}/shader/${oso_filename}
-            ${CMAKE_SOURCE_DIR}/resource/shader/src/${osl_source}
-        MAIN_DEPENDECY ${CMAKE_SOURCE_DIR}/${osl_source}
+            ${osl_source}
+        MAIN_DEPENDECY ${osl_source}
         DEPENDS ${OSL_HEADERS} ${OSL_SOURCES})
 endforeach()
 
