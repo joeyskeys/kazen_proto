@@ -39,7 +39,7 @@ public:
         }
         */
 
-        mat *= base::translate3f(-t);
+        mat *= base::translate3f(t);
         mat_inv *= base::translate3f(-t);
         return *this;
     }

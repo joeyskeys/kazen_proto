@@ -196,6 +196,8 @@ EmbreeAccel::EmbreeAccel(std::vector<std::shared_ptr<Hitable>>* hs)
 EmbreeAccel::~EmbreeAccel() {
     if (m_scene)
         rtcReleaseScene(m_scene);
+    for (auto subscene_pair : m_subscenes)
+        rtcReleaseScene(subscene_pair.second.first);
 
     if (m_device)
         rtcReleaseDevice(m_device);
@@ -254,15 +256,41 @@ void EmbreeAccel::add_triangle(std::shared_ptr<Triangle>& t) {
 void EmbreeAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
     Accelerator::add_trianglemesh(t);
 
+    // Seems rtcSetGeometryTransform can only be applied to instance
+    // So wrap the geometry into a sub-scene and make an instance of it
+    // Then apply transform to the instance
+    auto subscene = rtcNewScene(m_device);
+    rtcSetSceneFlags(subscene, RTC_SCENE_FLAG_ROBUST);
+    rtcSetSceneBuildQuality(subscene, RTC_BUILD_QUALITY_HIGH);
+    //m_subscenes.push_back(subscene);
+
     RTCGeometry geom = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_TRIANGLE);
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
         RTC_FORMAT_FLOAT3, t->verts.data(), 0, sizeof(Vec3f), t->verts.size());
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0,
         RTC_FORMAT_UINT3, t->indice.data(), 0, sizeof(Vec3i), t->indice.size());
-    rtcSetGeometryTransform(geom, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, t->local_to_world.mat.data());
     rtcCommitGeometry(geom);
-    rtcAttachGeometryByID(m_scene, geom, hitables->size() - 1);
+    //rtcAttachGeometryByID(m_scene, geom, hitables->size() - 1);
+    
+    auto geom_id = rtcAttachGeometry(subscene, geom);
     rtcReleaseGeometry(geom);
+    rtcCommitScene(subscene);
+
+    // Ideally the instance geometry should be stored in the class and be applied
+    // transform to later on, for animation between frames.
+    // Or totally rebuild scene from ground up will be kinda a waste of time. So
+    // leave it here as a
+    // TODO : store instance and apply transform between frames.
+    RTCGeometry instance = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_INSTANCE);
+    rtcSetGeometryInstancedScene(instance, subscene);
+    rtcSetGeometryTimeStepCount(instance, 1);
+    rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, t->local_to_world.mat.data());
+    rtcCommitGeometry(instance);
+    auto ins_id = rtcAttachGeometry(m_scene, instance);
+    rtcReleaseGeometry(instance);
+    rtcReleaseScene(subscene);
+
+    m_subscenes.emplace(ins_id, std::make_pair(subscene, t));
 }
 
 void EmbreeAccel::build() {
@@ -294,7 +322,29 @@ bool EmbreeAccel::intersect(const Ray& r, Intersection& isect) const {
         isect.uv = Vec2f(rayhit.hit.u, rayhit.hit.v);
         isect.geom_id = rayhit.hit.geomID;
         isect.prim_id = rayhit.hit.primID;
-        isect.shape = reinterpret_cast<Shape*>(hitables->at(rayhit.hit.geomID).get());
+        //isect.shape = reinterpret_cast<Shape*>(hitables->at(rayhit.hit.geomID).get());
+        /*
+         * RTCHit object have the instID array field which will hold the instance list
+         * Suppose the scene is:
+         * Scene(id = 0)
+         * |-> Instance(geomID = 0)
+         * |    |-> Sub Scene(id = 1)
+         * |    |   |->Mesh1(geomID = 0)
+         * |    |   |->Mesh2(geomID = 1)
+         * |-> Instance(geomID = 1)
+         * |    |   |-> Instance(geomID = 0)
+         * |    |   |   |-> Sub Scene(id = 2)
+         * |    |   |   |   |->Mesh3(geomID = 0)
+         * 
+         * If we hit Mesh3, the instID array of RTCHit object will hold 1, 0,
+         * terminated with RTC_INVALID_GEOMETRY_ID.
+         * And geomID will hold the value 0
+         * 
+         */
+        // TODO : This is a convinient solution for adding transform and the
+        // scene description does not support instancing for now.
+        // But nested instancing need to handle instID array correctly.
+        isect.shape = reinterpret_cast<Shape*>(m_subscenes.at(rayhit.hit.instID[0]).second.get());
         isect.shape->post_hit(isect);
         isect.frame = Frame(isect.shading_normal);
     

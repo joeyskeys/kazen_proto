@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <memory>
+#include <unordered_map>
 
 #include <embree3/rtcore.h>
 
@@ -28,7 +29,7 @@ public:
     void print_info() const override;
 
 public:
-    std::vector<std::shared_ptr<Hitable>>* hitables;
+    std::vector<std::shared_ptr<Hitable>>*  hitables;
 };
 
 class BVHNode;
@@ -67,4 +68,5 @@ public:
 private:
     RTCDevice   m_device = nullptr;
     RTCScene    m_scene = nullptr;
+    std::unordered_map<uint32_t, std::pair<RTCScene, std::shared_ptr<Hitable>>> m_subscenes;
 };

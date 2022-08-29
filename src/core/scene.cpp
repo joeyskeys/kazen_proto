@@ -543,7 +543,7 @@ void Scene::parse_from_file(fs::path filepath) {
                 if (trans_attr)
                     parse_attribute(trans_attr, &t);
 
-                auto s = Vec3f(0.f);
+                auto s = Vec3f(1.f);
                 auto scale_attr = node.attribute("scale");
                 if (scale_attr)
                     parse_attribute(scale_attr, &s);
@@ -557,6 +557,7 @@ void Scene::parse_from_file(fs::path filepath) {
                     mesh->is_light = is_light;
                     setup_light_attrib(node, mesh);
                     mesh->translate(t);
+                    mesh->rotate(r);
                     mesh->scale(s);
                     mesh->setup_dpdf();
                     accelerator->add_trianglemesh(mesh);
