@@ -76,6 +76,7 @@ public:
         };
 
         float recip = 1.f / (far_plane - near_plane);
+        // FOV defined in degrees to align with nori scene description
         float cot = 1.f / std::tan(to_radian(fov / 2.f));
         auto proj_matrix = Mat4f{
             Vec4f{cot, 0, 0, 0},

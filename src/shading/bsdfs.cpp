@@ -200,7 +200,7 @@ float Translucent::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSamp
 
 float Translucent::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
-    sample.wo = -sample_hemisphere(rand.head<2>());
+    sample.wo = -sample_hemisphere(base::head<2>(rand));
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     return constants::one_div_pi<float>();
 }

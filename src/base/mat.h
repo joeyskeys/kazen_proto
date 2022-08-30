@@ -7,6 +7,7 @@
 #include <OSL/Imathx/ImathMatrix.h>
 
 #include "base/vec.h"
+#include "base/utils.h"
 
 namespace base
 {
@@ -519,9 +520,26 @@ inline Mat<T, N> translate(const Vec<T, N - 1>& v) {
 const auto translate3f = translate<float, 4>;
 
 template <typename T, uint N>
-inline Mat<T, N> rotate(const Vec<T, N - 1>& axis, const T& angle) {
-    // FIXME : add rotate matrix calculation
-    return Mat<T, N>::identity();
+inline Mat<T, N> rotate(const Vec<T, N - 1>& axis, const T& radian) {
+    //auto radian = to_radian(angle);
+    auto rad = angle;
+    auto c = std::cos(radian);
+    auto s = std::sin(radian);
+    auto t = 1. - c;
+    auto x = axis.x();
+    auto y = axis.y();
+    auto z = axis.z();
+    auto ret = Mat<T, N>::identity();
+    ret[0][0] = t * x * x + c;
+    ret[0][1] = t * x * y + z * s;
+    ret[0][2] = t * x * z - y * s;
+    ret[1][0] = t * x * y - z * s;
+    ret[1][1] = t * y * y + c;
+    ret[1][2] = t * y * z + x * s;
+    ret[2][0] = t * x * z + y * s;
+    ret[2][1] = t * y * z - x * s;
+    ret[2][2] = t * z * z + c;
+    return ret;
 }
 
 const auto rotate3f = rotate<float, 4>;

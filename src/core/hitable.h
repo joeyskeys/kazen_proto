@@ -63,8 +63,8 @@ public:
     }
 
     void rotate(const Vec4f& r) {
-        local_to_world.rotate(r.head<3>(), r[3]);
-        world_to_local.rotate(r.head<3>(), -r[3]);
+        local_to_world.rotate(base::head<3>(r), r[3]);
+        world_to_local.rotate(base::head<3>(r), -r[3]);
     }
 
     void scale(const Vec3f& s) {

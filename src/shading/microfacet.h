@@ -212,7 +212,7 @@ public:
         }
 
         // 2. sample slope
-        Vec2f slope = MDF::sample_slope(cos_theta_i, rand.head<2>());
+        Vec2f slope = MDF::sample_slope(cos_theta_i, base::head<2>(rand));
 
         // 3. rotate
         const float cos_phi_v = cos(phi);

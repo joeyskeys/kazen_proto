@@ -32,64 +32,19 @@ public:
     }
 
     inline Transform& translate(const Vec3f& t) {
-        /*
-        for (int i = 0; i < t.dimension; i++) {
-            mat[3][i] += t[i];
-            mat_inv[3][i] -= t[i];
-        }
-        */
-
         mat *= base::translate3f(t);
         mat_inv *= base::translate3f(-t);
         return *this;
     }
 
-    //void translate(const T& x, const T& y, const T& z);
-
-    Transform& rotate(const Vec3f& axis, const float& angle) {
-        /*
-        auto a = base::normalize(axis);
-        auto angle_in_radian = to_radian<float>(angle);
-        auto sin_theta = std::sin(angle_in_radian);
-        auto cos_theta = std::cos(angle_in_radian);
-
-        // Compute rotation of first basis vector
-        Mat4f rot;
-        rot[0][0] = a.x() * a.x() + (1.f - a.x() * a.x()) * cos_theta;
-        rot[1][0] = a.x() * a.y() * (1.f - cos_theta) - a.z() * sin_theta;
-        rot[2][0] = a.x() * a.z() * (1.f - cos_theta) + a.y() * sin_theta;
-        rot[3][0] = 0.f;
-
-        rot[0][1] = a.x() * a.y() * (1.f - cos_theta) + a.z() * sin_theta;
-        rot[1][1] = a.y() * a.y() + (1.f - a.y() * a.y()) * cos_theta;
-        rot[2][1] = a.y() * a.z() * (1.f - cos_theta) - a.x() * sin_theta;
-        rot[3][1] = 0.f;
-
-        rot[0][2] = a.x() * a.z() * (1.f - cos_theta) - a.y() * sin_theta;
-        rot[1][2] = a.y() * a.z() * (1.f - cos_theta) + a.x() * sin_theta;
-        rot[2][2] = a.z() * a.z() + (1.f - a.z() * a.z()) * cos_theta;
-        rot[2][3] = 0.f;
-
-        // Column majored matrix, apply transform in the left
-        mat = rot * mat;
-        auto rot_inv = base::transpose(rot);
-        mat_inv = rot_inv * mat_inv;
-
-        return *this;
-        */
-
-        mat *= base::rotate3f(axis, angle);
-        mat_inv *= base::rotate3f(axis, -angle);
+    Transform& rotate(const Vec3f& axis, const float& radian) {
+        // Use radian directly since DCC exports radian by default
+        mat *= base::rotate3f(axis, radian);
+        mat_inv *= base::rotate3f(axis, -radian);
         return *this;
     }
 
     inline Transform& scale(const Vec3f& s) {
-        /*
-        for (int i = 0; i < s.dimension; i++) {
-            mat[i][i] *= s[i];
-            mat_inv[i][i] /= s[i];
-        }
-        */
         mat *= base::scale3f(s);
         mat_inv *= base::scale3f(1.f / s);
         return *this;

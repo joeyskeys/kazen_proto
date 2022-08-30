@@ -572,7 +572,9 @@ void TriangleMesh::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
     float v = sp.y() * su0;
     //p = vs[0] + u * (vs[1] - vs[0]) + v * (vs[2] - vs[0]);
     p = u * vs[0] + v * vs[1] + (1 - u - v) * vs[2];
+    p = local_to_world.apply(p);
     n = base::normalize(base::cross(vs[1] - vs[0], vs[2] - vs[0]));
+    n = base::normalize(local_to_world.apply_normal(n));
     uv[0] = u;
     uv[1] = v;
     pdf = 1. / m_area;
