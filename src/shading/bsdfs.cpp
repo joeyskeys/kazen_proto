@@ -93,7 +93,7 @@ float Ward::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sam
 
     // Checkout "Notes on the Ward BRDF" page 1,2 equation 3, 9.
     // https://www.graphics.cornell.edu/~bjw/wardnotes.pdf
-    sample.pdf = tmp / (base::dot(m, wi) * std::pow(cos_theta(m), 3));
+    sample.pdf = std::max(tmp / (base::dot(m, wi) * std::pow(cos_theta(m), 3)), 0.);
     return tmp / (std::sqrt(cos_theta_i * cos_theta_o));
 }
 
@@ -127,7 +127,7 @@ float Ward::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& s
         (4.f * constants::pi<float>() * params->xalpha * params->yalpha);
     
     // Same as above
-    sample.pdf = tmp / (base::dot(m, wi) * std::pow(cos_theta_v, 3));
+    sample.pdf = std::max(tmp / (base::dot(m, wi) * std::pow(cos_theta_v, 3)), 0.);
     return tmp / (std::sqrt(cos_theta_i * cos_theta(sample.wo)));
 } 
 

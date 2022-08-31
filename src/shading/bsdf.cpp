@@ -72,6 +72,7 @@ namespace
 
 void register_closures(OSL::ShadingSystem *shadingsys) {
     register_closure<Diffuse>(*shadingsys);
+    register_closure<Ward>(*shadingsys);
     register_closure<Reflection>(*shadingsys);
     register_closure<Refraction>(*shadingsys);
     //register_closure<Microfacet>(*shadingsys);
@@ -96,6 +97,8 @@ void register_closures(OSL::ShadingSystem *shadingsys) {
     register_closure<KpDielectric>(*shadingsys);
     register_closure<KpMicrofacet>(*shadingsys);
     register_closure<KpEmitter>(*shadingsys);
+    register_closure<KpGloss>(*shadingsys);
+    register_closure<KpGlass>(*shadingsys);
 }
 
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only) {
@@ -130,6 +133,9 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                 bool status = false;
                 switch (comp->id) {
                     case DiffuseID:         status = ret.surface.add_bsdf<DiffuseParams>(DiffuseID, cw, comp->as<DiffuseParams>());
+                        break;
+
+                    case WardID:            status = ret.surface.add_bsdf<WardParams>(WardID, cw, comp->as<WardParams>());
                         break;
 
                     case ReflectionID:      status = ret.surface.add_bsdf<ReflectionParams>(ReflectionID, cw, comp->as<ReflectionParams>());
