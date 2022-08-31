@@ -588,7 +588,7 @@ void TriangleMesh::post_hit(Intersection& isect) const {
     isect.is_light = is_light;
     isect.shader_name = shader_name;
     auto bary_x = 1. - isect.uv[0] - isect.uv[1];
-    isect.P = bary_x * v1 + isect.uv[0] * v2 + isect.uv[1] * v3;
+    isect.P = local_to_world.apply(bary_x * v1 + isect.uv[0] * v2 + isect.uv[1] * v3);
 
     if (norms.size() > 0) {
         isect.shading_normal = base::normalize(bary_x * norms[idx[0]] + isect.uv[0] * norms[idx[1]]

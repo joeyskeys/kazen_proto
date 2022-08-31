@@ -4,7 +4,7 @@
 
 int main() {
     Scene scene;
-    scene.parse_from_file("/home/joeyskeys/assets/kazen_proj/cube/output.xml");
+    scene.parse_from_file("/home/joeyskeys/assets/kazen_proj/materials/materials.xml");
     Sampler sampler;
 
     auto integrator_ptr = scene.integrator_fac.create(
@@ -20,7 +20,7 @@ int main() {
     rctx.pixel_x = 322;
     rctx.pixel_y = 383;
 
-    auto ray = scene.camera->generate_ray(Vec2f{10.5, 550.5});
+    auto ray = scene.camera->generate_ray(Vec2f{315.5, 945.5});
     auto radiance = integrator_ptr->Li(ray, rctx);
 
     scene.recorder.output(std::cout);
