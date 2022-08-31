@@ -1,0 +1,22 @@
+surface ward_anisotropic
+    [[ string description = "Anisotropic material" ]]
+(
+    color base_color = color(0.5)
+    [[
+        string label = "Base Color",
+        int connectable = 1
+    ]],
+    float xrough = 0.1
+    [[
+        string label = "roughness along u",
+        int connectable = 1
+    ]],
+    float yrough = 0.5
+    [[
+        string label = "roughness along v",
+        int connectable = 1
+    ]]
+)
+{
+    Ci = base_color * ward(N, vector(0, 1, 0), xrough, yrough);
+}

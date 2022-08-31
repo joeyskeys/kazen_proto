@@ -77,6 +77,14 @@ float Phong::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
     return sample.pdf = 0;
 }
 
+float OrenNayar::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+
+}
+
+float OrenNayar::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    
+}
+
 float Ward::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const WardParams*>(data);
     auto wi = base::to_vec3(-sg.I);

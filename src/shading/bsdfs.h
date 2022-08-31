@@ -26,6 +26,11 @@ struct PhongParams {
     float exponent;
 };
 
+struct OrenNayarParams {
+    OSL::Vec3 N;
+    float sigma;
+}
+
 struct WardParams {
     OSL::Vec3 N;
     OSL::Vec3 T;
@@ -95,6 +100,20 @@ struct Phong {
         };
 
         shadingsys.register_closure("phong", PhongID, params, nullptr, nullptr);
+    }
+};
+
+struct OrenNayar {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(OrenNayarParams, N),
+            CLOSURE_FLOAT_PARAM(OrenNayarParams, sigma),
+            CLOSURE_FINISH_PARAM(OrenNayarParams)
+        };
+
+        shadingsys.register_closure("oren_nayar", OrenNayarID, params, nullptr, nullptr);
     }
 };
 
