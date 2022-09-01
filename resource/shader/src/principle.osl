@@ -5,7 +5,80 @@ shader kp_principle
     string help = "standard principle shader"
 ]]
 (
+    color base_color = color(0.5)
+    [[
+        string label = "Base Color",
+        int connectable = 1
+    ]],
+    float sheen = 0.1
+    [[
+        string label = "Sheen",
+        int connectable = 1
+    ]],
+    float sheen_tint = 0.1
+    [[
+        string label = "Sheen tint",
+        int connectable = 1
+    ]],
+    float specular
+    [[
+        string label = "Specular",
+        int connectable = 1
+    ]],
+    float specular_tint
+    [[
+        string label = "Specular tint",
+        int connectable = 1
+    ]],
+    float clear_coat
+    [[
+        string label = "Clearcoat",
+        int connectable = 1
+    ]],
+    float roughness = 0.5
+    [[
+        string label = "Roughness",
+        int connectable = 1
+    ]]
 )
 {
-    Ci = kp_mirror();
+    // 2012 disney shader model, so transmission and ss are not considered yet
+    // New closures to implement:
+    // 1. principled_diffuse
+    // 2. a_new_microfacet_closure
+    // 3. principled_sheen
+    // 4. principled_clearcoat
+
+    // Utility variables
+    float diffuse_weight = (1 - clamp(metallic, 0, 1));
+    float specular_weight = clamp(metallic, 0, 1);
+    float base_lum = luminance(base_color);
+    color tint_color = base_lum > 0 ? base_color / base_lum : color(1, 1, 1);
+
+    Ci = 0;
+
+    if (diffuse_weight > 1e-5) {
+        // Diffuse component
+        Ci = base_color * principled_diffuse(N, roughness);
+
+        // Sheen component
+        if (sheen > 1e-5) {
+            color sheen_color = color(1, 1, 1) * (1 - sheen_tint) + tint_color * sheen_tint;
+            Ci = Ci + sheen_color * sheen * principled_sheen(N);
+        }
+
+        Ci = Ci * diffuse_weight;
+    }
+
+    if (specular_weight > 1e-5) {
+        float r = 0.5 + roughness / 2;
+        float alpha = r * r;
+        color tmp = color(1, 1, 1) * (1 - specular_tint) + tint_color * specular_tint;
+        color specular_color = (specular * 0.08 * tmp) * (1 - metallic) + base_color * metallic;
+        Ci = Ci + specular_weight * specular_color * a_new_microfacet_closure(N, alpha, f);
+    }
+
+    if (clear_coat > 1e-5) {
+        Ci = Ci + principled_clearcoat(clearN, clear_coat, clear_coat_r * clear_coat_r);
+    }
 }
