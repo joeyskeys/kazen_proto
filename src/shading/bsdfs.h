@@ -29,7 +29,7 @@ struct PhongParams {
 struct OrenNayarParams {
     OSL::Vec3 N;
     float sigma;
-}
+};
 
 struct WardParams {
     OSL::Vec3 N;

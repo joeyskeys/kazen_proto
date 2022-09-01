@@ -10,6 +10,11 @@ shader kp_principle
         string label = "Base Color",
         int connectable = 1
     ]],
+    float metallic = 0.2
+    [[
+        string label = "Metallic",
+        int connectable = 1
+    ]],
     float sheen = 0.1
     [[
         string label = "Sheen",
