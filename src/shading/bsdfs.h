@@ -16,7 +16,6 @@ using OSL::TypeDesc;
 struct EmptyParams      {};
 
 struct DiffuseParams {
-    OSL::Vec3 R;
     OSL::Vec3 N;
 };
 
@@ -75,6 +74,16 @@ struct KpRoughParams {
     float xalpha, yalpha, eta, f;
     OSL::ustring dist;
 };
+
+struct KpPrincipleRetroParams {
+    OSL::Vec3 N;
+    float roughness;
+};
+
+struct KpPrincipleSheenParams {
+    OSL::Vec3 N;
+    float sheen;
+}
 
 struct Diffuse {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
@@ -545,12 +554,52 @@ private:
     }
 };
 
+struct KpPrincipleDiffuse {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(DiffuseParams, N);
+            CLOSURE_FINISH_PARAM(DiffuseParams)
+        };
+
+        shadingsys.register_closure("principle_diffuse", KpPrincipleDiffuseID, params, nullptr, nullptr);
+    }
+};
+
+struct KpPrincipleRetro {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(KpPrincipleRetroParams, N);
+            CLOSURE_FLOAT_PARAM(KpPrincipleRetroParams, roughness);
+            CLOSURE_FINISH_PARAM(KpPrincipleRetroParams)
+        };
+
+        shadingsys.register_closure("principle_retro", KpPrincipleRetroID, params, nullptr, nullptr);
+    }
+};
+
+struct KpPrincipleSheen {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(KpPrincipleSheenParams, N);
+            CLOSURE_FINISH_PARAM(KpPrincipleSheenParams)
+        };
+
+        shadingsys.register_closure("principle_sheen", KpPrincipleSheenID, params, nullptr, nullptr);
+    }
+};
+
 using eval_func = std::function<float(const void*, const OSL::ShaderGlobals&,
     BSDFSample&)>;
 using sample_func = std::function<float(const void*, const OSL::ShaderGlobals&,
     BSDFSample&, const Vec3f)>;
 
-// cpp 17 inlined constexpr variables will have external linkage will
+// cpp 17 inlined constexpr variables will have external linkage and
 // have only one copy among all included files
 inline eval_func get_eval_func(ClosureID id) {
     static std::array<eval_func, 21> eval_functions {
@@ -565,7 +614,7 @@ inline eval_func get_eval_func(ClosureID id) {
         //Microfacet::eval,
         nullptr,
         nullptr,
-        Emission::eval, // emission
+        Emission::eval,
         nullptr,
         nullptr,
         nullptr,
@@ -593,7 +642,7 @@ inline sample_func get_sample_func(ClosureID id) {
         //Microfacet::sample,
         nullptr,
         nullptr,
-        Emission::sample, // emission
+        Emission::sample,
         nullptr,
         nullptr,
         nullptr,

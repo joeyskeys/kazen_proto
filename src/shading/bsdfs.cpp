@@ -516,3 +516,58 @@ float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
         }
     }
 }
+
+float KpPrincipleDiffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    auto params = reinterpret_cast<const DiffuseParams*>(data);
+    auto wi = base::to_Vec3(-sg.I);
+    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
+    return constants::one_div_pi<float>() * 
+        (1.f - 0.5f * pow(1 - cos_theta(wi), 5));
+        (1.f - 0.5f * pow(1 - cos_theta(params->N), 5));
+}
+
+float KpPrincipleDiffuse::sample(const void* data, const OSL::ShaderGlobals&sg, BSDFSample& sample, const Vec3f& rand) {
+    sample.mode = ScatteringMode::Diffuse;
+    sample.wo = sample_hemisphere(base::head<2>(rand));
+    return eval(data, sg, sample);
+}
+
+float KpPrincipleRetro::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    auto params = reinterpret_cast<const KpPrincipleRetroParams*>(data);
+    auto wi = base::to_vec3(-sg.I);
+    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
+    // Checkout "Extending the Disney BRDF to a BSDF with Integrated Subsurface
+    // Scattering" page 6 equation 4
+    // https://blog.selfshadow.com/publications/s2015-shading-course/burley/s2015_pbs_disney_bsdf_notes.pdf
+    // Here we follow the same convension used in the paper with Latex syntax
+    auto F_L = pow(1. - cos_theta(sample.wo), 5.);
+    auto F_V = pow(1. - cos_theta(wi), 5.);
+    auto wh = base::normalize(wi + sample.wo);
+    auto R_R = 2.f * params->roughness * square(base::dot(sample.wo, wh));
+    return constants::one_div_pi<float>() *
+        R_R * (F_L + F_V + F_L * F_V * (R_R - 1.));
+}
+
+float KpPrincipleRetro::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    sample.mode = ScatteringMode::Diffuse;
+    sample.wo = sample_hemisphere(base::head<2>(rand));
+    return eval(data, sg, sample);
+}
+
+float KpPrincipleSheen::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    auto params = reinterpret_cast<const KpPrincipleSheenParams*>(data);
+    auto wi = base::to_vec3(-sg.I);
+    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
+    auto wh = base::normalize(wi + sample.wo);
+    auto cos_theta_v = std::max(cos_theta(wh), 0.f);
+    if (cos_theta_v < 1e-6)
+        return params->sheen;
+    else
+        return params->sheen * pow(1. - cos_theta_v, 5.);
+}
+
+float KpPrincipleSheen::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    sample.mode = ScatteringMode::Diffuse;
+    sample.wo = sample_hemisphere(base::head<2>(rand));
+    return eval(data, sg, sample);
+}
