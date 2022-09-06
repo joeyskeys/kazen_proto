@@ -35,7 +35,7 @@ float G1(const Vec3f& wh, const Vec3f& wv, float alpha);
  *    i. stretch
  *    ii. sample p22
  *    iii. rotate
- *    iiii. unstretch
+ *    iv. unstretch
  *    v. compute normal
  *    is for smith model, which seems more popular among the community.
  *    checkout https://hal.inria.fr/hal-00996995v2/document
@@ -94,10 +94,6 @@ inline float projected_roughness(
 
 struct GGXDist {
     static float D(const float tan2m_a) {
-        // Impl here are copied from OpenShadingLanguage testrender,
-        // identical to the impl in pbrt-v3.
-        // Appleseed have a extra stretched_roughness in it, need to
-        // do some further investigate.
         auto tmp = 1 + tan2m_a;
         return 1.f / (constants::pi<float>() * tmp * tmp);
     }
@@ -189,14 +185,15 @@ struct BeckmannDist {
 template <typename MDF>
 class MicrofacetInterface {
 public:
+    MicrofacetInterface(const Vec3f& i, const float xa, const float ya)
+        : wi(i)
+        , xalpha(xa)
+        , yalpha(ya)
+    {}
+
     // The design of returning pdf rather than sampled direction is more convinient
     // for error checking
-    static Vec3f sample_m(
-        const Vec3f& wi,
-        const float xalpha,
-        const float yalpha,
-        const Vec3f& rand)
-    {
+    Vec3f sample_m(const Vec3f& rand) const {
         // 1. stretch wi
         Vec3f stretched{wi[0] * xalpha, wi[1], wi[2] * yalpha};
         auto cos_theta_i = cos_theta(wi);
@@ -227,12 +224,7 @@ public:
         return base::normalize(m);
     }
 
-    static float pdf(
-        const Vec3f& wi,
-        const Vec3f& m,
-        const float xalpha,
-        const float yalpha)
-    {
+    float pdf(const Vec3f& m) const {
         // Check "Importance Sampling Microfacet-Based BSDFs using the Distribution
         // of Visible Normals" page 4 equation 2.
         // https://hal.inria.fr/hal-00996995v2/document
@@ -248,7 +240,7 @@ public:
             D(m, xalpha, yalpha) / std::abs(cos_theta_v);
     }
 
-    static inline float lambda(const Vec3f& m, const float xalpha, const float yalpha) {
+    inline float lambda(const Vec3f& m) const {
         float cos_theta_v = cos_theta(m);
         if (cos_theta_v == 0.f)
             return 0.f;
@@ -264,20 +256,15 @@ public:
         return MDF::lambda(a_rcp);
     }
 
-    inline static float G(
-        const Vec3f& wi,
-        const Vec3f& wo,
-        const float xalpha,
-        const float yalpha)
-    {
+    virtual float G(const Vec3f& wo) const {
         return 1.f / (lambda(wi, xalpha, yalpha) + lambda(wo, xalpha, yalpha) + 1.f);
     }
 
-    inline static float G1(const Vec3f& w, const float xalpha, const float yalpha) {
+    inline float G1(const Vec3f& w) const {
         return 1.f / (lambda(w, xalpha, yalpha) + 1.f);
     }
 
-    static inline float D(const Vec3f& m, const float xalpha, const float yalpha) {
+    inline float D(const Vec3f& m) const {
         const float cos_theta_v = cos_theta(m);
         if (cos_theta_v == 0.f) {
             if constexpr (std::is_same_v<MDF, BeckmannDist>)
@@ -296,5 +283,16 @@ public:
         // Code structure here takes reference from "Understanding the Masking-Shadowing
         // Function in Microfacet-Based BRDFs" page 88 equation 87
         return MDF::D(tan_theta_2 * A) / (cos_theta_4 * xalpha * yalpha);
+    }
+
+public:
+    Vec3f wi;
+    float xalpha, yalpha;
+};
+
+class DisneyMicrofacetInterface : public MicrofacetInterface<GGXDist> {
+public:
+    float G(const Vec3f& wo) const override {
+        return G1(wo) * G1(wi);
     }
 };

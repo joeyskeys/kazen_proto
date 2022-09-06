@@ -59,6 +59,8 @@ enum ClosureID {
     KpPrincipleDiffuseID,
     KpPrincipleRetroID,
     KpPrincipleSheenID,
+    KpPrincipleSpecularID,
+    KpPrincipleClearcoatID,
 
     NumClosureIDs
 };

@@ -83,7 +83,22 @@ struct KpPrincipleRetroParams {
 struct KpPrincipleSheenParams {
     OSL::Vec3 N;
     float sheen;
-}
+};
+
+// No need to create parameter struct for each closure
+// Perhaps change parameter struct to a naming style like
+// ParamVFFFF indicating components containing one vector and four floats
+// will be more convinient which can be shared between multiple closures.
+// But the naming of parameter will be kinda confusing...
+struct KpPrincipleSpecularParams {
+    OSL::Vec3 N;
+    float xalpha, yalpha, eta, f;
+};
+
+struct KpPrincipleClearcoatParams {
+    OSL::Vec3 N;
+    float roughness;
+};
 
 struct Diffuse {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
@@ -494,32 +509,31 @@ struct KpGlass {
 
 private:
     template <typename MDF>
-    static inline float eval_reflection(const Vec3f& wi, const Vec3f& wo, const Vec3f& m,
-        const float xalpha, const float yalpha, const float F)
+    static inline float eval_reflection(const MDF& mdf, const Vec3f& wo, const Vec3f& m,
+        const float F)
     {
         const float denom = std::abs(4.f * wi[1] * wo[1]);
         if (denom == 0.f)
             return 0.f;
 
-        const float D = MicrofacetInterface<MDF>::D(m, xalpha, yalpha);
-        const float G = MicrofacetInterface<MDF>::G(wo, wi, xalpha, yalpha);
+        const float D = mdf.D(m);
+        const float G = mdf.G(wo);
         return F * D * G / denom;
     }
 
     template <typename MDF>
-    static inline float reflection_pdf(const Vec3f& wi, const Vec3f& m, const float cos_mi,
-        const float xalpha, const float yalpha)
+    static inline float reflection_pdf(const MDF& mdf, const Vec3f& m, const float cos_mi)
     {
         if (cos_mi == 0.f)
             return 0.f;
 
         const float jacobian = 1.f / (4.f * std::abs(cos_mi));
-        return jacobian * MicrofacetInterface<MDF>::pdf(wi, m, xalpha, yalpha);
+        return jacobian * mdf.pdf(m);
     }
 
     template <typename MDF>
-    static inline float eval_refraction(const float eta, const Vec3f& wi, const Vec3f& wo,
-        const Vec3f& m, const float xalpha, const float yalpha, const float T)
+    static inline float eval_refraction(const MDF& mdf, const float eta, const Vec3f& wo,
+        const Vec3f& m, const float T)
     {
         if (wi[1] == 0.f || wo[1] == 0.f)
             return 0.f;
@@ -533,24 +547,24 @@ private:
         if (std::abs(denom) < 1.0e-6f)
             return 0.f;
 
-        const float D = MicrofacetInterface<MDF>::D(m, xalpha, yalpha);
-        const float G = MicrofacetInterface<MDF>::G(wi, wo, xalpha, yalpha);
+        const float D = mdf.D(m);
+        const float G = mdf.G(wo);
 
         return c * D * G * T * square(eta) / square(denom);
     }
 
     template <typename MDF>
-    static inline float refraction_pdf(const Vec3f& wi, const Vec3f& wo, const Vec3f& m,
-        const float xalpha, const float yalpha, const float eta)
+    static inline float refraction_pdf(const MDF& mdf, const Vec3f& wo, const Vec3f& m,
+        const float eta)
     {
         auto cos_mo = base::dot(m, wo);
-        auto cos_mi = base::dot(m, wi);
+        auto cos_mi = base::dot(m, mdf.wi);
         auto denom = cos_mi + eta * cos_mo;
         if (std::abs(denom) < 1.0e-6f)
             return 0.f;
 
         auto jacobian = std::abs(cos_mo) * square(eta / denom);
-        return jacobian * MicrofacetInterface<MDF>::pdf(wi, m, xalpha, yalpha);
+        return jacobian * mdf.pdf(m);
     }
 };
 
@@ -591,6 +605,37 @@ struct KpPrincipleSheen {
         };
 
         shadingsys.register_closure("principle_sheen", KpPrincipleSheenID, params, nullptr, nullptr);
+    }
+};
+
+struct KpPrincipleSpecular {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARMA(KpPrincipleSpecularParams, N);
+            CLOSURE_FLOAT_PARAM(KpPrincipleSpecularParams, xalpha);
+            CLOSURE_FLOAT_PARAM(KpPrincipleSpecularParams, yalpha);
+            CLOSURE_FLOAT_PARAM(KpPrincipleSpecularParams, eta);
+            CLOSURE_FLOAT_PARAM(KpPrincipleSpecularParams, f);
+            CLOSURE_FINISH_PARAM(KpPrincipleSpecularParams)
+        };
+
+        shadingsys.register_closure("principle_specular", KpPrincipleSpecularID, params, nullptr, nullptr);
+    }
+};
+
+struct KpPrincipleClearcoat {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(KpPrincipleClearcoatParams, N);
+            CLOSURE_FLOAT_PARAM(KpPrincipleClearcoatParams, roughness);
+            CLOSURE_FINISH_PARAM(KpPrincipleClearcoatParams)
+        };
+
+        shadingsys.register_closure("principle_clearcoat", KpPrincipleClearcoatID, params, nullptr, nullptr);
     }
 };
 

@@ -342,16 +342,18 @@ float KpGloss::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
 
     float D, G, F;
     if (params->dist == u_beckmann) {
-        D = MicrofacetInterface<BeckmannDist>::D(m, params->xalpha, params->yalpha);
-        G = MicrofacetInterface<BeckmannDist>::G(wi, sample.wo, params->xalpha, params->yalpha);
+        auto mdf = MicrofacetInterface<BeckmannDist>(wi, params->xalpha, params->yalpha);
+        D = mdf.D(m);
+        G = mdf.G(sample.wo);
         F = fresnel_refl_dielectric(params->eta, base::dot(m, wi));
-        sample.pdf = MicrofacetInterface<BeckmannDist>::pdf(wi, m, params->xalpha, params->yalpha);
+        sample.pdf = mdf.pdf(m);
     }
     else {
-        D = MicrofacetInterface<GGXDist>::D(m, params->xalpha, params->yalpha);
-        G = MicrofacetInterface<GGXDist>::G(wi, sample.wo, params->xalpha, params->yalpha);
+        auto mdf = MicrofacetInterface<GGXDist>(wi, params->xalpha, params->yalpha);
+        D = mdf.D(m);
+        G = mdf.G(sample.wo);
         F = fresnel_refl_dielectric(params->eta, std::abs(base::dot(m, wi)));
-        sample.pdf = MicrofacetInterface<GGXDist>::pdf(wi, m, params->xalpha, params->yalpha);
+        sample.pdf = mdf.pdf(m);
     }
 
     return D * G * F / (4.f * cos_theta_i * cos_theta_o);
@@ -368,38 +370,32 @@ float KpGloss::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
 
     float D, G, F;
     if (params->dist == u_beckmann) {
-        const Vec3f m = MicrofacetInterface<BeckmannDist>::sample_m(wi,
-            params->xalpha, params->yalpha, rand);
+        auto mdf = MicrofacetInterface<BeckmannDist>(wi, params->xalpha, params->yalpha);
+        const Vec3f m = mdf.sample_m(rand);
         sample.wo = reflect(wi, m);
         auto cos_theta_o = cos_theta(sample.wo);
         if (cos_theta_o == 0.f)
             return 0.f;
 
-        const float D = MicrofacetInterface<BeckmannDist>::D(m, params->xalpha,
-            params->yalpha);
-        const float G = MicrofacetInterface<BeckmannDist>::G(wi, sample.wo,
-            params->xalpha, params->yalpha);
+        const float D = mdf.D(m);
+        const float G = mdf.G(sample.wo);
         const float F = fresnel_refl_dielectric(params->eta, std::abs(base::dot(m, wi)));
 
-        sample.pdf = MicrofacetInterface<BeckmannDist>::pdf(wi, m, params->xalpha,
-            params->yalpha);
+        sample.pdf = mdf.pdf(m);
     }
     else {
-        const Vec3f m = MicrofacetInterface<GGXDist>::sample_m(wi,
-            params->xalpha, params->yalpha, rand);
+        auto mdf = MicrofacetInterface<GGXDist>(wi, params->xalpha, params->yalpha);
+        const Vec3f m = mdf.sample_m(rand);
         sample.wo = reflect(wi, m);
         auto cos_theta_o = cos_theta(sample.wo);
         if (cos_theta_o == 0.f)
             return 0.f;
 
-        const float D = MicrofacetInterface<GGXDist>::D(m, params->xalpha,
-            params->yalpha);
-        const float G = MicrofacetInterface<GGXDist>::G(wi, sample.wo,
-            params->xalpha, params->yalpha);
+        const float D = mdf.D(m);
+        const float G = mdf.G(sample.wo);
         const float F = fresnel_refl_dielectric(params->eta, std::abs(base::dot(m, wi)));
 
-        sample.pdf = MicrofacetInterface<GGXDist>::pdf(wi, m, params->xalpha,
-            params->yalpha);
+        sample.pdf = mdf.pdf(m);
     }
 
     return D * G * F / (4.f * cos_theta_i * cos_theta(sample.wo));
@@ -424,12 +420,14 @@ float KpGlass::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
         auto cos_mi = base::dot(wi, m);
         const float F = fresnel_refl_dielectric(eta, cos_mi);
         if (params->dist == u_beckmann) {
-            sample.pdf = reflection_pdf<BeckmannDist>(wi, m, cos_mi, params->xalpha, params->yalpha);
-            return eval_reflection<BeckmannDist>(wi, sample.wo, m, params->xalpha, params->yalpha, F);
+            auto mdf = MicrofacetInterface<BeckmannDist>(wi, params->xalpha, params->yalpha);
+            sample.pdf = reflection_pdf(mdf, m, cos_mi);
+            return eval_reflection(mdf, sample.wo, m, F);
         }
         else {
-            sample.pdf = reflection_pdf<GGXDist>(wi, m, cos_mi, params->xalpha, params->yalpha);
-            return eval_reflection<GGXDist>(wi, sample.wo, m, params->xalpha, params->yalpha, F);
+            auto mdf = MicrofacetInterface<GGXDist>(wi, params->xalpha, params->yalpha);
+            sample.pdf = reflection_pdf(mdf, m, cos_mi);
+            return eval_reflection(sample.wo, m, F);
         }
     }
     else {
@@ -440,14 +438,14 @@ float KpGlass::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
         auto cos_mi = base::dot(wi, m);
         const float F = fresnel_refl_dielectric(eta, cos_mi);
         if (params->dist == u_beckmann) {
-            sample.pdf = refraction_pdf<BeckmannDist>(wi, sample.wo, m, params->xalpha, params->yalpha,
-                eta);
-            return eval_refraction<BeckmannDist>(eta, wi, sample.wo, m, params->xalpha, params->yalpha, 1.f - F);
+            auto mdf = MicrofacetInterface<BeckmannDist>(wi, params->xalpha, params->yalpha);
+            sample.pdf = refraction_pdf(mdf, sample.wo, m, eta);
+            return eval_refraction(mdf, eta, sample.wo, m, 1.f - F);
         }
         else {
-            sample.pdf = refraction_pdf<GGXDist>(wi, sample.wo, m, params->xalpha, params->yalpha,
-                eta);
-            return eval_refraction<GGXDist>(eta, wi, sample.wo, m, params->xalpha, params->yalpha, 1.f - F);
+            auto mdf = MicrofacetInterface<GGXDist>(wi, params->xalpha, params->yalpha);
+            sample.pdf = refraction_pdf(mdf, sample.wo, m, eta);
+            return eval_refraction(mdf, eta, sample.wo, m, 1.f - F);
         }
     }
 }
@@ -467,12 +465,14 @@ float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
         eta = 1.f / eta;
 
     Vec3f m;
+    auto mdf_b = MicrofacetInterface<BeckmannDist>::sample_m(wi, params->xalpha,
+        params->yalpha);
+    auto mdf_g = MicrofacetInterface<GGXDist>::sample_m(wi, params->xalpha,
+        params->yalpha);
     if (params->dist == u_beckmann)
-        m = MicrofacetInterface<BeckmannDist>::sample_m(wi, params->xalpha,
-            params->yalpha, rand);
+        m = mdf_b.sample_m(rand);
     else
-        m = MicrofacetInterface<GGXDist>::sample_m(wi, params->xalpha,
-            params->yalpha, rand);
+        m = mdf_g.sample_m(rand);
 
     auto cos_mi = std::clamp(base::dot(m, wi), -1.f, 1.f);
     // We need a extra fresnel function which calculates cos_theta_t
@@ -487,12 +487,12 @@ float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
             return 0.f;
 
         if (params->dist == u_beckmann) {
-            sample.pdf = F * reflection_pdf<BeckmannDist>(wi, m, cos_mi, params->xalpha, params->yalpha);
-            return eval_reflection<BeckmannDist>(wi, sample.wo, m, params->xalpha, params->yalpha, F);
+            sample.pdf = F * reflection_pdf(mdf_b, m, cos_mi);
+            return eval_reflection(mdf_b, sample.wo, m, F);
         }
         else {
-            sample.pdf = F * reflection_pdf<GGXDist>(wi, m, cos_mi, params->xalpha, params->yalpha);
-            return eval_reflection<GGXDist>(wi, sample.wo, m, params->xalpha, params->yalpha, F);
+            sample.pdf = F * reflection_pdf(mdf, m, cos_mi);
+            return eval_reflection(mdf_g, sample.wo, m, F);
         }
     }
     else {
@@ -503,16 +503,12 @@ float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
             return 0.f;
 
         if (params->dist == u_beckmann) {
-            sample.pdf = (1.f - F) * refraction_pdf<BeckmannDist>(wi, sample.wo, m, params->xalpha,
-                params->yalpha, eta);
-            return eval_refraction<BeckmannDist>(eta, wi, sample.wo, m, params->xalpha, params->yalpha,
-                1.f - F);
+            sample.pdf = (1.f - F) * refraction_pdf(mdf_b, sample.wo, m, eta);
+            return eval_refraction(mdf_b, eta, sample.wo, m, 1.f - F);
         }
         else {
-            sample.pdf = (1.f - F) * refraction_pdf<GGXDist>(wi, sample.wo, m, params->xalpha,
-                params->yalpha, eta);
-            return eval_refraction<GGXDist>(eta, wi, sample.wo, m, params->xalpha, params->yalpha,
-                1.f - F);
+            sample.pdf = (1.f - F) * refraction_pdf(mdf_g, sample.wo, m, eta);
+            return eval_refraction(mdf_g, eta, sample.wo, m, 1.f - F);
         }
     }
 }
@@ -570,4 +566,20 @@ float KpPrincipleSheen::sample(const void* data, const OSL::ShaderGlobals& sg, B
     sample.mode = ScatteringMode::Diffuse;
     sample.wo = sample_hemisphere(base::head<2>(rand));
     return eval(data, sg, sample);
+}
+
+float KpPrincipleSpecular::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+
+}
+
+float KpPrincipleSpecular::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+
+}
+
+float KpPrincipleClearcoat::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+
+}
+
+float KpPrincipleClearcoat::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+
 }
