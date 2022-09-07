@@ -608,7 +608,7 @@ struct KpPrincipleSheen {
     }
 };
 
-struct KpPrincipleSpecular {
+struct KpPrincipleSpecularReflection {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
@@ -621,7 +621,7 @@ struct KpPrincipleSpecular {
             CLOSURE_FINISH_PARAM(KpPrincipleSpecularParams)
         };
 
-        shadingsys.register_closure("principle_specular", KpPrincipleSpecularID, params, nullptr, nullptr);
+        shadingsys.register_closure("principle_specular_reflection", KpPrincipleSpecularReflectionID, params, nullptr, nullptr);
     }
 };
 

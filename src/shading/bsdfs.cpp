@@ -568,18 +568,94 @@ float KpPrincipleSheen::sample(const void* data, const OSL::ShaderGlobals& sg, B
     return eval(data, sg, sample);
 }
 
-float KpPrincipleSpecular::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+float KpPrincipleSpecularReflection::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    auto params = reinterpret_cast<const KpPrincipleSpecularParams*>(data);
+    auto wi = base::to_vec3(-sg.I);
+    auto cos_theta_i = cos_theta(wi);
+    auto cos_theta_o = cos_theta(sample.wo);
+    if (cos_theta_i * cos_theta_o < 0.)
+        return 0.f;
 
+    const Vec3f wh = base::normalize(wi + sample.wo);
+    auto cos_om = base::dot(sample.wo, wh);
+    if (cos_om == 0.f)
+        return 0.f;
+
+    auto mdf = MicrofacetInterface<GGXDist>(wi, params->xalpha, params->yalpha);
+    auto D = mdf.D(wh);
+    auto G = mdf.G(sample.wo);
+    auto F = fresnel_schlick(params->eta, cos_theta_i);
+    sample.pdf = mdf.pdf(wh);
+
+    return D * G * F / (4.f * cos_theta_i * cos_theta_o);
 }
 
-float KpPrincipleSpecular::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+float KpPrincipleSpecularReflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    // This is confusing... Consider changing it to Delta & NonDelta
+    sample.mode = ScatteringMode::Diffuse;
+    auto mdf = MicrofacetInterface<GGXDist>(wi, params->xalpha, params->yalpha);
+    const Vec3f wh = mdf.sample_m(rand);
+    auto wi = base::to_vec3(-sg.I);
+    sample.wo = reflect(wi, wh);
+    return eval(data, sg, sample);
+}
 
+// Following two functions are less general and just put it here
+static inline float gtr1(const float alpha, const float cos_theta_v) {
+    auto a2 = square(alpha);
+    return (a2 - 1.) / (constants::pi<float>() * log(a2) * (1. + (a2 - 1.) *
+        cos_theta_v));
+}
+
+static inline float clearcoat_g1(const float cos_theta_v) {
+    // This is a simplified version of GGX G function with Smith profile and
+    // fixed roughenss 0.25 (0.25 * 0.25 = 0.0625)
+    // The G1 reduced to:
+    //                2
+    // --------------------------------
+    // 1 + sqrt(1 + a^2 * tan^2(theta))
+    //
+    // PBRT used another form that I couldn't understand, need to look into it
+    // later.
+
+    const auto sin_theta_v = std::sqrt(std::max(0., 1. - square(cos_theta_v)));
+    const auto tan_theta_v = sin_theta_v / cos_theta_v;
+    return 2. / (1. + std::sqrt(1. + 0.0625 * tan_theta_v));
 }
 
 float KpPrincipleClearcoat::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    auto params = reinterpret_cast<const KpPrincipleClearcoatParams*>(data);
+    auto wi = base::to_vec3(-sg.I);
+    auto cos_theta_i = cos_theta(wi);
+    auto cos_theta_o = cos_theta(sample.wo);
+    if (cos_theta_i <= 0 || cos_theta_o <= 0)
+        return 0.f;
 
+    const Vec3f wh = base::normalize(wi + sample.wo);
+    auto D = gtr1(params->roughness, cos_theta(wh));
+    auto G = clearcoat_g1(cos_theta_i) * clearcoat_g1(cos_theta_o);
+    // Fixed ior 1.5, corresponding F0 = 0.04, here we write the schlick function
+    // directly with precomputed F0
+    // Perhaps we can make it constexpr?
+    auto F = 0.04 + 0.96 * pow(1. - cos_theta_i, 5.);
+
+    // Parameter range is normalized into range of [0, 0.25]
+    return D * G * F * 0.25;
 }
 
 float KpPrincipleClearcoat::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    auto params = reinterpret_cast<const KpPrincipleClearcoatParams*>(data);
+    // Check "Physically Based Shading at Disney" appendix B page 25 equations 2, 5
+    // for the sampling function for GTR1
+    auto phi = constants::two_pi<float>() * rand[0];
+    auto a2 = square(params->roughness);
+    auto cos_theta_v = std::sqrt((1. - std::pow(a2, 1. - rand[1])) / (1. - a2));
+    auto sin_theta_v = std::sqrt(1. - square(cos_theta_v));
+    float sin_phi_v, cos_phi_v;
+    sincosf(phi, &sin_phi_v, &cos_phi_v);
+    Vec3f wh{sin_theta_v * cos_phi_v, cos_theta_v, sin_theta_v * sin_phi_v};
+    auto wi = base::to_vec3(-sg.I);
+    sample.wo = reflect(wi, wh);
 
+    return eval(data, sg, sample);
 }

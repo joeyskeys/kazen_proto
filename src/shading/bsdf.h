@@ -59,7 +59,8 @@ enum ClosureID {
     KpPrincipleDiffuseID,
     KpPrincipleRetroID,
     KpPrincipleSheenID,
-    KpPrincipleSpecularID,
+    KpPrincipleSpecularReflectionID,
+    KpPrincipleSpecularRefractionID,
     KpPrincipleClearcoatID,
 
     NumClosureIDs
