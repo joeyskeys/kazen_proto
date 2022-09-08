@@ -58,10 +58,12 @@ enum ClosureID {
     KpGlassID,
     KpPrincipleDiffuseID,
     KpPrincipleRetroID,
+    KpPrincipleFakeSSID,
     KpPrincipleSheenID,
     KpPrincipleSpecularReflectionID,
     KpPrincipleSpecularRefractionID,
     KpPrincipleClearcoatID,
+    KpPrincipleBSSRDFID,
 
     NumClosureIDs
 };

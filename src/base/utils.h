@@ -226,3 +226,9 @@ inline std::string load_file(const fs::path& path) {
 
     return buffer;
 }
+
+// Math utils
+template <typename T>
+inline lerp(const T t, const T a, const T b) {
+    return (static_cast<T>(1) - t) * a + t * b;
+}

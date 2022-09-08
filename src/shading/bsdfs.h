@@ -80,6 +80,10 @@ struct KpPrincipleRetroParams {
     float roughness;
 };
 
+struct KpPrincipleFakeSSParams {
+    float roughness;
+};
+
 struct KpPrincipleSheenParams {
     OSL::Vec3 N;
     float sheen;
@@ -98,6 +102,10 @@ struct KpPrincipleSpecularParams {
 struct KpPrincipleClearcoatParams {
     OSL::Vec3 N;
     float roughness;
+};
+
+struct KpPrincipleBSSRDFParams {
+
 };
 
 struct Diffuse {
@@ -595,6 +603,18 @@ struct KpPrincipleRetro {
     }
 };
 
+struct KpPrincipleFakeSS {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_FLOAT_PARAM(KpPrincipleFakeSSParams, roughenss);
+            CLOSURE_FINISH_PARAM(KpPrincipleFakeSSParams)
+        };
+
+        shadingsys.register_closure("principle_fakess", KpPrincipleFakeSSID, params, nullptr, nullptr);
+};
+
 struct KpPrincipleSheen {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
@@ -636,6 +656,18 @@ struct KpPrincipleClearcoat {
         };
 
         shadingsys.register_closure("principle_clearcoat", KpPrincipleClearcoatID, params, nullptr, nullptr);
+    }
+};
+
+struct KpPrincipleBSSRDF {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_FINISH_PARAM(KpPrincipleBSSRDFParams)
+        };
+
+        shadingsys.register_closure("principle_bssrdf", KpPrincipleBSSRDFID, params, nullptr, nullptr);
     }
 };
 

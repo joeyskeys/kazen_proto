@@ -550,6 +550,37 @@ float KpPrincipleRetro::sample(const void* data, const OSL::ShaderGlobals& sg, B
     return eval(data, sg, sample);
 }
 
+float KpPrincipleFakeSS::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    // This part of code is copied from PBRT-v3
+    // Same code signature is found in WADS's brdf explorer code
+    // TODO : read Hanrahan's paper in detail
+    auto params = reinterpret_cast<const KpPrincipleFakeSSParams*>(data);
+    auto wi = base::to_vec3(-sg.I);
+    auto wh = base::normalize(wi + sample.wo);
+    auto cos_theta_h = base::dot(wh, sample.wo);
+
+    // fss90 used to "flatten" retroreflection based on roughness
+    auto fss90 = square(cos_theta_h) * params->roughness;
+    auto schlick_weight = [](cos_theta_v) {
+        return std::pow(1. - cos_theta_v, 5.);
+    };
+    auto abs_cos_theta_i = std::abs(cos_theta(wi));
+    auto abs_cos_theta_o = std::abs(cos_theta(sample.wo));
+    auto fi = schlick_weight(abs_cos_theta_i);
+    auto fo = schlick_weight(abs_cos_theta_o);
+    auto fss = lerp(fi, 1., fss90) * lerp(fo, 1., fss90);
+    auto ss = 1.25f * (fss * (1. / (abs_cos_theta_i + abs_cos_theta_o) - .5f) + .5f);
+    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
+
+    return ss * constants::one_div_pi<float>();
+}
+
+float KpPrincipleFakeSS::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    sample.mode = ScatteringMode::Diffuse;
+    sample.wo = sample_hemisphere(base::head<2>(rand));
+    return eval(data, sg, sample);
+}
+
 float KpPrincipleSheen::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const KpPrincipleSheenParams*>(data);
     auto wi = base::to_vec3(-sg.I);
