@@ -93,6 +93,8 @@ struct BSDFSample {
     // A BSDF sampling parameter pack
     Vec3f wo;
     float pdf;
+    float bssrdf_r;
+    float bssrdf_idx;
     ScatteringMode::Mode mode;
 };
 

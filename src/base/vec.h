@@ -92,6 +92,11 @@ inline Vec<T, N> abs(const Vec<T, N>& v) {
     return enoki::abs(v);
 }
 
+template <typename T, size_t N>
+inline Vec<T, N> exp(const Vec<T, N>& v) {
+    return enoki::exp(v);
+}
+
 // Comparison
 template <typename T, size_t N>
 inline bool is_zero(const Vec<T, N>& v, const T& epsilon=1e-5) {
@@ -305,6 +310,11 @@ inline auto normalize(const Eigen::MatrixBase<Derived>& v) {
 template <typename T, int N>
 inline Vec<T, N> abs(const Vec<T, N>& v) {
     return v.cwiseAbs();
+}
+
+template <typename T, int N>
+inline Vec<T, N> exp(const Vec<T, N>& v) {
+    return v.exp();
 }
 
 // Comparison
@@ -689,6 +699,13 @@ public:
         return tmp;
     }
 
+    inline auto exp() const {
+        Vec tmp;
+        for (int i = 0; i < N; i++)
+            tmp.arr[i] = std::exp(arr[i]);
+        return tmp;
+    }
+
     inline auto max_component() const {
         return *std::max_element(arr.begin(), arr.end());
     }
@@ -735,14 +752,6 @@ inline Vec<T, N + M> concat(const Vec<T, N>& v1, const Vec<T, M>& v2) {
 
 template <uint M, typename T, uint N>
 inline Vec<T, M> head(const Vec<T, N>& v) {
-    /*
-    static_assert(N > M && M > 1, "Invalid component number");
-    Vec<T, M> tmp;
-    for (int i = 0; i < M; i++)
-        tmp[i] = v.arr[i];
-
-    return tmp;
-    */
     return v.template head<M>();
 }
 
@@ -779,12 +788,6 @@ inline T length_squared(const Vec<T, N>& v) {
 template <template<typename, uint> class C, typename T, uint N, typename = std::enable_if_t<std::is_base_of_v<Vec<T, N>, C<T, N>>>>
 inline T dot(const C<T, N>& a, const C<T, N>& b) {
     return a.dot(b);
-    /*
-    T tmp{0};
-    for (int i = 0; i < N; i++)
-        tmp += a.arr[i] * b.arr[i];
-    return tmp;
-    */
 }
 
 template <template<typename, uint> class C, typename D, typename T, uint N,
@@ -797,33 +800,12 @@ inline T dot(const C<T, N>& a, const D& b) {
 template <typename T, uint N>
 inline auto cross(const Vec<T, N>& a, const Vec<T, N>& b) {
     return a.cross(b);
-    /*
-    static_assert(N > 1 && N < 4);
-    if constexpr (N == 2) {
-        return a.arr[0] * b.arr[1] - a.arr[1] * b.arr[0];
-    }
-    else {
-        Vec tmp;
-        tmp[0] = a.arr[1] * b.arr[2] - a.arr[2] * b.arr[1];
-        tmp[1] = a.arr[2] * b.arr[0] - a.arr[0] * b.arr[2];
-        tmp[2] = a.arr[0] * b.arr[1] - a.arr[1] * b.arr[0];
-        return tmp;
-    }
-    */
 }
 
 // Normalize
 template <typename T, uint N>
 inline Vec<T, N> normalize(const Vec<T, N>& w) {
     return w.normalized();
-    /*
-    T sum{0};
-    for (auto& e : arr)
-        sum += e * e;
-    T rcp = 1. / std::sqrt(static_cast<double>(sum));
-    for (auto& e : arr)
-        e *= rcp;
-    */
 }
 
 // Misc
@@ -832,15 +814,14 @@ inline Vec<T, N> abs(const Vec<T, N>& v) {
     return v.abs();
 }
 
+template <typename T, uint N>
+inline Vec<T, N> exp(const Vec<T, N>& v) {
+    return v.exp();
+}
+
 // Comparison
 template <typename T, uint N>
 inline bool is_zero(const Vec<T, N>& v) {
-    /*
-    for (int i = 0; i < N; i++)
-        if (std::abs(v.arr[i]) >= epsilon<T>)
-            return false;
-    return true;
-    */
     return v.is_zero();
 }
 

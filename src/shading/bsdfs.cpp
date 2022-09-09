@@ -569,6 +569,7 @@ float KpPrincipleFakeSS::eval(const void* data, const OSL::ShaderGlobals& sg, BS
     auto fi = schlick_weight(abs_cos_theta_i);
     auto fo = schlick_weight(abs_cos_theta_o);
     auto fss = lerp(fi, 1., fss90) * lerp(fo, 1., fss90);
+    // 1.25 scale is used to (roughly) preserve albedo
     auto ss = 1.25f * (fss * (1. / (abs_cos_theta_i + abs_cos_theta_o) - .5f) + .5f);
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
 
@@ -687,6 +688,51 @@ float KpPrincipleClearcoat::sample(const void* data, const OSL::ShaderGlobals& s
     Vec3f wh{sin_theta_v * cos_phi_v, cos_theta_v, sin_theta_v * sin_phi_v};
     auto wi = base::to_vec3(-sg.I);
     sample.wo = reflect(wi, wh);
+
+    return eval(data, sg, sample);
+}
+
+float KpPrincipleBSSRDF::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+    // Check "Approximate Reflectance Profiles for Efficient Subsurface Scattering"
+    // page 4 equation 5
+    auto params = reinterpret_cast<const KpPrincipleBSSRDFParams*>(data);
+    const auto r = sample.bssrdf_r;
+    const auto d = params->scatter_distance[sample.bssrdf_idx];
+    sample.pdf = (.25f * std::exp(-r / d) / (2. * constants::pi<float>() * d * r)) +
+        .75f * std::exp(-r / (3. * d)) / (6. * constants::pi<float>() * d * r);
+    return base::exp(-RGBSpectrum{sample.bssrdf_r} / params->scatter_distance) +
+        base::exp(-RGBSpectrum{sample.bssrdf_r} / (3.f * params->scatter_distance)) /
+        (8. * constants::pi<float>() * sample.bssrdf_r * params->scatter_distance);
+}
+
+float KpPrincipleBSSRDF::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    auto params = reinterpret_cast<const KpPrincipleBSSRDFParams*>(data);
+    uint32_t idx = rand[0] * 2.999999;
+    sample.bssrdf_idx = idx;
+
+    // The cdf is 1 - e^(-x/d) / 4 - (3 / 4) e^(-x / (3d))
+    // Follow the suggestion in "Approximate Reflectance Profiles for Efficient Subsurface Scattering"
+    // here we "randomly pick one of the two exponents, use its inverse as a cdf, and then weight the
+    // results using MIS", the implementation is copied from pbrt-v3
+    // Constants like 2.999999 or 3.99999 are used to avoid zero value that might
+    // cause problem
+    // TODO : go through the equation deduction
+
+    float u;
+    if (rand[1] < .25f) {
+        u = rand[1] * 3.999999;
+        sample.bssrdf_r = params->scatter_distance[idx] * std::log(1. / (1. - u));
+    }
+    else {
+        u = (rand[1] - .25f) / .751111f;
+        sample.bssrdf_r = 3. * params->scatter_distance[idx] * std::log(1. / (1. - u));
+    }
+
+    // The outgoing direction of bssrdf is not defined in the paper,
+    // Just use cosine weighted distribution for now.
+    // This's only need for the diffusion profile approximation, for real path
+    // traced BSSRDF wo is calculated in the volume integrator.
+    sample.wo = sample_hemisphere(Vec2f{u, rand[2]});
 
     return eval(data, sg, sample);
 }

@@ -105,7 +105,7 @@ struct KpPrincipleClearcoatParams {
 };
 
 struct KpPrincipleBSSRDFParams {
-
+    OSL::Vec3 scatter_distance;
 };
 
 struct Diffuse {
