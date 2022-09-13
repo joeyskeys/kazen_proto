@@ -96,7 +96,7 @@ struct KpPrincipleSheenParams {
 // But the naming of parameter will be kinda confusing...
 struct KpPrincipleSpecularParams {
     OSL::Vec3 N;
-    float xalpha, yalpha, eta, f;
+    float xalpha, yalpha, eta;
 };
 
 struct KpPrincipleClearcoatParams {
@@ -637,7 +637,6 @@ struct KpPrincipleSpecularReflection {
             CLOSURE_FLOAT_PARAM(KpPrincipleSpecularParams, xalpha);
             CLOSURE_FLOAT_PARAM(KpPrincipleSpecularParams, yalpha);
             CLOSURE_FLOAT_PARAM(KpPrincipleSpecularParams, eta);
-            CLOSURE_FLOAT_PARAM(KpPrincipleSpecularParams, f);
             CLOSURE_FINISH_PARAM(KpPrincipleSpecularParams)
         };
 

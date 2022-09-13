@@ -25,17 +25,17 @@ shader kp_principle
         string label = "Sheen tint",
         int connectable = 1
     ]],
-    float specular
+    float specular = 0.1
     [[
         string label = "Specular",
         int connectable = 1
     ]],
-    float specular_tint
+    float specular_tint = 0.1
     [[
         string label = "Specular tint",
         int connectable = 1
     ]],
-    float clear_coat
+    float clear_coat = 0.1
     [[
         string label = "Clearcoat",
         int connectable = 1

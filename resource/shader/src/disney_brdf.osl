@@ -1,0 +1,107 @@
+shader kp_dinsey_brdf
+[[
+    string node_name = "disney",
+    string category = "shader",
+    string help = "disney brdf shader"
+]]
+(
+    color base_color = color(0.5)
+    [[
+        string label = "Base Color",
+        int connectable = 1
+    ]],
+    float subsurface = 0.2
+    [[
+        string label = "Subsurface",
+        int connectable = 1
+    ]],
+    float metallic = 0.2
+    [[
+        string label = "Metallic",
+        int connectable = 1
+    ]],
+    float specular = 0.2
+    [[
+        string label = "Specular",
+        int connectable = 1
+    ]],
+    float specular_tint = 0.1
+    [[
+        string label = "Specular tint",
+        int connectable = 1
+    ]],
+    float roughness = 0.5
+    [[
+        string label = "Roughness",
+        int connectable = 1
+    ]],
+    float anisotropic = 0
+    [[
+        string label = "Anisotropic",
+        int connectable = 1
+    ]],
+    float sheen = 0.1
+    [[
+        string label = "Sheen",
+        int connectable = 1
+    ]],
+    float sheen_tint = 0.1
+    [[
+        string label = "Sheen tint
+    ]],
+    float clearcoat = 0.1
+    [[
+        string label = "Clearcoat",
+        int connectable = 1
+    ]],
+    float clearcoat_gloss = 0.1
+    [[
+        string label = "Clearcoat gloss",
+        int connectable = 1
+    ]],
+    float eta = 1.04
+    [[
+        string label = "IOR",
+        int connectable = 0
+    ]]
+)
+{
+    // Utility variables
+    float diffuse_weight = 1 - clamp(metallic, 0, 1);
+    float metallic_weight = 1 - diffuse_weight;
+    float base_lum = luminance(base_color);
+    color tint_color = base_lum > 0 ? base_color / base_lum : color(1, 1, 1);
+
+    Ci = 0;
+
+    if (diffuse_weight > 1e-6) {
+        // Diffuse component
+        Ci = mix(base_color * (principle_diffuse(N) + principle_retro(N, roughenss)),
+            principle_fakess(roughness), subsurface);
+
+        // Sheen component
+        if (sheen > 1e -6) {
+            color sheen_color = color(1) * (1 - sheen_tint) + tint_color * sheen_tint;
+            Ci = Ci + sheen_color * sheen * principle_sheen(N);
+        }
+
+        Ci = Ci * diffuse_weight;
+    }
+
+    if (metallic_weight > 1e-6) {
+        float aspect = sqrt(1 - anisotropic * .9);
+        float ax = max(.001, roughenss * roughenss / aspect);
+        float ay = max(.001, roughenss * roughenss * aspect);
+        float r0 = (eta - 1) * (eta - 1) / ((eta + 1) * (eta + 1));
+        color spec_color = mix(specular * r0 * mix(color(1), tint_color, specular_tint),
+            base_color, metallic_weight);
+        Ci = Ci + principle_specular_reflection(N, ax, ay, eta);
+    }
+
+    if (clearcoat > 1e-6) {
+        // The implementation is from pbrt-v3, original paper didn't explain
+        // much on the clearcoat gloss parameter
+        // Same pattern is found in WDAS/brdf_explorer
+        Ci = Ci + principle_clearcoat(N, mix(.1, .001, clearcoat_gloss));
+    }
+}
