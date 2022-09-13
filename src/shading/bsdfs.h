@@ -585,7 +585,7 @@ struct KpPrincipleDiffuse {
             CLOSURE_FINISH_PARAM(DiffuseParams)
         };
 
-        shadingsys.register_closure("principle_diffuse", KpPrincipleDiffuseID, params, nullptr, nullptr);
+        shadingsys.register_closure("kp_principle_diffuse", KpPrincipleDiffuseID, params, nullptr, nullptr);
     }
 };
 
@@ -599,7 +599,7 @@ struct KpPrincipleRetro {
             CLOSURE_FINISH_PARAM(KpPrincipleRetroParams)
         };
 
-        shadingsys.register_closure("principle_retro", KpPrincipleRetroID, params, nullptr, nullptr);
+        shadingsys.register_closure("kp_principle_retro", KpPrincipleRetroID, params, nullptr, nullptr);
     }
 };
 
@@ -612,7 +612,7 @@ struct KpPrincipleFakeSS {
             CLOSURE_FINISH_PARAM(KpPrincipleFakeSSParams)
         };
 
-        shadingsys.register_closure("principle_fakess", KpPrincipleFakeSSID, params, nullptr, nullptr);
+        shadingsys.register_closure("kp_principle_fakess", KpPrincipleFakeSSID, params, nullptr, nullptr);
 };
 
 struct KpPrincipleSheen {
@@ -624,7 +624,7 @@ struct KpPrincipleSheen {
             CLOSURE_FINISH_PARAM(KpPrincipleSheenParams)
         };
 
-        shadingsys.register_closure("principle_sheen", KpPrincipleSheenID, params, nullptr, nullptr);
+        shadingsys.register_closure("kp_principle_sheen", KpPrincipleSheenID, params, nullptr, nullptr);
     }
 };
 
@@ -640,7 +640,7 @@ struct KpPrincipleSpecularReflection {
             CLOSURE_FINISH_PARAM(KpPrincipleSpecularParams)
         };
 
-        shadingsys.register_closure("principle_specular_reflection", KpPrincipleSpecularReflectionID, params, nullptr, nullptr);
+        shadingsys.register_closure("kp_principle_specular_reflection", KpPrincipleSpecularReflectionID, params, nullptr, nullptr);
     }
 };
 
@@ -654,7 +654,7 @@ struct KpPrincipleClearcoat {
             CLOSURE_FINISH_PARAM(KpPrincipleClearcoatParams)
         };
 
-        shadingsys.register_closure("principle_clearcoat", KpPrincipleClearcoatID, params, nullptr, nullptr);
+        shadingsys.register_closure("kp_principle_clearcoat", KpPrincipleClearcoatID, params, nullptr, nullptr);
     }
 };
 
@@ -666,7 +666,7 @@ struct KpPrincipleBSSRDF {
             CLOSURE_FINISH_PARAM(KpPrincipleBSSRDFParams)
         };
 
-        shadingsys.register_closure("principle_bssrdf", KpPrincipleBSSRDFID, params, nullptr, nullptr);
+        shadingsys.register_closure("kp_principle_bssrdf", KpPrincipleBSSRDFID, params, nullptr, nullptr);
     }
 };
 

@@ -76,13 +76,13 @@ shader kp_dinsey_brdf
 
     if (diffuse_weight > 1e-6) {
         // Diffuse component
-        Ci = mix(base_color * (principle_diffuse(N) + principle_retro(N, roughenss)),
-            principle_fakess(roughness), subsurface);
+        Ci = mix(base_color * (kp_principle_diffuse(N) + kp_principle_retro(N, roughenss)),
+            kp_principle_fakess(roughness), subsurface);
 
         // Sheen component
         if (sheen > 1e -6) {
             color sheen_color = color(1) * (1 - sheen_tint) + tint_color * sheen_tint;
-            Ci = Ci + sheen_color * sheen * principle_sheen(N);
+            Ci = Ci + sheen_color * sheen * kp_principle_sheen(N);
         }
 
         Ci = Ci * diffuse_weight;
@@ -95,13 +95,13 @@ shader kp_dinsey_brdf
         float r0 = (eta - 1) * (eta - 1) / ((eta + 1) * (eta + 1));
         color spec_color = mix(specular * r0 * mix(color(1), tint_color, specular_tint),
             base_color, metallic_weight);
-        Ci = Ci + principle_specular_reflection(N, ax, ay, eta);
+        Ci = Ci + kp_principle_specular_reflection(N, ax, ay, eta);
     }
 
     if (clearcoat > 1e-6) {
         // The implementation is from pbrt-v3, original paper didn't explain
         // much on the clearcoat gloss parameter
         // Same pattern is found in WDAS/brdf_explorer
-        Ci = Ci + principle_clearcoat(N, mix(.1, .001, clearcoat_gloss));
+        Ci = Ci + kp_principle_clearcoat(N, mix(.1, .001, clearcoat_gloss));
     }
 }
