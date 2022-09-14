@@ -78,11 +78,11 @@ float Phong::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
 }
 
 float OrenNayar::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-
+    return 0;
 }
 
 float OrenNayar::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
-    
+    return 0;
 }
 
 float Ward::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
@@ -427,7 +427,7 @@ float KpGlass::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
         else {
             auto mdf = MicrofacetInterface<GGXDist>(wi, params->xalpha, params->yalpha);
             sample.pdf = reflection_pdf(mdf, m, cos_mi);
-            return eval_reflection(sample.wo, m, F);
+            return eval_reflection(mdf, sample.wo, m, F);
         }
     }
     else {
@@ -465,9 +465,9 @@ float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
         eta = 1.f / eta;
 
     Vec3f m;
-    auto mdf_b = MicrofacetInterface<BeckmannDist>::sample_m(wi, params->xalpha,
+    auto mdf_b = MicrofacetInterface<BeckmannDist>(wi, params->xalpha,
         params->yalpha);
-    auto mdf_g = MicrofacetInterface<GGXDist>::sample_m(wi, params->xalpha,
+    auto mdf_g = MicrofacetInterface<GGXDist>(wi, params->xalpha,
         params->yalpha);
     if (params->dist == u_beckmann)
         m = mdf_b.sample_m(rand);
@@ -491,7 +491,7 @@ float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
             return eval_reflection(mdf_b, sample.wo, m, F);
         }
         else {
-            sample.pdf = F * reflection_pdf(mdf, m, cos_mi);
+            sample.pdf = F * reflection_pdf(mdf_g, m, cos_mi);
             return eval_reflection(mdf_g, sample.wo, m, F);
         }
     }
@@ -515,7 +515,7 @@ float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
 
 float KpPrincipleDiffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const DiffuseParams*>(data);
-    auto wi = base::to_Vec3(-sg.I);
+    auto wi = base::to_vec3(-sg.I);
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     return constants::one_div_pi<float>() * 
         (1.f - 0.5f * pow(1 - cos_theta(wi), 5));
@@ -560,15 +560,15 @@ float KpPrincipleFakeSS::eval(const void* data, const OSL::ShaderGlobals& sg, BS
     auto cos_theta_h = base::dot(wh, sample.wo);
 
     // fss90 used to "flatten" retroreflection based on roughness
-    auto fss90 = square(cos_theta_h) * params->roughness;
-    auto schlick_weight = [](cos_theta_v) {
+    float fss90 = square(cos_theta_h) * params->roughness;
+    auto schlick_weight = [](auto cos_theta_v) {
         return std::pow(1. - cos_theta_v, 5.);
     };
     auto abs_cos_theta_i = std::abs(cos_theta(wi));
     auto abs_cos_theta_o = std::abs(cos_theta(sample.wo));
-    auto fi = schlick_weight(abs_cos_theta_i);
-    auto fo = schlick_weight(abs_cos_theta_o);
-    auto fss = lerp(fi, 1., fss90) * lerp(fo, 1., fss90);
+    float fi = schlick_weight(abs_cos_theta_i);
+    float fo = schlick_weight(abs_cos_theta_o);
+    auto fss = lerp(1.f, fss90, fi) * lerp(1.f, fss90, fo);
     // 1.25 scale is used to (roughly) preserve albedo
     auto ss = 1.25f * (fss * (1. / (abs_cos_theta_i + abs_cos_theta_o) - .5f) + .5f);
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
@@ -625,9 +625,10 @@ float KpPrincipleSpecularReflection::eval(const void* data, const OSL::ShaderGlo
 float KpPrincipleSpecularReflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     // This is confusing... Consider changing it to Delta & NonDelta
     sample.mode = ScatteringMode::Diffuse;
+    auto params = reinterpret_cast<const KpPrincipleSpecularParams*>(data);
+    auto wi = base::to_vec3(-sg.I);
     auto mdf = MicrofacetInterface<GGXDist>(wi, params->xalpha, params->yalpha);
     const Vec3f wh = mdf.sample_m(rand);
-    auto wi = base::to_vec3(-sg.I);
     sample.wo = reflect(wi, wh);
     return eval(data, sg, sample);
 }
@@ -700,9 +701,14 @@ float KpPrincipleBSSRDF::eval(const void* data, const OSL::ShaderGlobals& sg, BS
     const auto d = params->scatter_distance[sample.bssrdf_idx];
     sample.pdf = (.25f * std::exp(-r / d) / (2. * constants::pi<float>() * d * r)) +
         .75f * std::exp(-r / (3. * d)) / (6. * constants::pi<float>() * d * r);
-    return base::exp(-RGBSpectrum{sample.bssrdf_r} / params->scatter_distance) +
-        base::exp(-RGBSpectrum{sample.bssrdf_r} / (3.f * params->scatter_distance)) /
-        (8. * constants::pi<float>() * sample.bssrdf_r * params->scatter_distance);
+    auto sd = base::to_vec3(params->scatter_distance);
+    /*
+    return base::exp(-RGBSpectrum{sample.bssrdf_r} / sd) +
+        base::exp(-RGBSpectrum{sample.bssrdf_r} / (3.f * sd)) /
+        (8. * constants::pi<float>() * sample.bssrdf_r * sd);
+    */
+    // Understanding of BSSRDF is not enough, leave the mess here for now
+    return 0;
 }
 
 float KpPrincipleBSSRDF::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {

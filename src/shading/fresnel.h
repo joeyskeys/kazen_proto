@@ -141,7 +141,7 @@ float fresnel_trans_dielectric(const float eta, const float cos_theta_i) {
     }
 }
 
-float fresnel_schlick(const float eta, const float cos_theta_v) {
+inline float fresnel_schlick(const float eta, const float cos_theta_v) {
     auto F0 = square((1. - eta) / (1. + eta));
     return F0 + (1. - F0) * pow(1. - cos_theta_v, 5.);
 }

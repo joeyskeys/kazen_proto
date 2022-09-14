@@ -236,8 +236,8 @@ public:
         if (cos_theta_v == 0.f)
             return 0.f;
 
-        return G1(wi, xalpha, yalpha) * std::abs(base::dot(wi, m)) *
-            D(m, xalpha, yalpha) / std::abs(cos_theta_v);
+        return G1(wi) * std::abs(base::dot(wi, m)) *
+            D(m) / std::abs(cos_theta_v);
     }
 
     inline float lambda(const Vec3f& m) const {
@@ -257,11 +257,11 @@ public:
     }
 
     virtual float G(const Vec3f& wo) const {
-        return 1.f / (lambda(wi, xalpha, yalpha) + lambda(wo, xalpha, yalpha) + 1.f);
+        return 1.f / (lambda(wi) + lambda(wo) + 1.f);
     }
 
     inline float G1(const Vec3f& w) const {
-        return 1.f / (lambda(w, xalpha, yalpha) + 1.f);
+        return 1.f / (lambda(w) + 1.f);
     }
 
     inline float D(const Vec3f& m) const {

@@ -520,7 +520,7 @@ private:
     static inline float eval_reflection(const MDF& mdf, const Vec3f& wo, const Vec3f& m,
         const float F)
     {
-        const float denom = std::abs(4.f * wi[1] * wo[1]);
+        const float denom = std::abs(4.f * mdf.wi[1] * wo[1]);
         if (denom == 0.f)
             return 0.f;
 
@@ -543,12 +543,12 @@ private:
     static inline float eval_refraction(const MDF& mdf, const float eta, const Vec3f& wo,
         const Vec3f& m, const float T)
     {
-        if (wi[1] == 0.f || wo[1] == 0.f)
+        if (mdf.wi[1] == 0.f || wo[1] == 0.f)
             return 0.f;
 
-        const float cos_mi = base::dot(m, wi);
+        const float cos_mi = base::dot(m, mdf.wi);
         const float cos_mo = base::dot(m, wo);
-        const float c = std::abs((cos_mi * cos_mo) / (wi[1] * wo[1]));
+        const float c = std::abs((cos_mi * cos_mo) / (mdf.wi[1] * wo[1]));
 
         float denom = cos_mi + eta * cos_mo;
         denom = square(denom);
@@ -581,7 +581,7 @@ struct KpPrincipleDiffuse {
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
-            CLOSURE_VECTOR_PARAM(DiffuseParams, N);
+            CLOSURE_VECTOR_PARAM(DiffuseParams, N),
             CLOSURE_FINISH_PARAM(DiffuseParams)
         };
 
@@ -594,8 +594,8 @@ struct KpPrincipleRetro {
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
-            CLOSURE_VECTOR_PARAM(KpPrincipleRetroParams, N);
-            CLOSURE_FLOAT_PARAM(KpPrincipleRetroParams, roughness);
+            CLOSURE_VECTOR_PARAM(KpPrincipleRetroParams, N),
+            CLOSURE_FLOAT_PARAM(KpPrincipleRetroParams, roughness),
             CLOSURE_FINISH_PARAM(KpPrincipleRetroParams)
         };
 
@@ -608,11 +608,12 @@ struct KpPrincipleFakeSS {
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
-            CLOSURE_FLOAT_PARAM(KpPrincipleFakeSSParams, roughenss);
+            CLOSURE_FLOAT_PARAM(KpPrincipleFakeSSParams, roughness),
             CLOSURE_FINISH_PARAM(KpPrincipleFakeSSParams)
         };
 
         shadingsys.register_closure("kp_principle_fakess", KpPrincipleFakeSSID, params, nullptr, nullptr);
+    }
 };
 
 struct KpPrincipleSheen {
@@ -620,7 +621,7 @@ struct KpPrincipleSheen {
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
-            CLOSURE_VECTOR_PARAM(KpPrincipleSheenParams, N);
+            CLOSURE_VECTOR_PARAM(KpPrincipleSheenParams, N),
             CLOSURE_FINISH_PARAM(KpPrincipleSheenParams)
         };
 
@@ -633,10 +634,10 @@ struct KpPrincipleSpecularReflection {
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
-            CLOSURE_VECTOR_PARMA(KpPrincipleSpecularParams, N);
-            CLOSURE_FLOAT_PARAM(KpPrincipleSpecularParams, xalpha);
-            CLOSURE_FLOAT_PARAM(KpPrincipleSpecularParams, yalpha);
-            CLOSURE_FLOAT_PARAM(KpPrincipleSpecularParams, eta);
+            CLOSURE_VECTOR_PARAM(KpPrincipleSpecularParams, N),
+            CLOSURE_FLOAT_PARAM(KpPrincipleSpecularParams, xalpha),
+            CLOSURE_FLOAT_PARAM(KpPrincipleSpecularParams, yalpha),
+            CLOSURE_FLOAT_PARAM(KpPrincipleSpecularParams, eta),
             CLOSURE_FINISH_PARAM(KpPrincipleSpecularParams)
         };
 
@@ -649,8 +650,8 @@ struct KpPrincipleClearcoat {
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
-            CLOSURE_VECTOR_PARAM(KpPrincipleClearcoatParams, N);
-            CLOSURE_FLOAT_PARAM(KpPrincipleClearcoatParams, roughness);
+            CLOSURE_VECTOR_PARAM(KpPrincipleClearcoatParams, N),
+            CLOSURE_FLOAT_PARAM(KpPrincipleClearcoatParams, roughness),
             CLOSURE_FINISH_PARAM(KpPrincipleClearcoatParams)
         };
 

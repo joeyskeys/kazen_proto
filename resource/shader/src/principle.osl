@@ -40,6 +40,11 @@ shader kp_principle
         string label = "Clearcoat",
         int connectable = 1
     ]],
+    float clearcoat_gloss = 0.1
+    [[
+        string label = "Clearcoat roughness",
+        int connectable = 1
+    ]],
     float roughness = 0.5
     [[
         string label = "Roughness",
@@ -64,12 +69,12 @@ shader kp_principle
 
     if (diffuse_weight > 1e-5) {
         // Diffuse component
-        Ci = base_color * principled_diffuse(N, roughness);
+        Ci = base_color * kp_principle_diffuse(N);
 
         // Sheen component
         if (sheen > 1e-5) {
             color sheen_color = color(1, 1, 1) * (1 - sheen_tint) + tint_color * sheen_tint;
-            Ci = Ci + sheen_color * sheen * principled_sheen(N);
+            Ci = Ci + sheen_color * sheen * kp_principle_sheen(N);
         }
 
         Ci = Ci * diffuse_weight;
@@ -80,10 +85,10 @@ shader kp_principle
         float alpha = r * r;
         color tmp = color(1, 1, 1) * (1 - specular_tint) + tint_color * specular_tint;
         color specular_color = (specular * 0.08 * tmp) * (1 - metallic) + base_color * metallic;
-        Ci = Ci + specular_weight * specular_color * a_new_microfacet_closure(N, alpha, f);
+        Ci = Ci + specular_weight * specular_color * kp_principle_specular_reflection(N, roughness, roughness, 1.04);
     }
 
     if (clear_coat > 1e-5) {
-        Ci = Ci + principled_clearcoat(clearN, clear_coat, clear_coat_r * clear_coat_r);
+        Ci = Ci + kp_principle_clearcoat(N, clearcoat_gloss * clearcoat_gloss);
     }
 }
