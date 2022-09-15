@@ -617,7 +617,7 @@ float KpPrincipleSpecularReflection::eval(const void* data, const OSL::ShaderGlo
     auto D = mdf.D(wh);
     auto G = mdf.G(sample.wo);
     auto F = fresnel_schlick(params->eta, cos_theta_i);
-    sample.pdf = mdf.pdf(wh);
+    sample.pdf = std::max(0.f, mdf.pdf(wh));
 
     return D * G * F / (4.f * cos_theta_i * cos_theta_o);
 }
@@ -665,12 +665,16 @@ float KpPrincipleClearcoat::eval(const void* data, const OSL::ShaderGlobals& sg,
         return 0.f;
 
     const Vec3f wh = base::normalize(wi + sample.wo);
-    auto D = gtr1(params->roughness, cos_theta(wh));
+    auto cos_theta_h = cos_theta(wh);
+    auto D = gtr1(params->roughness, cos_theta_h);
     auto G = clearcoat_g1(cos_theta_i) * clearcoat_g1(cos_theta_o);
     // Fixed ior 1.5, corresponding F0 = 0.04, here we write the schlick function
     // directly with precomputed F0
     // Perhaps we can make it constexpr?
     auto F = 0.04 + 0.96 * pow(1. - cos_theta_i, 5.);
+
+    // PDF is documented in the paper appendix B.1
+    sample.pdf = std::max(0., D * cos_theta_h / (4. * base::dot(sample.wo, wh)));
 
     // Parameter range is normalized into range of [0, 0.25]
     return D * G * F * 0.25;

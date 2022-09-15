@@ -1,5 +1,7 @@
 #pragma once
 
+#cmakedefine USE_TBB
+
 #cmakedefine USE_ENOKI
 #cmakedefine USE_EIGEN
 

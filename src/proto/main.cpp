@@ -1,10 +1,14 @@
 
-#include <tbb/tbb.h>
 #include <OpenImageIO/argparse.h>
 
 #include "core/sampler.h"
 #include "core/scene.h"
 #include "core/state.h"
+#include "config.h"
+
+#ifdef USE_TBB
+#include <tbb/tbb.h>
+#endif
 
 int main(int argc, const char **argv) {
     std::string filename;
@@ -45,9 +49,7 @@ int main(int argc, const char **argv) {
     auto render_start = get_time();
     bool hit = false;
 
-#define WITH_TBB
-
-#ifdef WITH_TBB
+#ifdef USE_TBB
     if (nthreads > 0)
         tbb::task_scheduler_init init(nthreads);
     tbb::parallel_for (tbb::blocked_range<size_t>(0, scene.film->tiles.size()),
@@ -56,7 +58,7 @@ int main(int argc, const char **argv) {
     {
 #endif
 
-#ifdef WITH_TBB
+#ifdef USE_TBB
         for (int t = r.begin(); t != r.end(); ++t) {
 #else
         for (int t = 0; t < scene.film->tiles.size(); ++t) {
@@ -101,7 +103,7 @@ int main(int argc, const char **argv) {
             std::cout << "tile duration : " << tile_duration.count() << " ms\n";
         }
 
-#ifdef WITH_TBB
+#ifdef USE_TBB
     });
 #else
     }

@@ -99,6 +99,12 @@ void register_closures(OSL::ShadingSystem *shadingsys) {
     register_closure<KpEmitter>(*shadingsys);
     register_closure<KpGloss>(*shadingsys);
     register_closure<KpGlass>(*shadingsys);
+    register_closure<KpPrincipleDiffuse>(*shadingsys);
+    register_closure<KpPrincipleRetro>(*shadingsys);
+    register_closure<KpPrincipleFakeSS>(*shadingsys);
+    register_closure<KpPrincipleSheen>(*shadingsys);
+    register_closure<KpPrincipleSpecularReflection>(*shadingsys);
+    register_closure<KpPrincipleClearcoat>(*shadingsys);
 }
 
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only) {
@@ -188,6 +194,36 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                     // Weight for emission is different
                     case KpEmitterID:       status = ret.surface.add_bsdf<KpEmitterParams>(KpEmitterID, RGBSpectrum{1}, comp->as<KpEmitterParams>());
                         break;
+
+                    case KpPrincipleDiffuseID: {
+                        status = ret.surface.add_bsdf<DiffuseParams>(KpPrincipleDiffuseID, cw, comp->as<DiffuseParams>());
+                        break;
+                    }
+                    
+                    case KpPrincipleRetroID: {
+                        status = ret.surface.add_bsdf<KpPrincipleRetroParams>(KpPrincipleRetroID, cw, comp->as<KpPrincipleRetroParams>());
+                        break;
+                    }
+
+                    case KpPrincipleFakeSSID: {
+                        status = ret.surface.add_bsdf<KpPrincipleFakeSSParams>(KpPrincipleFakeSSID, cw, comp->as<KpPrincipleFakeSSParams>());
+                        break;
+                    }
+
+                    case KpPrincipleSheenID: {
+                        status = ret.surface.add_bsdf<KpPrincipleSheenParams>(KpPrincipleSheenID, cw, comp->as<KpPrincipleSheenParams>());
+                        break;
+                    }
+
+                    case KpPrincipleSpecularReflectionID: {
+                        status = ret.surface.add_bsdf<KpPrincipleSpecularParams>(KpPrincipleSpecularReflectionID, cw, comp->as<KpPrincipleSpecularParams>());
+                        break;
+                    }
+
+                    case KpPrincipleClearcoatID: {
+                        status = ret.surface.add_bsdf<KpPrincipleClearcoatParams>(KpPrincipleClearcoatID, cw, comp->as<KpPrincipleClearcoatParams>());
+                        break;
+                    }
                 }
                 //OSL_ASSERT(status && "Invalid closure invoked");
                 if (!status) {

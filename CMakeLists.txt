@@ -10,6 +10,8 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInf
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
+option(USE_TBB "Whether to use TBB to enable multithreading" ON)
+
 set(VECTORIZATION "None" CACHE STRING "Chooose vectorization solution")
 set_property(CACHE VECTORIZATION PROPERTY STRINGS None Enoki Eigen)
 set(USE_ENOKI OFF)
