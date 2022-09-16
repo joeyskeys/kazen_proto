@@ -96,13 +96,13 @@ shader kp_dinsey_brdf
         float r0 = (eta - 1) * (eta - 1) / ((eta + 1) * (eta + 1));
         color spec_color = mix(specular * r0 * mix(color(1), tint_color, specular_tint),
             base_color, metallic_weight);
-        Ci = Ci + kp_principle_specular_reflection(N, ax, ay, eta);
+        //Ci = Ci + spec_color * kp_principle_specular_reflection(N, ax, ay, eta);
     }
 
     if (clearcoat > 1e-6) {
         // The implementation is from pbrt-v3, original paper didn't explain
         // much on the clearcoat gloss parameter
         // Same pattern is found in WDAS/brdf_explorer
-        Ci = Ci + kp_principle_clearcoat(N, mix(.1, .001, clearcoat_gloss));
+        Ci = Ci + clearcoat * kp_principle_clearcoat(N, mix(.1, .001, clearcoat_gloss));
     }
 }
