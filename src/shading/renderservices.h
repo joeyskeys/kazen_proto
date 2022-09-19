@@ -128,6 +128,12 @@ public:
         const Intersection& t,
         bool flip=false);
 
+    static void globals_from_miss(
+        OSL::ShaderGlobals& sg,
+        const Ray& r,
+        const Intersection& t
+    );
+
     static void globals_from_lightrec(
         OSL::ShaderGlobals& sg,
         const LightRecord& lrec

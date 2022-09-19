@@ -205,3 +205,6 @@ struct ShadingResult {
 
 void register_closures(OSL::ShadingSystem *shadingsys);
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only);
+
+// This function follows the signature in OSL testrender
+RGBSpectrum process_bg_closure(const OSL::ClosureColor *closure);

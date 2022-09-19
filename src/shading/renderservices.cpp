@@ -261,6 +261,17 @@ void KazenRenderServices::globals_from_hit(
     sg.renderstate = &sg;
 }
 
+void globals_from_miss(
+    OSL::ShaderGlobals& sg,
+    const Ray& r,
+    const Intersection& t)
+{
+    sg.I = base::to_osl_vec3(isect.to_local(r.direction));
+    // Dual number or 2D ray tracing ? look into OSL and appleseed
+    //sg.dIdx = ;
+    //sg.dIdy = ;
+}
+
 void KazenRenderServices::globals_from_lightrec(
     OSL::ShaderGlobals& sg,
     const LightRecord& lrec)

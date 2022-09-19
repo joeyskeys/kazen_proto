@@ -225,6 +225,14 @@ float Emission::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSampl
     return 1.f;
 }
 
+float Background::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+
+}
+
+float Background::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+    
+}
+
 float KpMirror::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.pdf = 0.f;
     return 0.f;

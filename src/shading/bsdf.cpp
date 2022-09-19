@@ -96,6 +96,7 @@ void register_closures(OSL::ShadingSystem *shadingsys) {
     shadingsys->register_closure("microfacet", MicrofacetID, params, nullptr, nullptr);
 
     register_closure<Emission>(*shadingsys);
+    register_closure<Background>(*shadingsys);
     register_closure<KpMirror>(*shadingsys);
     register_closure<KpDielectric>(*shadingsys);
     register_closure<KpMicrofacet>(*shadingsys);
@@ -185,6 +186,9 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                     case EmissionID:        status = ret.surface.add_bsdf<EmptyParams>(EmissionID, cw, comp->as<EmptyParams>());
                         break;
 
+                    case BackgroundID:      status = ret.surface.add_bsdf<EmptyParams>(BackgroundID, cw, comp->as<EmptyParams>());
+                        break;
+
                     case KpMirrorID:        status = ret.surface.add_bsdf<EmptyParams>(KpMirrorID, cw, comp->as<EmptyParams>());
                         break;
 
@@ -238,4 +242,23 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
             break;
         }
     }
+}
+
+RGBSpectrum process_bg_closure(const OSL::ClosureColor *closure) {
+    if (!closure) return RGBSpectrum{0};
+    switch (closure->id) {
+        case ClosureColor::MUL: {
+            return closure->as_mul()->weight * process_bg_closure(closure->as_mul()->closure);
+        }
+        case ClosureColor::ADD: {
+            return process_bg_closure(closure->as_add()->closureA) + 
+                process_bg_closure(closure->as_add()->closureB);
+        }
+        case BackgroundID: {
+            return closure->as_comp()->w;
+        }
+    }
+
+    // Should never happen, debug purple color to indicate error
+    return RGBSpectrum{1, 0, 1};
 }

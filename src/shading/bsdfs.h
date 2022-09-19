@@ -427,6 +427,18 @@ struct Emission {
     }
 };
 
+struct Background {
+    static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
+    static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static void register_closure(OSL::ShaderSystem& shadingsys) {
+        const OSL::ClosureParams params[] = {
+            CLOSURE_FINISH_PARAM(EmptyParams)
+        };
+
+        shadingsys.register_closure("background", BackgroundID, params, nullptr, nullptr);
+    }
+};
+
 struct KpMirror {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
@@ -692,7 +704,7 @@ inline eval_func get_eval_func(ClosureID id) {
         nullptr,
         nullptr,
         Emission::eval,
-        nullptr,
+        Background::eval,
         nullptr,
         nullptr,
         KpMirror::eval,
@@ -728,7 +740,7 @@ inline sample_func get_sample_func(ClosureID id) {
         nullptr,
         nullptr,
         Emission::sample,
-        nullptr,
+        Background::sample,
         nullptr,
         nullptr,
         KpMirror::sample,
