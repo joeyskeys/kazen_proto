@@ -20,7 +20,7 @@ shader kp_dinsey_brdf
         string label = "Metallic",
         int connectable = 1
     ]],
-    float specular = 0.2
+    float specular = 0.7
     [[
         string label = "Specular",
         int connectable = 1
@@ -60,7 +60,7 @@ shader kp_dinsey_brdf
         string label = "Clearcoat gloss",
         int connectable = 1
     ]],
-    float eta = 1.04
+    float eta = 1.43
     [[
         string label = "IOR",
         int connectable = 0
@@ -96,7 +96,7 @@ shader kp_dinsey_brdf
         float r0 = (eta - 1) * (eta - 1) / ((eta + 1) * (eta + 1));
         color spec_color = mix(specular * r0 * mix(color(1), tint_color, specular_tint),
             base_color, metallic_weight);
-        //Ci = Ci + spec_color * kp_principle_specular_reflection(N, ax, ay, eta);
+        Ci = Ci + spec_color * kp_principle_specular_reflection(N, ax, ay, eta);
     }
 
     if (clearcoat > 1e-6) {
