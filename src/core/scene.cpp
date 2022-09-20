@@ -49,12 +49,14 @@ enum ETag {
     // lights
     ELights,
     EPointLight,
+    // Background
+    EBackground,
     // Recorder
     ERecorder,
     EInvalid
 };
 
-constexpr static frozen::unordered_map<frozen::string, ETag, 26> tags = {
+constexpr static frozen::unordered_map<frozen::string, ETag, 27> tags = {
     {"Scene", EScene},
     {"Film", EFilm},
     {"Camera", ECamera},
@@ -82,6 +84,7 @@ constexpr static frozen::unordered_map<frozen::string, ETag, 26> tags = {
     {"ConnectShaders", EConnectShaders},
     {"Lights", ELights},
     {"PointLight", EPointLight},
+    {"Background", EBackground},
     {"Recorder", ERecorder}
 };
 
@@ -272,6 +275,7 @@ Scene::Scene()
     : film(std::make_unique<Film>())
     , camera(std::make_unique<Camera>())
     , accelerator(nullptr)
+    , background_shader(nullptr)
     , recorder(film->width, film->height)
 {
     camera->film = film.get();
@@ -639,6 +643,10 @@ void Scene::parse_from_file(fs::path filepath) {
                 auto lgt_ptr = std::make_unique<PointLight>(lights.size());
                 parse_attributes(node, lgt_ptr.get());
                 lights.emplace_back(std::move(lgt_ptr));
+                break;
+            }
+
+            case EBackground: {
                 break;
             }
 

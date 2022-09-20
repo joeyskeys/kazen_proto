@@ -71,8 +71,9 @@ public:
 
     OSL::ShadingSystem* shadingsys;
     std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
-    OSL::PerThreadInfo* thread_info;
-    OSL::ShadingContext* ctx;
+    OSL::ShaderGroupRef*    background_shader;
+    OSL::PerThreadInfo*     thread_info;
+    OSL::ShadingContext*    ctx;
 };
 
 class WhittedIntegrator : public OSLBasedIntegrator {

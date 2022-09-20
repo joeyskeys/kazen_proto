@@ -91,6 +91,7 @@ void OSLBasedIntegrator::setup(Scene* scene) {
     Integrator::setup(scene);
     shadingsys = scene->shadingsys.get();
     shaders = &scene->shaders;
+    background_shader = &scene->background_shader;
     thread_info = shadingsys->create_thread_info();
     ctx = shadingsys->get_context(thread_info);
 }
@@ -363,8 +364,10 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
      * *********************************************/
 
     Intersection its;
-    if (!accel_ptr->intersect(r, its))
-        return 0.f;
+    if (!accel_ptr->intersect(r, its)) {
+        KazenRenderServices::globals_from_miss(sg, ray, its);
+        return process_bg_closure(background_shader);
+    }
 
     RGBSpectrum Li{0}, throughput{1};
     float eta = 0.95f;
@@ -473,8 +476,10 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
         mpdf = bsdf_sample.pdf;
         ray = Ray(its.P, its.to_world(bsdf_sample.wo));
 
-        if (!accel_ptr->intersect(ray, its))
-            return Li;
+        if (!accel_ptr->intersect(ray, its)) {
+            KazenRenderServices::globals_from_miss(sg, ray, its);
+            return Li + throughput * process_bg_closure(background_shader);
+        }
 
         // LightPath event recording
         if (its.is_light)
