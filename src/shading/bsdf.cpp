@@ -247,10 +247,11 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
 RGBSpectrum process_bg_closure(const OSL::ClosureColor *closure) {
     if (!closure) return RGBSpectrum{0};
     switch (closure->id) {
-        case ClosureColor::MUL: {
-            return closure->as_mul()->weight * process_bg_closure(closure->as_mul()->closure);
+        case OSL::ClosureColor::MUL: {
+            return base::to_vec3(closure->as_mul()->weight) *
+                process_bg_closure(closure->as_mul()->closure);
         }
-        case ClosureColor::ADD: {
+        case OSL::ClosureColor::ADD: {
             return process_bg_closure(closure->as_add()->closureA) + 
                 process_bg_closure(closure->as_add()->closureB);
         }

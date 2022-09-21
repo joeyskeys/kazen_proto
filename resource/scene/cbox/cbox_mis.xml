@@ -3,6 +3,12 @@
 
     <Camera position="float3 0 0.919769 5.41159" lookat="float3 0 0.893051 4.41198" up="float3 0 1 0" fov="float 27.7856" scale="float3 -1 1 1"/>
 
+    <EnvironmentBegin/>
+        <Shader name="env" layer="layer0">
+            <Parameter filename=""/>
+        </Shader>
+    <EnvironmentEnd/>
+
     <Materials>
         <ShaderGroupBegin name="diffuse1"/>
             <Shader name="diffuse" layer="layer1">

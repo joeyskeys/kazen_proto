@@ -430,8 +430,8 @@ struct Emission {
 struct Background {
     static float eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
     static float sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
-    static void register_closure(OSL::ShaderSystem& shadingsys) {
-        const OSL::ClosureParams params[] = {
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
             CLOSURE_FINISH_PARAM(EmptyParams)
         };
 

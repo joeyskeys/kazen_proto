@@ -50,13 +50,14 @@ enum ETag {
     ELights,
     EPointLight,
     // Background
-    EBackground,
+    EEnvironmentBegin,
+    EEnvironmentEnd,
     // Recorder
     ERecorder,
     EInvalid
 };
 
-constexpr static frozen::unordered_map<frozen::string, ETag, 27> tags = {
+constexpr static frozen::unordered_map<frozen::string, ETag, 28> tags = {
     {"Scene", EScene},
     {"Film", EFilm},
     {"Camera", ECamera},
@@ -84,7 +85,8 @@ constexpr static frozen::unordered_map<frozen::string, ETag, 27> tags = {
     {"ConnectShaders", EConnectShaders},
     {"Lights", ELights},
     {"PointLight", EPointLight},
-    {"Background", EBackground},
+    {"EnvironmentBegin", EEnvironmentBegin},
+    {"EnvironmentEnd", EEnvironmentEnd},
     {"Recorder", ERecorder}
 };
 
@@ -646,7 +648,31 @@ void Scene::parse_from_file(fs::path filepath) {
                 break;
             }
 
-            case EBackground: {
+            case EEnvironmentBegin: {
+                // Environment is also a osl shader so these two tags are
+                // just like ShaderGroupBegin/End
+                // Except they setup the background shader
+                current_shader_group = shadingsys->ShaderGroupBegin(name_attr.value());
+                background_shader = current_shader_group;
+                break;
+            }
+
+            case EEnvironmentEnd: {
+                // Now process the shader connections
+                for (auto conn_node : shader_connections) {
+                    // Ugly code for now..
+                    auto sl = conn_node.attribute("srclayer");
+                    auto sp = conn_node.attribute("srcparam");
+                    auto dl = conn_node.attribute("dstlayer");
+                    auto dp = conn_node.attribute("dstparam");
+                    if (sl && sp && dl && dp)
+                        shadingsys->ConnectShaders(sl.value(), sp.value(),
+                            dl.value(), dp.value());
+                }
+
+                shadingsys->ShaderGroupEnd(*current_shader_group);
+                // Maybe also push the group into shader here ?
+                shader_connections.clear();
                 break;
             }
 
