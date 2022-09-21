@@ -172,11 +172,6 @@ OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
         case EVec3f: {
             ret = OSL::TypeDesc::TypeVector;
             auto typed_dst = reinterpret_cast<Vec3f*>(dst);
-            // We have a problem here, different lib may have different aliasing
-            // name for the desired variable...
-            // TODO : unify the name aliasing
-            //for (int i = 0; i < Vec3f::dimension; i++)
-                //(*typed_dst)[i] = string_to<typename Vec3f::ValueType>(comps[i + 1]);
             for (int i = 0; i < Vec3f::Size; i++)
                 (*typed_dst)[i] = string_to<typename Vec3f::Scalar>(comps[i + 1]);
             break;
@@ -185,8 +180,6 @@ OSL::TypeDesc parse_attribute(const pugi::xml_attribute& attr, void* dst) {
         case EVec4f: {
             ret = OSL::TypeDesc::TypeVector;
             auto typed_dst = reinterpret_cast<Vec4f*>(dst);
-            //for (int i = 0; i < Vec4f::dimension; i++)
-                //(*typed_dst)[i] = string_to<typename Vec4f::ValueType>(comps[i + 1]);
             for (int i = 0; i < Vec4f::Size; i++)
                 (*typed_dst)[i] = string_to<typename Vec4f::Scalar>(comps[i + 1]);
             break;
@@ -652,7 +645,7 @@ void Scene::parse_from_file(fs::path filepath) {
                 // Environment is also a osl shader so these two tags are
                 // just like ShaderGroupBegin/End
                 // Except they setup the background shader
-                current_shader_group = shadingsys->ShaderGroupBegin(name_attr.value());
+                current_shader_group = shadingsys->ShaderGroupBegin("env");
                 background_shader = current_shader_group;
                 break;
             }

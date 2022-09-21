@@ -71,7 +71,7 @@ public:
 
     OSL::ShadingSystem* shadingsys;
     std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
-    OSL::ShaderGroupRef*    background_shader;
+    OSL::ShaderGroupRef     background_shader;
     OSL::PerThreadInfo*     thread_info;
     OSL::ShadingContext*    ctx;
 };
