@@ -78,7 +78,7 @@ shader kp_dinsey_brdf
     if (diffuse_weight > 1e-6) {
         // Diffuse component
         Ci = mix(base_color * (kp_principle_diffuse(N) + kp_principle_retro(N, roughness)),
-            kp_principle_fakess(roughness), sub_surface);
+            base_color * kp_principle_fakess(roughness), sub_surface);
 
         // Sheen component
         if (sheen > 1e-6) {

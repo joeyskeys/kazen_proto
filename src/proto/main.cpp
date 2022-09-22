@@ -14,6 +14,10 @@ int main(int argc, const char **argv) {
     std::string filename;
     OIIO::ArgParse ap;
     int nthreads = 0;
+    int sample_count = 10;
+    bool debug = false;
+    int debug_x = -1;
+    int debug_y = -1;
 
     ap.intro("Kazen Render")
         .usage("kazen [options] filename")
@@ -28,6 +32,16 @@ int main(int argc, const char **argv) {
         .help("number of threads")
         .defaultval(0);
 
+    ap.arg("-s", &sample_count)
+        .help("number of samples per pixel")
+        .defaultval(10);
+
+    ap.arg("-d", &debug)
+        .help("enable debug mode");
+
+    ap.arg("--pixel %d %d", &debug_x, &debug_y)
+        .help("specify the pixel of interest");
+
     if (ap.parse(argc, argv) < 0 || filename.size() == 0) {
         std::cerr << ap.geterror() << std::endl;
         ap.print_help();
@@ -35,19 +49,43 @@ int main(int argc, const char **argv) {
     }
 
     Scene scene;
-    //scene.parse_from_file("../resource/scene/veach_mi/veach_mats.xml");
     scene.parse_from_file(filename);
 
-    constexpr static int sample_count = 10;
-            
-    scene.recorder.x_min = 480;
-    scene.recorder.x_max = 482;
-    scene.recorder.y_min = 300;
-    scene.recorder.y_max = 302;
+    scene.recorder.x_min = 180;
+    scene.recorder.x_max = 181;
+    scene.recorder.y_min = 260;
+    scene.recorder.y_max = 261;
     scene.recorder.setup();
 
     auto render_start = get_time();
-    bool hit = false;
+    //bool hit = false;
+
+    if (debug) {
+        if (debug_x < 0 || debug_x >= scene.film->width ||
+            debug_y < 0 || debug_y >= scene.film->height)
+        {
+            std::cout << "Pixel of interest (--pixel) must be set and the value should be valid\n"
+                << "Scene film wdith : " << scene.film->width << ", height : "
+                << scene.film->height << std::endl;
+        }
+
+        Sampler sampler;
+        sampler.seed(debug_x, debug_y);
+
+        RecordContext rctx;
+
+        auto integrator_ptr = scene.integrator_fac.create(scene.camera.get(), scene.film.get(), &sampler, &scene.recorder);
+        integrator_ptr->setup(&scene);
+
+        for (int i = 0; i < sample_count; ++i) {
+            auto ray = scene.camera->generate_ray(Vec2f(debug_x, debug_y) + sampler.random2f());
+            auto radiance = integrator_ptr->Li(ray, rctx);
+
+            std::cout << "radiance value : " << radiance << std::endl;
+        }
+
+        return 0;
+    }
 
 #ifdef USE_TBB
     if (nthreads > 0)
@@ -89,8 +127,10 @@ int main(int argc, const char **argv) {
                         //auto ray = scene.camera->generate_ray(x, y);
                         auto ray = scene.camera->generate_ray(Vec2f(x, y) + sampler.random2f());
                         pixel_radiance += integrator_ptr->Li(ray, rctx);
+                        /*
                         if (!base::is_zero(pixel_radiance))
                             hit = true;
+                        */
                     }
 
                     pixel_radiance /= sample_count;
@@ -114,7 +154,7 @@ int main(int argc, const char **argv) {
     std::cout << "render duration : " << render_duration.count() << " ms\n";
 
     scene.film->write_tiles();
-    //scene.recorder.output(std::cout);
+    scene.recorder.output(std::cout);
 
     return 0;
 }
