@@ -21,7 +21,7 @@ int main() {
     rctx.pixel_y = 383;
 
     auto ray = scene.camera->generate_ray(Vec2f{370.5, 500.5});
-    auto radiance = integrator_ptr->Li(ray, rctx);
+    auto radiance = integrator_ptr->Li(ray, &rctx);
 
     scene.recorder.output(std::cout);
 }

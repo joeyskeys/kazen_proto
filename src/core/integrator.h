@@ -24,7 +24,7 @@ public:
     Integrator(Camera* cam_ptr, Film* flm_ptr, Sampler* sampler_ptr, Recorder* rec);
 
     virtual void setup(Scene* scene);
-    virtual RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const = 0;
+    virtual RGBSpectrum Li(const Ray& r, const RecordContext* rctx) const = 0;
     Light*  get_random_light(const float& xi, float& pdf) const;
 
     HitablePtr          accel_ptr;
@@ -45,7 +45,7 @@ public:
         return std::make_unique<NormalIntegrator>(cam_ptr, flm_ptr, spl_ptr, rec);
     }
 
-    RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
+    RGBSpectrum Li(const Ray& r, const RecordContext* rctx) const override;
 };
 
 class AmbientOcclusionIntegrator : public Integrator {
@@ -57,7 +57,7 @@ public:
         return std::make_unique<AmbientOcclusionIntegrator>(cam_ptr, flm_ptr, spl_ptr, rec);
     }
 
-    RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
+    RGBSpectrum Li(const Ray& r, const RecordContext* rctx) const override;
 };
 
 class OSLBasedIntegrator : public Integrator {
@@ -85,7 +85,7 @@ public:
         return std::make_unique<WhittedIntegrator>(cam_ptr, flm_ptr, spl_ptr, rec);
     }
 
-    RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
+    RGBSpectrum Li(const Ray& r, const RecordContext* rctx) const override;
 };
 
 class PathMatsIntegrator : public OSLBasedIntegrator {
@@ -97,7 +97,7 @@ public:
         return std::make_unique<PathMatsIntegrator>(cam_ptr, flm_ptr, spl_ptr, rec);
     }
 
-    RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
+    RGBSpectrum Li(const Ray& r, const RecordContext* rctx) const override;
 };
 
 class PathEmsIntegrator : public OSLBasedIntegrator {
@@ -109,7 +109,7 @@ public:
         return std::make_unique<PathEmsIntegrator>(cam_ptr, flm_ptr, spl_ptr, rec);
     }
 
-    RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
+    RGBSpectrum Li(const Ray& r, const RecordContext* rctx) const override;
 };
 
 class PathIntegrator : public OSLBasedIntegrator {
@@ -121,7 +121,7 @@ public:
         return std::make_unique<PathIntegrator>(cam_ptr, flm_ptr, spl_ptr, rec);
     }
 
-    RGBSpectrum Li(const Ray& r, const RecordContext& rctx) const override;
+    RGBSpectrum Li(const Ray& r, const RecordContext* rctx) const override;
 };
 
 class IntegratorFactory {

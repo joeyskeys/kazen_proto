@@ -29,13 +29,13 @@ void LightPath::record(const EventType t, const Intersection& isect,
     path.emplace_back(e);
 }
 
-void Recorder::record(const LightPath& p, const RecordContext& ctx) {
-    if (ctx.pixel_x < x_min || ctx.pixel_x >= x_max ||
-        ctx.pixel_y < y_min || ctx.pixel_y >= y_max ||
-        ctx.depth < depth_min || ctx.depth >= depth_max)
+void Recorder::record(const LightPath& p, const RecordContext* ctx) {
+    if (ctx && (ctx->pixel_x < x_min || ctx->pixel_x >= x_max ||
+        ctx->pixel_y < y_min || ctx->pixel_y >= y_max ||
+        ctx->depth < depth_min || ctx->depth >= depth_max))
         return;
 
-    auto idx = (ctx.pixel_y - y_min) * (x_max - x_min) + (ctx.pixel_x - x_min);
+    auto idx = (ctx->pixel_y - y_min) * (x_max - x_min) + (ctx->pixel_x - x_min);
     assert(database.size() > idx);
     database.at(idx).emplace_back(p);
 }
@@ -60,10 +60,10 @@ void Recorder::output(std::ostream& os) const {
     }
 }
 
-void Recorder::print(const RecordContext& ctx, const std::string& str) const {
-    if (ctx.pixel_x < x_min || ctx.pixel_x >= x_max ||
-        ctx.pixel_y < y_min || ctx.pixel_y >= y_max ||
-        ctx.depth < depth_min || ctx.depth >= depth_max)
+void Recorder::print(const RecordContext* ctx, const std::string& str) const {
+    if (ctx->pixel_x < x_min || ctx->pixel_x >= x_max ||
+        ctx->pixel_y < y_min || ctx->pixel_y >= y_max ||
+        ctx->depth < depth_min || ctx->depth >= depth_max)
         return;
         
     std::cout << str << std::endl;

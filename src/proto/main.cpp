@@ -58,7 +58,6 @@ int main(int argc, const char **argv) {
     scene.recorder.setup();
 
     auto render_start = get_time();
-    //bool hit = false;
 
     if (debug) {
         if (debug_x < 0 || debug_x >= scene.film->width ||
@@ -79,10 +78,12 @@ int main(int argc, const char **argv) {
 
         for (int i = 0; i < sample_count; ++i) {
             auto ray = scene.camera->generate_ray(Vec2f(debug_x, debug_y) + sampler.random2f());
-            auto radiance = integrator_ptr->Li(ray, rctx);
+            auto radiance = integrator_ptr->Li(ray, &rctx);
 
             std::cout << "radiance value : " << radiance << std::endl;
         }
+        
+        scene.recorder.output(std::cout);
 
         return 0;
     }
@@ -126,11 +127,7 @@ int main(int argc, const char **argv) {
 
                         //auto ray = scene.camera->generate_ray(x, y);
                         auto ray = scene.camera->generate_ray(Vec2f(x, y) + sampler.random2f());
-                        pixel_radiance += integrator_ptr->Li(ray, rctx);
-                        /*
-                        if (!base::is_zero(pixel_radiance))
-                            hit = true;
-                        */
+                        pixel_radiance += integrator_ptr->Li(ray, &rctx);
                     }
 
                     pixel_radiance /= sample_count;

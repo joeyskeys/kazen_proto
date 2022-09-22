@@ -102,9 +102,9 @@ public:
         database.resize(total_size);
     }
 
-    void record(const LightPath& p, const RecordContext& ctx);
+    void record(const LightPath& p, const RecordContext* ctx);
     void output(std::ostream& os) const;
-    void print(const RecordContext& ctx, const std::string& str) const;
+    void print(const RecordContext* ctx, const std::string& str) const;
 
     void* address_of(const std::string& name) override;
 };

@@ -48,7 +48,7 @@ NormalIntegrator::NormalIntegrator(Camera* cam_ptr, Film* flm_ptr, Sampler* spl_
     : Integrator(cam_ptr, flm_ptr, spl_ptr, rec)
 {}
 
-RGBSpectrum NormalIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
+RGBSpectrum NormalIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
     Intersection isect;
     if (!accel_ptr->intersect(r, isect)) {
         return RGBSpectrum{0};
@@ -68,7 +68,7 @@ AmbientOcclusionIntegrator::AmbientOcclusionIntegrator(Camera* cam_ptr,
     : Integrator(cam_ptr, flm_ptr, spl_ptr, rec)
 {}
 
-RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
+RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
     Intersection isect;
     if (!accel_ptr->intersect(r, isect)) {
         return RGBSpectrum{0};
@@ -104,7 +104,7 @@ WhittedIntegrator::WhittedIntegrator(Camera* cam_ptr, Film* flm_ptr, Sampler* sp
     : OSLBasedIntegrator(cam_ptr, flm_ptr, spl_ptr, rec)
 {}
 
-RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
+RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
     RGBSpectrum Li{0};
     Intersection isect;
     Ray ray(r);
@@ -202,7 +202,7 @@ PathMatsIntegrator::PathMatsIntegrator(Camera* cam_ptr, Film* flm_ptr, Sampler* 
     : OSLBasedIntegrator(cam_ptr, flm_ptr, spl_ptr, rec)
 {}
 
-RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
+RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
     Intersection its;
     if (!accel_ptr->intersect(r, its))
         return 0.f;
@@ -251,7 +251,7 @@ PathEmsIntegrator::PathEmsIntegrator(Camera* cam_ptr, Film* flm_ptr, Sampler* sp
     : OSLBasedIntegrator(cam_ptr, flm_ptr, spl_ptr, rec)
 {}
 
-RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
+RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
     Intersection its;
     if (!accel_ptr->intersect(r, its))
         return 0.f;
@@ -348,7 +348,7 @@ PathIntegrator::PathIntegrator(Camera* cam_ptr, Film* flm_ptr, Sampler* spl_ptr,
     : OSLBasedIntegrator(cam_ptr, flm_ptr, spl_ptr, rec)
 {}
 
-RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext& rctx) const {
+RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
     /* *********************************************
      * The rendering equation is:
      *           /

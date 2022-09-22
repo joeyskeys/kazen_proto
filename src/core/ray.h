@@ -30,8 +30,8 @@ public:
     */
 
     // Members
-    Vec3f   origin;
-    Vec3f   direction;
+    Vec3f       origin;
+    Vec3f       direction;
     //Dual2V3f    origin;
     //Dual2V3f    direction;
     float       tmin;
