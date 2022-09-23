@@ -63,6 +63,8 @@ public:
     RGBSpectrum     throughput;
     RGBSpectrum     Li;
 
+    // Random number sample
+    Vec4f           sample;
 };
 
 class LightPath {
@@ -70,7 +72,7 @@ public:
     std::vector<LightPathEvent> path;
 
     void record(LightPathEvent&& e);
-    void record(const EventType t, const Intersection& isect, const RGBSpectrum& b, const RGBSpectrum& l);
+    void record(const EventType t, const Intersection& isect, const RGBSpectrum& b, const RGBSpectrum& l, const Vec4f& sp=Vec4f{0}, const Vec3f& wo=Vec3f{0});
     void output(std::ostream& os) const;
 };
 
@@ -81,10 +83,10 @@ class Recorder : public DictLike {
 public:
     uint x_resolution;
     uint y_resolution;
-    uint x_min = 0;
-    uint x_max = std::numeric_limits<uint>::max();
-    uint y_min = 0;
-    uint y_max = std::numeric_limits<uint>::max();
+    uint x_min = -1;
+    uint x_max = -1;
+    uint y_min = -1;
+    uint y_max = -1;
     uint depth_min = 0;
     uint depth_max = std::numeric_limits<uint>::max();
     uint total_size;

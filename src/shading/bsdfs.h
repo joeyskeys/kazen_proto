@@ -747,6 +747,8 @@ inline sample_func get_sample_func(ClosureID id) {
         KpDielectric::sample,
         KpMicrofacet::sample,
         KpEmitter::sample,
+        KpGloss::sample,
+        KpGlass::sample,
         KpPrincipleDiffuse::sample,
         KpPrincipleRetro::sample,
         KpPrincipleFakeSS::sample,

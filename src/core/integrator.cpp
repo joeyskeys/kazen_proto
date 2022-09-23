@@ -430,6 +430,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
             mis_weight = last_bounce_specular ? 1.f : power_heuristic(1, mpdf, 1, lpdf);
             Li += mis_weight * throughput * Ls;
             //Li += throughput * ret.Le;
+            p.record(EEmission, its, throughput, Li);
         }
 
         //auto sampled_f = ret.surface.sample(sg, bsdf_sample);
@@ -459,7 +460,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
             auto prob = std::min(base::max_component(throughput) * eta * eta, 0.99f);
             if (prob < sampler_ptr->randomf()) {
                 p.record(ERouletteCut, its, throughput, Li);
-                return Li;
+                break;
             }
             throughput /= prob;
         }
@@ -467,11 +468,13 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         /* *********************************************
         * 3. Sampling material to get next direction
         * *********************************************/
-        auto f = ret.surface.sample(sg, bsdf_sample, sampler_ptr->random4f());
+        auto sp = sampler_ptr->random4f();
+        auto f = ret.surface.sample(sg, bsdf_sample, sp);
         last_bounce_specular = bsdf_sample.mode == ScatteringMode::Specular;
         throughput *= f;
+        p.record(EReflection, its, throughput, Li, sp, bsdf_sample.wo);
         if (base::is_zero(throughput))
-            return Li;
+            break;
 
         mpdf = bsdf_sample.pdf;
         ray = Ray(its.P, its.to_world(bsdf_sample.wo));
@@ -479,14 +482,10 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         if (!accel_ptr->intersect(ray, its)) {
             shadingsys->execute(*ctx, *background_shader, sg);
             KazenRenderServices::globals_from_miss(sg, ray, its);
-            return Li + throughput * process_bg_closure(sg.Ci);
+            Li += throughput * process_bg_closure(sg.Ci);
+            p.record(EBackground, its, throughput, Li);
+            break;
         }
-
-        // LightPath event recording
-        if (its.is_light)
-            p.record(EEmission, its, throughput, Li);
-        else
-            p.record(EReflection, its, throughput, Li);
 
         depth += 1;
     }

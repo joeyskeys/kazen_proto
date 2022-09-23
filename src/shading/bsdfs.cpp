@@ -524,10 +524,11 @@ float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
 float KpPrincipleDiffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const DiffuseParams*>(data);
     auto wi = base::to_vec3(-sg.I);
-    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
+    auto cos_theta_o = cos_theta(sample.wo);
+    sample.pdf = std::max(cos_theta_o, 0.f) * constants::one_div_pi<float>();
     return constants::one_div_pi<float>() * 
         (1.f - 0.5f * pow(1 - cos_theta(wi), 5));
-        (1.f - 0.5f * pow(1 - cos_theta(params->N), 5));
+        (1.f - 0.5f * pow(1 - cos_theta_o, 5));
 }
 
 float KpPrincipleDiffuse::sample(const void* data, const OSL::ShaderGlobals&sg, BSDFSample& sample, const Vec3f& rand) {

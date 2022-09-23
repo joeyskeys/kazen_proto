@@ -18,14 +18,17 @@ void LightPath::record(LightPathEvent&& e) {
 }
 
 void LightPath::record(const EventType t, const Intersection& isect,
-    const RGBSpectrum& b, const RGBSpectrum& l) {
+     const RGBSpectrum& b, const RGBSpectrum& l, const Vec4f& sp,
+     const Vec3f& wo)
+{
     LightPathEvent e;
     e.type = t;
-    e.event_position = isect.refined_point;
-    e.ray_direction = isect.wi;
+    e.event_position = isect.P;
+    e.ray_direction = wo;
     e.hit_geom_id = isect.geom_id;
     e.throughput = b;
     e.Li = l;
+    e.sample = sp;
     path.emplace_back(e);
 }
 
@@ -52,7 +55,8 @@ void Recorder::output(std::ostream& os) const {
                     << ", Next Direction : " << e.ray_direction
                     << ", Geom ID : " << e.hit_geom_id
                     << ", throughput : " << e.throughput
-                    << ", Li : " << e.Li << std::endl;
+                    << ", Li : " << e.Li
+                    << ", sample : " << e.sample << std::endl;
             }
 
             os << std::endl;

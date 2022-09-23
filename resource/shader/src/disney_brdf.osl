@@ -75,7 +75,7 @@ shader kp_dinsey_brdf
 
     Ci = 0;
 
-    if (diffuse_weight > 1e-6) {
+    if (diffuse_weight > 0) {
         // Diffuse component
         Ci = mix(base_color * (kp_principle_diffuse(N) + kp_principle_retro(N, roughness)),
             base_color * kp_principle_fakess(roughness), sub_surface);
@@ -89,7 +89,7 @@ shader kp_dinsey_brdf
         Ci = Ci * diffuse_weight;
     }
 
-    if (metallic_weight > 1e-6) {
+    if (metallic_weight > 0) {
         float aspect = sqrt(1 - anisotropic * .9);
         float ax = max(.001, roughness * roughness / aspect);
         float ay = max(.001, roughness * roughness * aspect);
@@ -99,7 +99,7 @@ shader kp_dinsey_brdf
         Ci = Ci + spec_color * kp_principle_specular_reflection(N, ax, ay, eta);
     }
 
-    if (clearcoat > 1e-6) {
+    if (clearcoat > 0) {
         // The implementation is from pbrt-v3, original paper didn't explain
         // much on the clearcoat gloss parameter
         // Same pattern is found in WDAS/brdf_explorer

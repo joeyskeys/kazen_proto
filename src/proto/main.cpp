@@ -28,11 +28,11 @@ int main(int argc, const char **argv) {
         .action([&](OIIO::cspan<const char*> argv) { filename = argv[0]; });
 
     ap.separator("Options:");
-    ap.arg("-t", &nthreads)
+    ap.arg("-t %d", &nthreads)
         .help("number of threads")
         .defaultval(0);
 
-    ap.arg("-s", &sample_count)
+    ap.arg("-s %d", &sample_count)
         .help("number of samples per pixel")
         .defaultval(10);
 
@@ -51,11 +51,6 @@ int main(int argc, const char **argv) {
     Scene scene;
     scene.parse_from_file(filename);
 
-    scene.recorder.x_min = 180;
-    scene.recorder.x_max = 181;
-    scene.recorder.y_min = 260;
-    scene.recorder.y_max = 261;
-    scene.recorder.setup();
 
     auto render_start = get_time();
 
@@ -71,7 +66,15 @@ int main(int argc, const char **argv) {
         Sampler sampler;
         sampler.seed(debug_x, debug_y);
 
+        scene.recorder.x_min = debug_x;
+        scene.recorder.x_max = debug_x + 1;
+        scene.recorder.y_min = debug_y;
+        scene.recorder.y_max = debug_y + 1;
+        scene.recorder.setup();
+
         RecordContext rctx;
+        rctx.pixel_x = debug_x;
+        rctx.pixel_y = debug_y;
 
         auto integrator_ptr = scene.integrator_fac.create(scene.camera.get(), scene.film.get(), &sampler, &scene.recorder);
         integrator_ptr->setup(&scene);
