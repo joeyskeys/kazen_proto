@@ -525,6 +525,10 @@ float KpPrincipleDiffuse::eval(const void* data, const OSL::ShaderGlobals& sg, B
     auto params = reinterpret_cast<const DiffuseParams*>(data);
     auto wi = base::to_vec3(-sg.I);
     auto cos_theta_o = cos_theta(sample.wo);
+    auto cos_theta_i = cos_theta(wi);
+    if (cos_theta_o <= 0 || cos_theta_i <= 0)
+        return 0;
+
     sample.pdf = std::max(cos_theta_o, 0.f) * constants::one_div_pi<float>();
     return constants::one_div_pi<float>() * 
         (1.f - 0.5f * pow(1 - cos_theta(wi), 5));
@@ -540,13 +544,18 @@ float KpPrincipleDiffuse::sample(const void* data, const OSL::ShaderGlobals&sg, 
 float KpPrincipleRetro::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const KpPrincipleRetroParams*>(data);
     auto wi = base::to_vec3(-sg.I);
-    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
+    auto cos_theta_o = cos_theta(sample.wo);
+    auto cos_theta_i = cos_theta(wi);
+    if (cos_theta_o <= 0 || cos_theta_i <= 0)
+        return 0;
+
+    sample.pdf = std::max(cos_theta_o, 0.f) * constants::one_div_pi<float>();
     // Checkout "Extending the Disney BRDF to a BSDF with Integrated Subsurface
     // Scattering" page 6 equation 4
     // https://blog.selfshadow.com/publications/s2015-shading-course/burley/s2015_pbs_disney_bsdf_notes.pdf
     // Here we follow the same convension used in the paper with Latex syntax
-    auto F_L = pow(1. - cos_theta(sample.wo), 5.);
-    auto F_V = pow(1. - cos_theta(wi), 5.);
+    auto F_L = pow(1. - cos_theta_o, 5.);
+    auto F_V = pow(1. - cos_theta_i, 5.);
     auto wh = base::normalize(wi + sample.wo);
     auto R_R = 2.f * params->roughness * square(base::dot(sample.wo, wh));
     return constants::one_div_pi<float>() *
@@ -594,6 +603,11 @@ float KpPrincipleFakeSS::sample(const void* data, const OSL::ShaderGlobals& sg, 
 float KpPrincipleSheen::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const KpPrincipleSheenParams*>(data);
     auto wi = base::to_vec3(-sg.I);
+    auto cos_theta_o = cos_theta(sample.wo);
+    auto cos_theta_i = cos_theta(wi);
+    if (cos_theta_o <= 0 || cos_theta_i <= 0)
+        return 0;
+
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     auto wh = base::normalize(wi + sample.wo);
     auto cos_theta_v = std::max(cos_theta(wh), 0.f);

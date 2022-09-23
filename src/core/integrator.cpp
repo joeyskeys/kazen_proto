@@ -472,12 +472,11 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         auto f = ret.surface.sample(sg, bsdf_sample, sp);
         last_bounce_specular = bsdf_sample.mode == ScatteringMode::Specular;
         throughput *= f;
-        p.record(EReflection, its, throughput, Li, sp, bsdf_sample.wo);
-        if (base::is_zero(throughput))
-            break;
-
         mpdf = bsdf_sample.pdf;
         ray = Ray(its.P, its.to_world(bsdf_sample.wo));
+        p.record(EReflection, its, throughput, Li, sp, ray.direction);
+        if (base::is_zero(throughput))
+            break;
 
         if (!accel_ptr->intersect(ray, its)) {
             shadingsys->execute(*ctx, *background_shader, sg);
