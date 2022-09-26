@@ -18,6 +18,7 @@ int main(int argc, const char **argv) {
     bool debug = false;
     int debug_x = -1;
     int debug_y = -1;
+    std::string output = "./test.jpg";
 
     ap.intro("Kazen Render")
         .usage("kazen [options] filename")
@@ -31,6 +32,9 @@ int main(int argc, const char **argv) {
     ap.arg("-t %d", &nthreads)
         .help("number of threads")
         .defaultval(0);
+
+    ap.arg("-o %s", &output)
+        .help("output filename");
 
     ap.arg("-s %d", &sample_count)
         .help("number of samples per pixel")
@@ -153,6 +157,8 @@ int main(int argc, const char **argv) {
     auto render_duration = std::chrono::duration_cast<std::chrono::milliseconds>(render_end - render_start);
     std::cout << "render duration : " << render_duration.count() << " ms\n";
 
+    // TODO : do some validation first
+    scene.film->filename = output;
     scene.film->write_tiles();
     scene.recorder.output(std::cout);
 
