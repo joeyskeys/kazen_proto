@@ -82,7 +82,7 @@ shader kp_dinsey_brdf
 
         // Sheen component
         if (sheen > 1e-6) {
-            color sheen_color = color(1) * (1 - sheen_tint) + tint_color * sheen_tint;
+            color sheen_color = mix(color(1), tint_color, sheen_tint);
             Ci = Ci + sheen_color * sheen * kp_principle_sheen(N);
         }
 

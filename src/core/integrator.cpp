@@ -24,7 +24,7 @@ void Integrator::setup(Scene* scene) {
 
 Light* Integrator::get_random_light(const float& xi, float& pdf) const {
     const auto cnt = lights->size();
-    assert(cnt > 0);
+    //assert(cnt > 0);
     if (cnt == 0)
         return nullptr;
 
@@ -407,13 +407,16 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
 
         float pdf;
         auto light_ptr = get_random_light(sampler_ptr->randomf(), pdf);
-        auto light_shader = (*shaders)[light_ptr->shader_name];
-        if (light_shader == nullptr)
-            throw std::runtime_error(fmt::format("Light shader for name : {} does not existj..", light_ptr->shader_name));
-        shadingsys->execute(*ctx, *light_shader, sg);
-        process_closure(light_ret, sg.Ci, RGBSpectrum{1}, false);
-        light_ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
-        light_ptr->prepare(light_ret.Le);
+        //if (light_shader == nullptr)
+            //throw std::runtime_error(fmt::format("Light shader for name : {} does not existj..", light_ptr->shader_name));
+        if (light_ptr != nullptr) {
+            // Now we don't explicitly need a light in scene
+            auto light_shader = (*shaders)[light_ptr->shader_name];
+            shadingsys->execute(*ctx, *light_shader, sg);
+            process_closure(light_ret, sg.Ci, RGBSpectrum{1}, false);
+            light_ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
+            light_ptr->prepare(light_ret.Le);
+        }
 
         /* *********************************************
             * 1. Le calculation
@@ -439,15 +442,17 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         * 2. Sampling light to get direct light contribution
         * *********************************************/
         Vec3f light_dir;
-        auto Ls = light_ptr->sample(its, light_dir, lpdf, accel_ptr);
-        if (!base::is_zero(Ls)) {
-            float cos_theta_v = dot(light_dir, its.shading_normal);
-            if (cos_theta_v > 0.) {
-                bsdf_sample.wo = its.to_local(light_dir);
-                auto f = ret.surface.eval(sg, bsdf_sample);
-                mis_weight = power_heuristic(1, lpdf, 1, bsdf_sample.pdf);
-                mis_weight = std::isnan(mis_weight) ? 0.f : mis_weight;
-                Li += mis_weight * throughput * Ls * f * cos_theta_v / pdf;
+        if (light_ptr) {
+            auto Ls = light_ptr->sample(its, light_dir, lpdf, accel_ptr);
+            if (!base::is_zero(Ls)) {
+                float cos_theta_v = dot(light_dir, its.shading_normal);
+                if (cos_theta_v > 0.) {
+                    bsdf_sample.wo = its.to_local(light_dir);
+                    auto f = ret.surface.eval(sg, bsdf_sample);
+                    mis_weight = power_heuristic(1, lpdf, 1, bsdf_sample.pdf);
+                    mis_weight = std::isnan(mis_weight) ? 0.f : mis_weight;
+                    Li += mis_weight * throughput * Ls * f * cos_theta_v / pdf;
+                }
             }
         }
 
@@ -479,8 +484,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
             break;
 
         if (!accel_ptr->intersect(ray, its)) {
-            shadingsys->execute(*ctx, *background_shader, sg);
             KazenRenderServices::globals_from_miss(sg, ray, its);
+            shadingsys->execute(*ctx, *background_shader, sg);
             Li += throughput * process_bg_closure(sg.Ci);
             p.record(EBackground, its, throughput, Li);
             break;

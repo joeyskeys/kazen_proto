@@ -268,6 +268,7 @@ void KazenRenderServices::globals_from_miss(
 {
     //sg.I = base::to_osl_vec3(isect.to_local(r.direction));
     sg.I = base::to_osl_vec3(r.direction);
+    //sg.I = OSL::Vec3(r.direction[0], -r.direction[2], r.direction[1]);
     // Dual number or 2D ray tracing ? look into OSL and appleseed
     //sg.dIdx = ;
     //sg.dIdy = ;

@@ -610,7 +610,7 @@ float KpPrincipleSheen::eval(const void* data, const OSL::ShaderGlobals& sg, BSD
 
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     auto wh = base::normalize(wi + sample.wo);
-    auto cos_theta_v = std::max(cos_theta(wh), 0.f);
+    auto cos_theta_v = base::dot(wh, sample.wo);
     if (cos_theta_v < 1e-6)
         return params->sheen;
     else
@@ -642,7 +642,8 @@ float KpPrincipleSpecularReflection::eval(const void* data, const OSL::ShaderGlo
     auto F = fresnel_schlick(params->eta, cos_theta_i);
     sample.pdf = std::max(0.f, mdf.pdf(wh));
 
-    return D * G * F / (4.f * cos_theta_i * cos_theta_o);
+    // A min function is used to limit the value in reasonable range
+    return std::min(1.f, D * G * F / (4.f * cos_theta_i * cos_theta_o));
 }
 
 float KpPrincipleSpecularReflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
@@ -700,7 +701,7 @@ float KpPrincipleClearcoat::eval(const void* data, const OSL::ShaderGlobals& sg,
     sample.pdf = std::max(0., D * cos_theta_h / (4. * base::dot(sample.wo, wh)));
 
     // Parameter range is normalized into range of [0, 0.25]
-    return D * G * F * 0.25;
+    return std::min(1., D * G * F * 0.25);
 }
 
 float KpPrincipleClearcoat::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
