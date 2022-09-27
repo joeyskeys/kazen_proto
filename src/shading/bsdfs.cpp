@@ -24,14 +24,14 @@ namespace constants = boost::math::constants;
 // conversion is everywhere in the shading related calculation, for sake of both
 // code clarity and performance, a unified way of vector calculation must be done
 
-float Diffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum Diffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const DiffuseParams*>(data);
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     //return 1.f;
     return constants::one_div_pi<float>();
 }
 
-float Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const DiffuseParams*>(data);
     sample.wo = sample_hemisphere(Vec2f(rand[0], rand[1]));
@@ -40,7 +40,7 @@ float Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
     return constants::one_div_pi<float>();
 }
 
-float Phong::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum Phong::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const PhongParams*>(data);
     float cos_ni = cos_theta(sample.wo);
     float cos_no = base::dot(base::to_vec3(-params->N), base::to_vec3(sg.I));
@@ -57,7 +57,7 @@ float Phong::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sa
     return sample.pdf = 0;
 }
 
-float Phong::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum Phong::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const PhongParams*>(data);
     float cos_no = base::dot(base::to_vec3(-params->N), base::to_vec3(sg.I));
@@ -77,15 +77,15 @@ float Phong::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
     return sample.pdf = 0;
 }
 
-float OrenNayar::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum OrenNayar::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     return 0;
 }
 
-float OrenNayar::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum OrenNayar::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     return 0;
 }
 
-float Ward::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum Ward::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const WardParams*>(data);
     auto wi = base::to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(wi);
@@ -105,7 +105,7 @@ float Ward::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sam
     return tmp / (std::sqrt(cos_theta_i * cos_theta_o));
 }
 
-float Ward::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum Ward::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const WardParams*>(data);
     auto wi = base::to_vec3(-sg.I);
@@ -139,12 +139,12 @@ float Ward::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& s
     return tmp / (std::sqrt(cos_theta_i * cos_theta(sample.wo)));
 } 
 
-float Reflection::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum Reflection::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.pdf = 0;
     return 0;
 }
 
-float Reflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum Reflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Specular;
     auto params = reinterpret_cast<const ReflectionParams*>(data);
     auto cos_theta_i = -cos_theta(base::to_vec3(sg.I));
@@ -159,7 +159,7 @@ float Reflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
     return 0.f;
 }
 
-float Refraction::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum Refraction::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     // mode shouldn't be set in eval function since one-sample MIS applied
     // in composite closure
     // sample.mode = ScatteringMode::Specular;
@@ -167,7 +167,7 @@ float Refraction::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSampl
     return 0;
 }
 
-float Refraction::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum Refraction::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Specular;
     auto params = reinterpret_cast<const RefractionParams*>(data);
     auto cos_theta_i = -cos_theta(base::to_vec3(sg.I));
@@ -189,56 +189,56 @@ float Refraction::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
     return 1.f;
 }
 
-float Transparent::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum Transparent::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.pdf = 1.f;
     return 1.f;
 }
 
-float Transparent::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum Transparent::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Specular;
     sample.wo = base::to_vec3(sg.I);
     sample.pdf = 1.f;
     return 1.f;
 }
 
-float Translucent::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum Translucent::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     return constants::one_div_pi<float>();
 }
 
-float Translucent::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum Translucent::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     sample.wo = -sample_hemisphere(base::head<2>(rand));
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     return constants::one_div_pi<float>();
 }
 
-float Emission::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum Emission::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     return 1.f;
 }
 
-float Emission::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum Emission::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     sample.wo = sample_hemisphere();
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
     return 1.f;
 }
 
-float Background::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum Background::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     return 0.f;
 }
 
-float Background::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum Background::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     return 0.f;
 }
 
-float KpMirror::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum KpMirror::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.pdf = 0.f;
     return 0.f;
 }
 
-float KpMirror::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum KpMirror::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Specular;
 
     sample.wo = reflect(base::to_vec3(-sg.I));
@@ -246,13 +246,13 @@ float KpMirror::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSampl
     return 1.f;
 }
 
-float KpDielectric::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum KpDielectric::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     //sample.mode = ScatteringMode::Specular;
     sample.pdf = 0.f;
     return 0.f;
 }
 
-float KpDielectric::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum KpDielectric::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Specular;
     sample.pdf = 1.f;
     auto params = reinterpret_cast<const KpDielectricParams*>(data);
@@ -276,7 +276,7 @@ float KpDielectric::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFS
     return 1.f;
 }
 
-float KpMicrofacet::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum KpMicrofacet::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const KpMicrofacetParams*>(data);
     auto wi = base::to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(base::to_vec3(-sg.I));
@@ -296,7 +296,7 @@ float KpMicrofacet::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSam
         ks * D * F * G / (4. * cos_theta_i * cos_theta_o * cos_theta(wh));
 }
 
-float KpMicrofacet::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum KpMicrofacet::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const KpMicrofacetParams*>(data);
     auto ks = 1. - params->kd;
@@ -313,13 +313,13 @@ float KpMicrofacet::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFS
     return eval(data, sg, sample) * cos_theta(sample.wo);
 }
 
-float KpEmitter::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum KpEmitter::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     sample.pdf = 1;
     auto params = reinterpret_cast<const KpEmitterParams*>(data);
     return params->albedo;
 }
 
-float KpEmitter::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum KpEmitter::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     sample.pdf = 1;
     auto params = reinterpret_cast<const KpEmitterParams*>(data);
@@ -330,7 +330,7 @@ static const OSL::ustring u_ggx("ggx");
 static const OSL::ustring u_beckmann("beckmann");
 static const OSL::ustring u_default("default");
 
-float KpGloss::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum KpGloss::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const MicrofacetParams*>(data);
     auto wi = base::to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(wi);
@@ -367,7 +367,7 @@ float KpGloss::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
     return D * G * F / (4.f * cos_theta_i * cos_theta_o);
 }
 
-float KpGloss::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum KpGloss::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     // Should we set the mode according to the roughness value?
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const MicrofacetParams*>(data);
@@ -409,7 +409,7 @@ float KpGloss::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
     return D * G * F / (4.f * cos_theta_i * cos_theta(sample.wo));
 }
 
-float KpGlass::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum KpGlass::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const MicrofacetParams*>(data);
     auto wi = base::to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(wi);
@@ -458,7 +458,7 @@ float KpGlass::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& 
     }
 }
 
-float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     // TODO : sample as KpGloss
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const MicrofacetParams*>(data);
@@ -521,7 +521,7 @@ float KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample
     }
 }
 
-float KpPrincipleDiffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum KpPrincipleDiffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const DiffuseParams*>(data);
     auto wi = base::to_vec3(-sg.I);
     auto cos_theta_o = cos_theta(sample.wo);
@@ -535,13 +535,13 @@ float KpPrincipleDiffuse::eval(const void* data, const OSL::ShaderGlobals& sg, B
         (1.f - 0.5f * pow(1 - cos_theta_o, 5));
 }
 
-float KpPrincipleDiffuse::sample(const void* data, const OSL::ShaderGlobals&sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum KpPrincipleDiffuse::sample(const void* data, const OSL::ShaderGlobals&sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     sample.wo = sample_hemisphere(base::head<2>(rand));
     return eval(data, sg, sample);
 }
 
-float KpPrincipleRetro::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum KpPrincipleRetro::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const KpPrincipleRetroParams*>(data);
     auto wi = base::to_vec3(-sg.I);
     auto cos_theta_o = cos_theta(sample.wo);
@@ -562,13 +562,13 @@ float KpPrincipleRetro::eval(const void* data, const OSL::ShaderGlobals& sg, BSD
         R_R * (F_L + F_V + F_L * F_V * (R_R - 1.));
 }
 
-float KpPrincipleRetro::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum KpPrincipleRetro::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     sample.wo = sample_hemisphere(base::head<2>(rand));
     return eval(data, sg, sample);
 }
 
-float KpPrincipleFakeSS::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum KpPrincipleFakeSS::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     // This part of code is copied from PBRT-v3
     // Same code signature is found in WADS's brdf explorer code
     // TODO : read Hanrahan's paper in detail
@@ -586,7 +586,7 @@ float KpPrincipleFakeSS::eval(const void* data, const OSL::ShaderGlobals& sg, BS
     auto abs_cos_theta_o = std::abs(cos_theta(sample.wo));
     float fi = schlick_weight(abs_cos_theta_i);
     float fo = schlick_weight(abs_cos_theta_o);
-    auto fss = lerp(1.f, fss90, fi) * lerp(1.f, fss90, fo);
+    auto fss = std::lerp(1.f, fss90, fi) * std::lerp(1.f, fss90, fo);
     // 1.25 scale is used to (roughly) preserve albedo
     auto ss = 1.25f * (fss * (1. / (abs_cos_theta_i + abs_cos_theta_o) - .5f) + .5f);
     sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
@@ -594,13 +594,13 @@ float KpPrincipleFakeSS::eval(const void* data, const OSL::ShaderGlobals& sg, BS
     return ss * constants::one_div_pi<float>();
 }
 
-float KpPrincipleFakeSS::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum KpPrincipleFakeSS::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     sample.wo = sample_hemisphere(base::head<2>(rand));
     return eval(data, sg, sample);
 }
 
-float KpPrincipleSheen::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum KpPrincipleSheen::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const KpPrincipleSheenParams*>(data);
     auto wi = base::to_vec3(-sg.I);
     auto cos_theta_o = cos_theta(sample.wo);
@@ -617,13 +617,23 @@ float KpPrincipleSheen::eval(const void* data, const OSL::ShaderGlobals& sg, BSD
         return params->sheen * pow(1. - cos_theta_v, 5.);
 }
 
-float KpPrincipleSheen::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum KpPrincipleSheen::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     sample.wo = sample_hemisphere(base::head<2>(rand));
     return eval(data, sg, sample);
 }
 
-float KpPrincipleSpecularReflection::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+static RGBSpectrum disney_fresnel_eval(
+    const RGBSpectrum F0,
+    const float cos_theta_o,
+    const float eta,
+    const float metallic)
+{
+    return base::lerp(RGBSpectrum(fresnel_dielectric(cos_theta_o, eta)),
+        fresnel_schlick(F0, cos_theta_o), RGBSpectrum{metallic});
+}
+
+RGBSpectrum KpPrincipleSpecularReflection::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const KpPrincipleSpecularParams*>(data);
     auto wi = base::to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(wi);
@@ -639,14 +649,22 @@ float KpPrincipleSpecularReflection::eval(const void* data, const OSL::ShaderGlo
     auto mdf = MicrofacetInterface<GGXDist>(wi, params->xalpha, params->yalpha);
     auto D = mdf.D(wh);
     auto G = mdf.G(sample.wo);
-    auto F = fresnel_schlick(params->eta, cos_theta_i);
+    //auto F = fresnel_schlick(params->eta, cos_theta_i);
+
+    // We have a design problem here now:
+    // Single closure returns a float to represent the ratio of reflectance
+    // It's not sufficient now for some complex material and also insufficient
+    // for wavelength spectrum calculation in the future
+    // TODO : change all the closure interfaces...
+    auto F = disney_fresnel_eval(params->F0, base::dot(sample.wo, wh),
+        params->eta, params->metallic);
     sample.pdf = std::max(0.f, mdf.pdf(wh));
 
     // A min function is used to limit the value in reasonable range
-    return std::min(1.f, D * G * F / (4.f * cos_theta_i * cos_theta_o));
+    return base::vec_min(RGBSpectrum{1.f}, D * G * F / (4.f * cos_theta_i * cos_theta_o));
 }
 
-float KpPrincipleSpecularReflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum KpPrincipleSpecularReflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     // This is confusing... Consider changing it to Delta & NonDelta
     sample.mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const KpPrincipleSpecularParams*>(data);
@@ -680,7 +698,7 @@ static inline float clearcoat_g1(const float cos_theta_v) {
     return 2. / (1. + std::sqrt(1. + 0.0625 * tan_theta_v));
 }
 
-float KpPrincipleClearcoat::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum KpPrincipleClearcoat::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const KpPrincipleClearcoatParams*>(data);
     auto wi = base::to_vec3(-sg.I);
     auto cos_theta_i = cos_theta(wi);
@@ -701,10 +719,10 @@ float KpPrincipleClearcoat::eval(const void* data, const OSL::ShaderGlobals& sg,
     sample.pdf = std::max(0., D * cos_theta_h / (4. * base::dot(sample.wo, wh)));
 
     // Parameter range is normalized into range of [0, 0.25]
-    return std::min(1., D * G * F * 0.25);
+    return std::clamp(D * G * F * 0.25, 0., 0.25);
 }
 
-float KpPrincipleClearcoat::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum KpPrincipleClearcoat::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     auto params = reinterpret_cast<const KpPrincipleClearcoatParams*>(data);
     // Check "Physically Based Shading at Disney" appendix B page 25 equations 2, 5
     // for the sampling function for GTR1
@@ -721,7 +739,7 @@ float KpPrincipleClearcoat::sample(const void* data, const OSL::ShaderGlobals& s
     return eval(data, sg, sample);
 }
 
-float KpPrincipleBSSRDF::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum KpPrincipleBSSRDF::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     // Check "Approximate Reflectance Profiles for Efficient Subsurface Scattering"
     // page 4 equation 5
     auto params = reinterpret_cast<const KpPrincipleBSSRDFParams*>(data);
@@ -739,7 +757,7 @@ float KpPrincipleBSSRDF::eval(const void* data, const OSL::ShaderGlobals& sg, BS
     return 0;
 }
 
-float KpPrincipleBSSRDF::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum KpPrincipleBSSRDF::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     auto params = reinterpret_cast<const KpPrincipleBSSRDFParams*>(data);
     uint32_t idx = rand[0] * 2.999999;
     sample.bssrdf_idx = idx;

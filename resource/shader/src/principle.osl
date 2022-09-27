@@ -85,7 +85,7 @@ shader kp_principle
         float alpha = r * r;
         color tmp = color(1, 1, 1) * (1 - specular_tint) + tint_color * specular_tint;
         color specular_color = (specular * 0.08 * tmp) * (1 - metallic) + base_color * metallic;
-        Ci = Ci + specular_weight * specular_color * kp_principle_specular_reflection(N, roughness, roughness, 1.04);
+        Ci = Ci + specular_weight * specular_color * kp_principle_specular_reflection(specular_color, N, roughness, roughness, 1.04, metallic);
     }
 
     if (clear_coat > 1e-5) {

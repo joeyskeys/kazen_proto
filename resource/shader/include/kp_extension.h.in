@@ -21,6 +21,6 @@ closure color kp_principle_fakess(float roughness) BUILTIN;
 
 closure color kp_principle_sheen(normal N) BUILTIN;
 
-closure color kp_principle_specular_reflection(normal N, float xalpha, float yalpha, float eta) BUILTIN;
+closure color kp_principle_specular_reflection(color F0, normal N, float xalpha, float yalpha, float eta, float metallic) BUILTIN;
 
 closure color kp_principle_clearcoat(normal N, float roughness) BUILTIN;

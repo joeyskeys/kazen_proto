@@ -141,7 +141,15 @@ float fresnel_trans_dielectric(const float eta, const float cos_theta_i) {
     }
 }
 
+inline float schlick_weight(float coso) {
+    return std::pow(std::clamp(1. - coso, 0., 1.), 5.);
+}
+
 inline float fresnel_schlick(const float eta, const float cos_theta_v) {
     auto F0 = square((1. - eta) / (1. + eta));
     return F0 + (1. - F0) * pow(1. - cos_theta_v, 5.);
+}
+
+inline RGBSpectrum fresnel_schlick(const RGBSpectrum F0, const float coso) {
+    return base::lerp(F0, RGBSpectrum{1}, RGBSpectrum{schlick_weight(coso)});
 }

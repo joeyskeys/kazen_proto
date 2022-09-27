@@ -97,6 +97,16 @@ inline Vec<T, N> exp(const Vec<T, N>& v) {
     return enoki::exp(v);
 }
 
+template <typename T, size_t N>
+inline Vec<T, N> lerp(const Vec<T, N>& a, const Vec<T, N>& b, const T t) {
+    return enoki::lerp(a, b, Vec<T, N>{t});
+}
+
+template <typename T, size_t N>
+inline Vec<T, N> lerp(const Vec<T, N>& a, const Vec<T, N>& b, const Vec<T, N>& t) {
+    return enoki::lerp(a, b, t);
+}
+
 // Comparison
 template <typename T, size_t N>
 inline bool is_zero(const Vec<T, N>& v, const T& epsilon=1e-5) {
@@ -315,6 +325,16 @@ inline Vec<T, N> abs(const Vec<T, N>& v) {
 template <typename T, int N>
 inline Vec<T, N> exp(const Vec<T, N>& v) {
     return v.exp();
+}
+
+template <typename T, int N>
+inline Vec<T, N> lerp(const Vec<T, N>& a, const Vec<T, N>& b, const T t) {
+    return a * (static_cast<T>(1) - t) + b * t;
+}
+
+template <typename T, int N>
+inline Vec<T, N> lerp(const Vec<T, N>& a, const Vec<T, N>& b, const Vec<T, N>& t) {
+    return a * (Vec<T, N>{1} - t) + b * t;
 }
 
 // Comparison
@@ -817,6 +837,19 @@ inline Vec<T, N> abs(const Vec<T, N>& v) {
 template <typename T, uint N>
 inline Vec<T, N> exp(const Vec<T, N>& v) {
     return v.exp();
+}
+
+template <typename T, uint N>
+inline Vec<T, N> lerp(const Vec<T, N>& a, const Vec<T, N>& b, const T t) {
+    return a * (static_cast<T>(1) - t) + b * t;
+}
+
+template <typename T, uint N>
+inline Vec<T, N> lerp(const Vec<T, N>& a, const Vec<T, N>& b, const Vec<T, N>& t) {
+    Vec<T, N> tmp;
+    for (int i = 0; i < N; i++)
+        tmp[i] = std::lerp(a[i], b[i], t[i]);
+    return tmp;
 }
 
 // Comparison
