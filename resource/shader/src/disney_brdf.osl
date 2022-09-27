@@ -94,9 +94,12 @@ shader kp_dinsey_brdf
         float ax = max(.001, roughness * roughness / aspect);
         float ay = max(.001, roughness * roughness * aspect);
         float r0 = (eta - 1) * (eta - 1) / ((eta + 1) * (eta + 1));
-        color spec_color = mix(specular * r0 * mix(color(1), tint_color, specular_tint),
+        // Paper page 15
+        // "The normalized range of this parameter is remapped linearly to the
+        // incident specular range [0.0, 0.08]."
+        color spec_color = mix(0.08 * specular * r0 * mix(color(1), tint_color, specular_tint),
             base_color, metallic_weight);
-        Ci = Ci + spec_color * kp_principle_specular_reflection(spec_color, N, ax, ay, eta, metallic_weight);
+        Ci = Ci + kp_principle_specular_reflection(spec_color, N, ax, ay, eta, metallic_weight);
     }
 
     if (clearcoat > 0) {

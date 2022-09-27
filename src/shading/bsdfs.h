@@ -95,7 +95,8 @@ struct KpPrincipleSheenParams {
 // will be more convinient which can be shared between multiple closures.
 // But the naming of parameter will be kinda confusing...
 struct KpPrincipleSpecularParams {
-    OSL::Vec3 F0, N;
+    OSL::Vec3 F0;
+    OSL::Vec3 N;
     float xalpha, yalpha, eta, metallic;
 };
 

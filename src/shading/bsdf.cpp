@@ -42,7 +42,7 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, BSDFSample& s
         auto other_id = bsdf_ids[i];
         BSDFSample other_sample = sample;
         RGBSpectrum bsdf_weight = weights[i] * get_eval_func(other_id)(
-            bsdf_params[idx], sg, other_sample);
+            bsdf_params[i], sg, other_sample);
         //power_heuristic(&ret, &sample.pdf, bsdf_weight, other_sample.pdf, pdfs[i]);
         ret += bsdf_weight;
         sample.pdf += pdfs[i] * other_sample.pdf;
