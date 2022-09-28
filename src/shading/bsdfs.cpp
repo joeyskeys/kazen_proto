@@ -647,21 +647,20 @@ RGBSpectrum KpPrincipleSpecularReflection::eval(const void* data, const OSL::Sha
         return 0.f;
 
     auto mdf = MicrofacetInterface<GGXDist>(wi, params->xalpha, params->yalpha);
-    auto D = mdf.D(wh);
+    // We have a problem here, the impl now will return value much larger than 1
+    // which should never happen, look into it later
+    auto D = std::min(4.f, mdf.D(wh));
     auto G = mdf.G(sample.wo);
-    //auto F = fresnel_schlick(params->eta, cos_theta_i);
-
-    // We have a design problem here now:
-    // Single closure returns a float to represent the ratio of reflectance
-    // It's not sufficient now for some complex material and also insufficient
-    // for wavelength spectrum calculation in the future
-    // TODO : change all the closure interfaces...
-    auto F = disney_fresnel_eval(params->F0, base::dot(sample.wo, wh),
-        params->eta, params->metallic);
+    auto F = base::lerp(base::to_vec3(params->F0), RGBSpectrum{1},
+        RGBSpectrum{fresnel_schlick(params->eta, cos_om)});
+    //auto F = disney_fresnel_eval(params->F0, base::dot(sample.wo, wh),
+        //params->eta, params->metallic);
+    //auto F = base::lerp(base::to_vec3(params->F0), RGBSpectrum{1}, schlick_weight(cos_om));
     sample.pdf = std::max(0.f, mdf.pdf(wh));
 
     // A min function is used to limit the value in reasonable range
     return base::vec_min(RGBSpectrum{1.f}, D * G * F / (4.f * cos_theta_i * cos_theta_o));
+    //return D * G * F / (4.f * cos_theta_i * cos_theta_o);
 }
 
 RGBSpectrum KpPrincipleSpecularReflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
