@@ -29,6 +29,8 @@ elseif(${VECTORIZATION} STREQUAL "Eigen")
 endif()
 
 option(USE_PCG "Whether to use pcg random numbers" ON)
+option(BUILD_TESTS "Whether to build tests" ON)
+option(BUILD_PYTHON_BINDING "Whether to build python binding" ON)
 
 configure_file(resource/shader/include/kp_extension.h.in ${CMAKE_SOURCE_DIR}/resource/shader/include/kp_extension.h @ONLY)
 configure_file(src/base/config.h.in include/config.h @ONLY)
@@ -143,15 +145,17 @@ target_link_libraries(kazen
     ${TBB_LIBRARIES}
     kazen_proto_lib)
 
-add_subdirectory(tests)
+if (BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
+
+if (BUILD_PYTHON_BINDING)
+    add_subdirectory(binding)
+endif()
 
 set(OSL_HEADERS
     resource/shader/include/stdosl.h
     resource/shader/include/kp_extension.h)
-
-#set(OSL_SOURCES
-    #resource/shader/src/lambert.osl
-    #resource/shader/src/principle.osl)
 
 file(GLOB OSL_SOURCES ${CMAKE_SOURCE_DIR}/resource/shader/src/*)
 
