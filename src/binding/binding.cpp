@@ -1,11 +1,10 @@
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
+#include "binding/utils.h"
 
 // Definitions of binding function in each file
 void bind_microfacet(py::module_&);
-void bind_utils(py::module_&);
+void bind_basetypes(py::module_&);
 
 PYBIND11_MODULE(pyzen, m) {
     bind_microfacet(m);
+    bind_basetypes(m);
 }
