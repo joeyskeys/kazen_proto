@@ -501,6 +501,7 @@ public:
 
     inline const T& b() const {
         static_assert(N> 2, "This vec does not have b component");
+        return arr[2];
     }
 
     inline T* data() {
@@ -649,8 +650,11 @@ public:
         return ret;
     }
 
-    template <typename C, typename = std::enable_if_t<std::is_base_of_v<Vec, C>>>
-    T dot(const C& rhs) const {
+    //template <typename C, typename = std::enable_if_t<std::is_base_of_v<Vec, C>>>
+    //T dot(const C& rhs) const {
+    // Spectrum class for now is just a alias to Vec3f, no need for inheritance
+    // handling
+    T dot(const Vec& rhs) const {
         T tmp{0};
         for (int i = 0; i < N; i++)
             tmp += arr[i] * rhs.arr[i];
@@ -805,20 +809,26 @@ inline T length_squared(const Vec<T, N>& v) {
 }
 
 // Dot & cross
-template <template<typename, uint> class C, typename T, uint N, typename = std::enable_if_t<std::is_base_of_v<Vec<T, N>, C<T, N>>>>
-inline T dot(const C<T, N>& a, const C<T, N>& b) {
+//template <template<typename, uint> class C, typename T, uint N, typename = std::enable_if_t<std::is_base_of_v<Vec<T, N>, C<T, N>>>>
+//inline T dot(const C<T, N>& a, const C<T, N>& b) {
+// Same as the method dot function since RGBSpectrum now is just a alias of Vec3f
+template <typename T, uint N>
+inline T dot(const Vec<T, N>& a, const Vec<T, N>& b) {
     return a.dot(b);
 }
 
+/*
 template <template<typename, uint> class C, typename D, typename T, uint N,
     typename = std::enable_if_t<std::is_base_of_v<Vec<T, N>, C<T, N>>>, typename = std::enable_if_t<std::is_convertible_v<D, C<T, N>>>>
 inline T dot(const C<T, N>& a, const D& b) {
     //return a.dot(static_cast<C<T, N>>(b));
     return dot(a, static_cast<C<T, N>>(b));
 }
+*/
 
 template <typename T, uint N>
 inline auto cross(const Vec<T, N>& a, const Vec<T, N>& b) {
+    static_assert(N >= 2 && N < 4);
     return a.cross(b);
 }
 

@@ -150,7 +150,7 @@ if (BUILD_TESTS)
 endif()
 
 if (BUILD_PYTHON_BINDING)
-    add_subdirectory(binding)
+    add_subdirectory(src/binding)
 endif()
 
 set(OSL_HEADERS
