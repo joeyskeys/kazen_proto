@@ -5,6 +5,6 @@ void bind_microfacet(py::module_&);
 void bind_basetypes(py::module_&);
 
 PYBIND11_MODULE(pyzen, m) {
-    bind_microfacet(m);
     bind_basetypes(m);
+    bind_microfacet(m);
 }
