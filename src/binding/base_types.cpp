@@ -60,6 +60,16 @@ py::class_<V> bind_vec(py::module& m, const char* name) {
         .def("r", py::overload_cast<>(&V::r, py::const_))
         .def("g", py::overload_cast<>(&V::g, py::const_));
 
+    if constexpr (N == 2) {
+        pycl.def(py::init<const T, const T>());
+    }
+    else if constexpr (N == 3) {
+        pycl.def(py::init<const T, const T, const T>());
+    }
+    else {
+        pycl.def(py::init<const T, const T, const T, const T>());
+    }
+
     if constexpr (N > 2) {
         pycl.def("z", py::overload_cast<>(&V::z, py::const_))
             .def("b", py::overload_cast<>(&V::b, py::const_));
@@ -119,18 +129,81 @@ py::class_<V> bind_vec(py::module& m, const char* name) {
     return pycl;
 }
 
+template <typename M>
+py::class_<M> bind_mat(py::module& m, const char* name) {
+
+#define T typename M::ValueType
+#define N M::dimension
+
+    py::class_<M> pycl(m, name);
+
+    pycl.def(py::init<>())
+        .def(py::self * T())
+        .def(py::self *= T())
+        .def(py::self * base::Vec<T, N>())
+        .def(py::self * py::self)
+        .def(py::self *= py::self)
+        .def("inverse", &M::inverse)
+        .def("transpose", &M::transpose)
+        .def_static("identity", &M::identity)
+        .def_static("scale", &M::scale);
+
+    if constexpr (N > 2) {
+        pycl.def(py::self * base::Vec<T, N - 1>())
+            .def_static("translate", &M::translate);
+    }
+
+    m.def("identity", &base::identity<T, N>, "create an identity matrix")
+     .def("transpose", &base::transpose<T, N>, "return a transposed matrix")
+     .def("inverse", &base::inverse<T, N>, "return a inversed matrix");
+    
+    if constexpr (N > 2) {
+        m.def("translate", &base::translate<T, N>, "return the translation matrix")
+         .def("scale", &base::scale<T, N>, "return the scale matrix");
+    }
+    if constexpr (N > 3) {
+        m.def("rotate", &base::rotate<T, N>, "return the rotation matrix");
+    }
+    
+#undef T
+#undef N
+
+    return pycl;
+}
+
 void bind_basetypes(py::module_& m) {
-    py::module sub = create_submodule(m, "math");
+    //py::module sub = create_submodule(m, "math");
+    py::module vec = m.def_submodule("vec",
+        "Vector related classes and methods");
 
-    sub.doc() = "Mathematical related stuffs";
+    bind_vec<base::Vec2f>(vec, "Vec2f");
+    bind_vec<base::Vec2d>(vec, "Vec2d");
+    bind_vec<base::Vec2i>(vec, "Vec2i");
+    bind_vec<base::Vec3f>(vec, "Vec3f");
+    bind_vec<base::Vec3d>(vec, "Vec3d");
+    bind_vec<base::Vec3i>(vec, "Vec3i");
+    bind_vec<base::Vec4f>(vec, "Vec4f");
+    bind_vec<base::Vec4d>(vec, "Vec4d");
+    bind_vec<base::Vec4i>(vec, "Vec4i");
 
-    bind_vec<base::Vec2f>(m, "Vec2f");
-    bind_vec<base::Vec2d>(m, "Vec2d");
-    bind_vec<base::Vec2i>(m, "Vec2i");
-    bind_vec<base::Vec3f>(m, "Vec3f");
-    bind_vec<base::Vec3d>(m, "Vec3d");
-    bind_vec<base::Vec3i>(m, "Vec3i");
-    bind_vec<base::Vec4f>(m, "Vec4f");
-    bind_vec<base::Vec4d>(m, "Vec4d");
-    bind_vec<base::Vec4i>(m, "Vec4i");
+    py::module mat = m.def_submodule("mat",
+        "Matrix related classes and methods");
+
+    bind_mat<base::Mat2f>(mat, "Mat2f");
+    bind_mat<base::Mat2d>(mat, "Mat2d");
+    bind_mat<base::Mat3f>(mat, "Mat3f");
+    bind_mat<base::Mat3d>(mat, "Mat3d");
+    bind_mat<base::Mat4f>(mat, "Mat4f");
+    bind_mat<base::Mat4d>(mat, "Mat4d");
+
+    // Interesting and worth noting:
+    // Explicitly instantiated function assigned to a variable is deduced as a
+    // function pointer, e.g. translate3f itself is already function pointer thus
+    // no need for the & operator
+    mat.def("translate3f", base::translate3f,
+        "return the translation matrix for 3D space")
+       .def("rotate3f", base::rotate3f,
+        "return the rotation matrix for 3D space")
+       .def("scale3f", base::scale3f,
+        "return the scale matrix for 3D space");
 }

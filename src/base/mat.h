@@ -521,6 +521,9 @@ const auto translate3f = translate<float, 4>;
 
 template <typename T, uint N>
 inline Mat<T, N> rotate(const Vec<T, N - 1>& axis, const T& radian) {
+    // Code here is only valid for 3D rotation
+    // More work must be done for rotation
+    static_assert(N > 3);
     //auto radian = to_radian(angle);
     auto c = std::cos(radian);
     auto s = std::sin(radian);
