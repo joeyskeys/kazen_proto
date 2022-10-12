@@ -1,5 +1,3 @@
-#include <pybind11/operators.h>
-
 #include "binding/utils.h"
 #include "base/vec.h"
 #include "base/mat.h"

@@ -4,7 +4,8 @@ find_package(pybind11 REQUIRED)
 set(SRC_FILES
     binding.cpp
     base_types.cpp
-    microfacet.cpp)
+    microfacet.cpp
+    sampler.cpp)
 
 pybind11_add_module(pyzen ${SRC_FILES})
 
