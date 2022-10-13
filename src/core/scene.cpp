@@ -696,3 +696,9 @@ void Scene::parse_from_file(fs::path filepath) {
     // Construct acceleration structure after all data is parsed
     accelerator->build();
 }
+
+std::unique_ptr<Integrator> Scene::create_integrator(Sampler& sampler) {
+    auto integrator_ptr = integrator_fac.create(camera.get(), film.get(), &sampler, &recorder);
+    integrator_ptr->setup(this);
+    return integrator_ptr;
+}

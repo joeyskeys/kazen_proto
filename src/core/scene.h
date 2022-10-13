@@ -23,6 +23,7 @@ public:
     Scene();
     
     void parse_from_file(fs::path file_path);
+    std::unique_ptr<Integrator> create_integrator(Sampler& sampler);
 
 private:
     bool process_shader_node(const pugi::xml_node& node, OSL::ShaderGroupRef shader_group);

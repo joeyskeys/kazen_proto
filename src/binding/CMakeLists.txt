@@ -2,6 +2,7 @@ find_package(Python COMPONENTS Interpreter Development)
 find_package(pybind11 REQUIRED)
 
 set(SRC_FILES
+    api.cpp
     binding.cpp
     base_types.cpp
     microfacet.cpp
