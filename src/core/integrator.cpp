@@ -484,9 +484,11 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
             break;
 
         if (!accel_ptr->intersect(ray, its)) {
-            KazenRenderServices::globals_from_miss(sg, ray, its);
-            shadingsys->execute(*ctx, *background_shader, sg);
-            Li += throughput * process_bg_closure(sg.Ci);
+            if (background_shader) {
+                KazenRenderServices::globals_from_miss(sg, ray, its);
+                shadingsys->execute(*ctx, *background_shader, sg);
+                Li += throughput * process_bg_closure(sg.Ci);
+            }
             p.record(EBackground, its, throughput, Li);
             break;
         }
