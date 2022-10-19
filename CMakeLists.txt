@@ -98,6 +98,7 @@ set(CORE_HEADERS
     src/core/light_path.h
     src/core/material.h
     src/core/ray.h
+    src/core/renderer.h
     src/core/sampler.h
     src/core/scene.h
     src/core/shape.h
@@ -119,6 +120,7 @@ set(CORE_SOURCES
     src/core/light_path.cpp
     src/core/material.cpp
     src/core/ray.cpp
+    src/core/renderer.cpp
     src/core/sampler.cpp
     src/core/scene.cpp
     src/core/shape.cpp

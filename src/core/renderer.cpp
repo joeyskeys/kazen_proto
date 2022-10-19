@@ -7,8 +7,7 @@
 #include <tbb/tbb.h>
 #endif
 
-bool Renderer::render() {
-    scene.parse_from_file(filename);
+bool Renderer::render(const std::string& output) {
     auto render_start = get_time();
 
 #ifdef USE_TBB

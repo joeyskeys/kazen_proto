@@ -8,16 +8,19 @@
 class Renderer {
 public:
     Renderer() {}
-    Renderer(const uint spl_cnt, const uint nth, const std::string o)
-        : sampler_cnt(spl_cnt)
+    Renderer(const uint spl_cnt, const uint nth)
+        : sample_count(spl_cnt)
         , nthreads(nth)
-        , output(o)
     {}
 
-    bool render();
+    inline bool load_scene(const std::string& filepath) {
+        scene.parse_from_file(filepath);
+        return true;
+    }
+
+    bool render(const std::string& output="./test.jpg");
 
     Scene scene;
-    uint sampler_cnt = 10;
+    uint sample_count = 10;
     uint nthreads = 0;
-    std::string output = "./test.jpg";
 };

@@ -1,5 +1,5 @@
 #include "binding/utils.h"
-#include "core/scene.h"
+#include "core/renderer.h"
 
 // Trampoline class for Integrator
 template <typename BaseItgt=Integrator>
@@ -87,11 +87,20 @@ void bind_api(py::module_& m) {
     path_itgt.def(py::init<>())
              .def("Li", &PathIntegrator::Li);
 
-    //Scene related
+    // Scene related
     py::class_<Scene> scene(api, "Scene");
     scene.def(py::init<>())
          .def("parse_from_file", &Scene::parse_from_file,
             "parse scene from a description file")
          .def("create_integrator", &Scene::create_integrator,
             "create integrator");
+
+    // Renderer related
+    py::class_<Renderer> renderer(api, "Renderer");
+    renderer.def(py::init<>())
+            .def(py::init<const uint, const uint>())
+            .def("load_scene", &Renderer::load_scene,
+                "load scene file from given path")
+            .def("render", &Renderer::render,
+                "start render");
 }
