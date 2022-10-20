@@ -64,9 +64,17 @@ shader kp_dinsey_brdf
     [[
         string label = "IOR",
         int connectable = 0
+    ]],
+    float bump_offset = 0
+    [[
+        string label = "Bump mapping",
+        int connectable = 1
     ]]
 )
 {
+    // Calculate bumped normal
+    N = normalize(calculatenormal(P + (vector)N * bump_offset));
+
     // Utility variables
     float diffuse_weight = 1 - clamp(metallic, 0, 1);
     float metallic_weight = 1 - diffuse_weight;

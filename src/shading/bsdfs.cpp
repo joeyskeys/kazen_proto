@@ -521,11 +521,19 @@ RGBSpectrum KpGlass::sample(const void* data, const OSL::ShaderGlobals& sg, BSDF
     }
 }
 
+/*
+ * Calculate cosine values in shading space is convenient but when bumped normal comes
+ * into play things are different.
+ * We can actually remap the wi&wo in the OSL code, but need to do some algebra there.
+ * Currently we strict to the easy way which simply calculate the cosine value with dot.
+ */
+
 RGBSpectrum KpPrincipleDiffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const DiffuseParams*>(data);
     auto wi = base::to_vec3(-sg.I);
-    auto cos_theta_o = cos_theta(sample.wo);
-    auto cos_theta_i = cos_theta(wi);
+    auto n = base::to_vec3(sg.N);
+    auto cos_theta_o = base::dot(n, sample.wo);
+    auto cos_theta_i = base::dot(n, wi);
     if (cos_theta_o <= 0 || cos_theta_i <= 0)
         return 0;
 
@@ -544,8 +552,9 @@ RGBSpectrum KpPrincipleDiffuse::sample(const void* data, const OSL::ShaderGlobal
 RGBSpectrum KpPrincipleRetro::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const KpPrincipleRetroParams*>(data);
     auto wi = base::to_vec3(-sg.I);
-    auto cos_theta_o = cos_theta(sample.wo);
-    auto cos_theta_i = cos_theta(wi);
+    auto n = base::to_vec3(sg.N);
+    auto cos_theta_o = base::dot(n, sample.wo);
+    auto cos_theta_i = base::dot(n, wi);
     if (cos_theta_o <= 0 || cos_theta_i <= 0)
         return 0;
 
@@ -582,8 +591,9 @@ RGBSpectrum KpPrincipleFakeSS::eval(const void* data, const OSL::ShaderGlobals& 
     auto schlick_weight = [](auto cos_theta_v) {
         return std::pow(1. - cos_theta_v, 5.);
     };
-    auto abs_cos_theta_i = std::abs(cos_theta(wi));
-    auto abs_cos_theta_o = std::abs(cos_theta(sample.wo));
+    auto n = base::to_vec3(sg.N);
+    auto abs_cos_theta_o = std::abs(base::dot(n, sample.wo));
+    auto abs_cos_theta_i = std::abs(base::dot(n, wi));
     float fi = schlick_weight(abs_cos_theta_i);
     float fo = schlick_weight(abs_cos_theta_o);
     auto fss = std::lerp(1.f, fss90, fi) * std::lerp(1.f, fss90, fo);
@@ -603,8 +613,9 @@ RGBSpectrum KpPrincipleFakeSS::sample(const void* data, const OSL::ShaderGlobals
 RGBSpectrum KpPrincipleSheen::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const KpPrincipleSheenParams*>(data);
     auto wi = base::to_vec3(-sg.I);
-    auto cos_theta_o = cos_theta(sample.wo);
-    auto cos_theta_i = cos_theta(wi);
+    auto n = base::to_vec3(sg.N);
+    auto cos_theta_o = base::dot(n, sample.wo);
+    auto cos_theta_i = base::dot(n, wi);
     if (cos_theta_o <= 0 || cos_theta_i <= 0)
         return 0;
 
@@ -636,8 +647,9 @@ static RGBSpectrum disney_fresnel_eval(
 RGBSpectrum KpPrincipleSpecularReflection::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const KpPrincipleSpecularParams*>(data);
     auto wi = base::to_vec3(-sg.I);
-    auto cos_theta_i = cos_theta(wi);
-    auto cos_theta_o = cos_theta(sample.wo);
+    auto n = base::to_vec3(sg.N);
+    auto cos_theta_o = base::dot(n, sample.wo);
+    auto cos_theta_i = base::dot(n, wi);
     if (cos_theta_i * cos_theta_o < 0.)
         return 0.f;
 
@@ -700,8 +712,9 @@ static inline float clearcoat_g1(const float cos_theta_v) {
 RGBSpectrum KpPrincipleClearcoat::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const KpPrincipleClearcoatParams*>(data);
     auto wi = base::to_vec3(-sg.I);
-    auto cos_theta_i = cos_theta(wi);
-    auto cos_theta_o = cos_theta(sample.wo);
+    auto n = base::to_vec3(sg.N);
+    auto cos_theta_o = base::dot(n, sample.wo);
+    auto cos_theta_i = base::dot(n, wi);
     if (cos_theta_i <= 0 || cos_theta_o <= 0)
         return 0.f;
 
