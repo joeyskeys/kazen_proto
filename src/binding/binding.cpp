@@ -4,6 +4,7 @@
 void bind_basetypes(py::module_&);
 void bind_microfacet(py::module_&);
 void bind_sampler(py::module_&);
+void bind_osltools(py::module_&);
 void bind_api(py::module_&);
 
 PYBIND11_MODULE(pyzen, m) {

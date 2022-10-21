@@ -34,3 +34,5 @@ target_link_libraries(pyzen PRIVATE
     ${OSL_LIBRARIES}
     ${Pugixml_LIBRARIES}
     ${EMBREE_LIBRARIES})
+
+install(TARGETS pyzen DESTINATION ${CMAKE_INSTALL_PREFIX}/python)
