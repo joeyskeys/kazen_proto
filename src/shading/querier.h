@@ -35,6 +35,10 @@ public:
         return OSL::OSLQuery::getparam(i)->type.c_str();
     }
 
+    inline std::string getparambasetype(size_t i) const {
+        return OSL::OSLQuery::getparam(i)->type.scalartype().c_str();
+    }
+
     inline std::vector<int> getdefaultsi(size_t i) const {
         return OSL::OSLQuery::getparam(i)->idefault;
     }

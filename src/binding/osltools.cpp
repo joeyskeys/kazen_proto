@@ -14,6 +14,7 @@ void bind_osltools(py::module_& m) {
         .def("nparams", &Querier::nparams)
         .def("getparamname", &Querier::getparamname)
         .def("getparamtype", &Querier::getparamtype)
+        .def("getparambasetype", &Querier::getparambasetype)
         .def("getdefaultsi", &Querier::getdefaultsi)
         .def("getdefaultsf", &Querier::getdefaultsf)
         .def("getdefaultss", &Querier::getdefaultss);
