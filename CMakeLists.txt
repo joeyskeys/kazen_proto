@@ -107,6 +107,7 @@ set(CORE_HEADERS
     src/shading/bsdf.h
     src/shading/bsdfs.h
     src/shading/compiler.h
+    src/shading/querier.h
     src/shading/renderservices.h
     src/shading/shader.h
     src/shading/microfacet.h)
@@ -127,6 +128,7 @@ set(CORE_SOURCES
     src/shading/bsdf.cpp
     src/shading/bsdfs.cpp
     src/shading/compiler.cpp
+    src/shading/querier.cpp
     src/shading/renderservices.cpp
     src/shading/shader.cpp
     src/shading/microfacet.cpp)

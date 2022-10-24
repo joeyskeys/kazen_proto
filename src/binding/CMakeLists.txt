@@ -5,6 +5,7 @@ set(SRC_FILES
     binding.cpp
     base_types.cpp
     microfacet.cpp
+    osltools.cpp
     sampler.cpp
     api.cpp
     ../core/accel.cpp
@@ -21,6 +22,7 @@ set(SRC_FILES
     ../shading/bsdfs.cpp
     ../shading/compiler.cpp
     ../shading/microfacet.cpp
+    ../shading/querier.cpp
     ../shading/renderservices.cpp
     ../shading/shader.cpp)
 

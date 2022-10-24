@@ -10,6 +10,7 @@ void bind_api(py::module_&);
 PYBIND11_MODULE(pyzen, m) {
     bind_basetypes(m);
     bind_microfacet(m);
+    bind_osltools(m);
     bind_sampler(m);
     bind_api(m);
 }
