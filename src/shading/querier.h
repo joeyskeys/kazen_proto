@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include <OSL/oslquery.h>
 
 // A wrapper classes for easy python binding
@@ -31,5 +33,22 @@ public:
 
     inline std::string getparamtype(size_t i) const {
         return OSL::OSLQuery::getparam(i)->type.c_str();
+    }
+
+    inline std::vector<int> getdefaultsi(size_t i) const {
+        return OSL::OSLQuery::getparam(i)->idefault;
+    }
+
+    inline std::vector<float> getdefaultsf(size_t i) const {
+        return OSL::OSLQuery::getparam(i)->fdefault;
+    }
+
+    inline std::vector<std::string> getdefaultss(size_t i) const {
+        std::vector<std::string> ret;
+        auto ss = OSL::OSLQuery::getparam(i)->sdefault;
+        std::for_each(ss.begin(), ss.end(), [&ret](const auto& us) {
+            ret.push_back(us.data());
+        });
+        return ret;
     }
 };

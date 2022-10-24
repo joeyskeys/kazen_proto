@@ -13,5 +13,8 @@ void bind_osltools(py::module_& m) {
         .def("shadername", &Querier::shadername)
         .def("nparams", &Querier::nparams)
         .def("getparamname", &Querier::getparamname)
-        .def("getparamtype", &Querier::getparamtype);
+        .def("getparamtype", &Querier::getparamtype)
+        .def("getdefaultsi", &Querier::getdefaultsi)
+        .def("getdefaultsf", &Querier::getdefaultsf)
+        .def("getdefaultss", &Querier::getdefaultss);
 }
