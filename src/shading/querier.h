@@ -4,7 +4,60 @@
 
 #include <OSL/oslquery.h>
 
-// A wrapper classes for easy python binding
+// Wrapper classes for easy python binding
+class Param : public OSL::OSLQuery::Parameter {
+public:
+    Param() : OSL::OSLQuery::Parameter() {}
+    Param(const OSL::OSLQuery::Parameter& p) : OSL::OSLQuery::Parameter(p) {}
+
+    inline std::string getname() const {
+        return static_cast<std::string>(name);
+    }
+
+    inline std::string gettype() const {
+        return type.c_str();
+    }
+
+    inline std::string getbasetype() const {
+        return type.scalartype().c_str();
+    }
+
+    inline std::vector<int> getdefaulti() const {
+        return idefault;
+    }
+
+    inline std::vector<float> getdefaultf() const {
+        return fdefault;
+    }
+
+    inline std::vector<std::string> getdefaults() const {
+        std::vector<std::string> ret;
+        for (auto& us : sdefault) {
+            ret.push_back(us.data());
+        }
+        return ret;
+    }
+
+    inline std::string getstructname() const {
+        return static_cast<std::string>(structname);
+    }
+
+    inline std::vector<std::string> getfields() const {
+        std::vector<std::string> ret;
+        for (auto& us : fields) {
+            ret.push_back(us.data());
+        }
+        return ret;
+    }
+
+    inline std::vector<Param> getmetadatas() const {
+        std::vector<Param> ret;
+        for (auto& m : metadata)
+            ret.push_back(m);
+        return ret;
+    }
+};
+
 class Querier : public OSL::OSLQuery {
 public:
     Querier() : OSL::OSLQuery() {}
@@ -25,6 +78,10 @@ public:
 
     inline size_t nparams() const {
         return OSL::OSLQuery::nparams();
+    }
+
+    inline Param getparam(size_t i) const {
+        return *OSL::OSLQuery::getparam(i);
     }
 
     inline std::string getparamname(size_t i) const {
