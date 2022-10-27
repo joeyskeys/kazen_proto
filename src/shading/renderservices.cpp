@@ -235,10 +235,6 @@ void KazenRenderServices::globals_from_hit(
 {
     memset((char*)&sg, 0, sizeof(OSL::ShaderGlobals));
     sg.P = base::to_osl_vec3(isect.P);
-    /*
-    sg.N = isect.shading_normal;
-    sg.Ng = isect.N;
-    */
     sg.N = OSL::Vec3(0.f, 1.f, 0.f);
     sg.Ng = base::to_osl_vec3(isect.to_local(isect.N));
 
@@ -247,9 +243,12 @@ void KazenRenderServices::globals_from_hit(
 
     sg.surfacearea = isect.shape->area();
 
-    // TODO : setup dPdu dPdv correctly
-    sg.dPdu = base::to_osl_vec3(isect.tangent);
-    sg.dPdv = base::to_osl_vec3(isect.bitangent);
+    //sg.dPdu = base::to_osl_vec3(isect.tangent);
+    //sg.dPdv = base::to_osl_vec3(isect.bitangent);
+    sg.dPdu = isect.dpdu;
+    sg.dPdv = isect.dpdv;
+    sg.dPdx = isect.dpdx;
+    sg.dPdy = isect.dpdy;
 
     sg.I = base::to_osl_vec3(isect.to_local(r.direction));
     sg.backfacing = sg.N.dot(sg.I) > 0;

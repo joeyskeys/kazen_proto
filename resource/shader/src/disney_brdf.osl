@@ -73,7 +73,8 @@ shader kp_dinsey_brdf
 )
 {
     // Calculate bumped normal
-    N = normalize(calculatenormal(P + (vector)N * bump_offset));
+    //N = normalize(calculatenormal(P + (vector)N * bump_offset));
+    N = normalize(calculatenormal(P + (vector)N * noise(P)));
 
     // Utility variables
     float diffuse_weight = 1 - clamp(metallic, 0, 1);

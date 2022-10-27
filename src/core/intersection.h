@@ -22,6 +22,10 @@ using ShapePtr = Shape*;
 
 struct Intersection {
     Vec3f P;
+    Vec3f dpdu;
+    Vec3f dpdv;
+    Vec3f dpdx;
+    Vec3f dpdy;
     Vec3f refined_point;
     Vec3f N;
     Vec3f shading_normal;

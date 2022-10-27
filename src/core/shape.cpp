@@ -177,6 +177,13 @@ void Sphere::post_hit(Intersection& isect) const {
     isect.uv[0] = phi * constants::one_div_two_pi<float>();
     float theta = std::acos(std::clamp(local_pos.y() / center_n_radius.w(), -1.f, 1.f));
     isect.uv[1] = theta / constants::pi<float>() + 0.5;
+    float sinphi, cosphi;
+    sincosf(phi, &sinphi, &cosphi);
+
+    isect.dpdu = local_to_world.apply(base::normalize(Vec3f{-constants::two_pi<float>() * local_pos.z(), 0, constants::two_pi<float>() * local_pos.x()}));
+    isect.dpdv = local_to_world.apply(base::normalize(Vec3f{local_pos.y() * cosphi, -center_n_radius[3] * std::sin(theta), local_pos.y() * sinphi}));
+    isect.dpdx = isect.tangent;
+    isect.dpdy = isect.bitangent;
 
     if (is_light)
         isect.light_id = light->light_id;
