@@ -174,9 +174,9 @@ void Sphere::post_hit(Intersection& isect) const {
     float phi = std::atan2(local_pos.z(), local_pos.x());
     if (phi < 0)
         phi += constants::two_pi<float>();
-    isect.uv[0] = phi * constants::one_div_two_pi<float>();
+    //isect.uv[0] = phi * constants::one_div_two_pi<float>();
+    //isect.uv[1] = theta / constants::pi<float>() + 0.5;
     float theta = std::acos(std::clamp(local_pos.y() / center_n_radius.w(), -1.f, 1.f));
-    isect.uv[1] = theta / constants::pi<float>() + 0.5;
     float sinphi, cosphi;
     sincosf(phi, &sinphi, &cosphi);
 
@@ -604,6 +604,21 @@ void TriangleMesh::post_hit(Intersection& isect) const {
     else
         isect.shading_normal = isect.N;
 
+    auto uv1 = uvs[idx.x()], uv2 = uvs[idx.y()], uv3 = uvs[idx.z()];
+    auto duv13 = uv1 - uv3, duv23 = uv2 - uv3;
+    auto dp13 = v1 - v3, dp23 = v2 - v3;
+    float determinant = duv13[0] * duv23[1] - duv13[1] * duv23[0];
+    bool degenerate = std::abs(determinant) < 1e-8;
+    if (!degenerate) {
+        float inv = 1 / determinant;
+        isect.dpdu = base::normalize((duv23[1] * dp13 - duv13[1] * dp23) * inv);
+        isect.dpdv = base::normalize((-duv23[0] * dp13 + duv13[0] * dp23) * inv);
+    }
+    if (degenerate || base::cross(isect.dpdu, isect.dpdv).length_squared() == 0) {
+        isect.dpdu = isect.tangent;
+        isect.dpdv = isect.bitangent;
+    }
+
     if (is_light)
         isect.light_id = light->light_id;
 }
@@ -648,13 +663,15 @@ static std::shared_ptr<TriangleMesh> process_mesh(aiMesh* mesh, const aiScene* s
     if (mesh->HasNormals()) {
         ns.reserve(mesh->mNumVertices);
         for (uint i = 0; i < mesh->mNumVertices; ++i) {
-            /*
-            ns[i][0] = mesh->mNormals[i].x;
-            ns[i][1] = mesh->mNormals[i].y;
-            ns[i][2] = mesh->mNormals[i].z;
-            */
             ns.emplace_back(Vec3f(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z));
         }
+    }
+
+    // Now only checks the first uv set
+    auto uv_cnt = mesh->mNumVertices;
+    std::vector<Vec2f> uvs(mesh->mNumVertices);
+    for (uint i = 0; i < uv_cnt; i++) {
+        uvs[i] = Vec2f{mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y};
     }
 
     for (uint i = 0; i < mesh->mNumFaces; i++) {
@@ -663,7 +680,7 @@ static std::shared_ptr<TriangleMesh> process_mesh(aiMesh* mesh, const aiScene* s
         idx[i][2] = mesh->mFaces[i].mIndices[2];
     }
 
-    return std::make_shared<TriangleMesh>(Transform{}, std::move(vs), std::move(ns), std::move(idx), m);
+    return std::make_shared<TriangleMesh>(Transform{}, std::move(vs), std::move(ns), std::move(uvs), std::move(idx), m);
 }
 
 static void process_node(aiNode* node, const aiScene* scene, std::vector<std::shared_ptr<TriangleMesh>>& meshes, const std::string& m) {

@@ -159,10 +159,11 @@ public:
         : Shape(id)
     {}
 
-    TriangleMesh(const Transform& l2w, std::vector<Vec3f>&& vs, std::vector<Vec3f>&& ns, std::vector<Vec3i>&& idx, const std::string m="", bool is_l=false)
+    TriangleMesh(const Transform& l2w, std::vector<Vec3f>&& vs, std::vector<Vec3f>&& ns, std::vector<Vec2f>&& ts, std::vector<Vec3i>&& idx, const std::string m="", bool is_l=false)
         : Shape(l2w, m, is_l, 0)
         , verts(vs)
         , norms(ns)
+        , uvs(ts)
         , indice(idx)
     {}
 
@@ -181,6 +182,7 @@ public:
 
     std::vector<Vec3f>  verts;
     std::vector<Vec3f>  norms;
+    std::vector<Vec2f>  uvs;
     std::vector<Vec3i>  indice;
     DiscrectPDF         m_dpdf;
     float               m_area;
