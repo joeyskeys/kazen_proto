@@ -31,7 +31,7 @@ public:
 
     // This function is added to handle tangent & bitangent calculation
     // in embree intersection
-    virtual void post_hit(Intersection& isect) const = 0;
+    virtual void post_hit(Intersection& isect) const;
     virtual float area() const = 0;
     void print_bound() const override;
 

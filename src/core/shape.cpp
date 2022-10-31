@@ -23,6 +23,10 @@ static inline AABBf bbox_of_triangle(const Vec3f& v0, const Vec3f& v1, const Vec
     return bound_union(AABBf{base::vec_min(v0, v1), base::vec_max(v0, v1)}, v2);
 }
 
+void Shape::post_hit(Intersection& isect) const {
+    isect.calculate_differentials();
+}
+
 void Shape::print_bound() const {
     std::cout << "id : " << geom_id << std::endl;
     Hitable::print_bound();
@@ -155,6 +159,7 @@ void Sphere::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
 }
 
 void Sphere::post_hit(Intersection& isect) const {
+    Shape::post_hit(isect);
     auto up_in_world = local_to_world.apply(Vec3f(0.f, 1.f, 0.f), true);
     auto forward_in_world = local_to_world.apply(Vec3f(0.f, 0.f, -1.f), true);
     if (isect.N == up_in_world)
@@ -203,6 +208,7 @@ void Sphere::get_world_position(Vec4f* cnr) const {
     *vec4_cnr = base::concat(local_to_world.apply(base::head<3>(center_n_radius)), center_n_radius.w());
 }
 
+/*
 static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3f& dir, float& t) {
     auto pos_vec = center - r.origin;
     auto projected_distance = base::dot(pos_vec, dir);
@@ -225,6 +231,7 @@ static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3
 
     return true;
 }
+*/
 
 static inline bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3f& dir, float& t, Vec3f& pos) {
     plane_intersect(r, center, dir, t);
@@ -318,6 +325,7 @@ void Quad::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
 }
 
 void Quad::post_hit(Intersection& isect) const {
+    Shape::post_hit(isect);
     isect.tangent = local_to_world.apply(horizontal_vec, true);
     isect.bitangent = local_to_world.apply(vertical_vec, true);
     isect.is_light = is_light;
@@ -479,6 +487,7 @@ void Triangle::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
 }
 
 void Triangle::post_hit(Intersection& isect) const {
+    Shape::post_hit(isect);
     Vec3f v1v0 = verts[1] - verts[0];
     isect.tangent = local_to_world.apply(base::normalize(v1v0), true);
     isect.bitangent = base::cross(isect.tangent, isect.N);
@@ -588,6 +597,7 @@ void TriangleMesh::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
 }
 
 void TriangleMesh::post_hit(Intersection& isect) const {
+    Shape::post_hit(isect);
     auto idx = indice[isect.prim_id];
     auto v1 = verts[idx.x()], v2 = verts[idx.y()], v3 = verts[idx.z()];
     isect.tangent = local_to_world.apply(base::normalize(v2 - v1), true);

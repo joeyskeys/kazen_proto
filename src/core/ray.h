@@ -16,7 +16,10 @@ public:
         , tmin(tmin)
         , tmax(tmax)
         , time(time)
-    {}
+    {
+        origin_dx = origin;
+        origin_dy = origin;
+    }
 
     inline Vec3f at(const float t) const {
         return origin + t * direction;
@@ -31,10 +34,14 @@ public:
 
     // Members
     Vec3f       origin;
+    Vec3f       origin_dx;
+    Vec3f       origin_dy;
     Vec3f       direction;
-    //Dual2V3f    origin;
-    //Dual2V3f    direction;
+    Vec3f       direction_dx;
+    Vec3f       direction_dy;
     float       tmin;
     float       tmax;
     float       time;
 };
+
+bool plane_intersect(const Ray& r, const Vec3f& center, const Vec3f& n, float& t);

@@ -125,8 +125,6 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext* rctx) const
             return Li;
         }
 
-        isect.refined_point = isect.P;
-
         KazenRenderServices::globals_from_hit(sg, ray, isect);
         auto shader_ptr = (*shaders)[isect.shader_name];
         if (shader_ptr == nullptr)
@@ -479,6 +477,12 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         throughput *= f;
         mpdf = bsdf_sample.pdf;
         ray = Ray(its.P, its.to_world(bsdf_sample.wo));
+
+        // Update ray differential
+        ray.origin_dx = ray.origin + its.dpdx;
+        ray.origin_dy = ray.origin + its.dpdy;
+        ray.direction_dx = ray.direction_dy = ray.direction;
+        
         p.record(EReflection, its, throughput, Li, sp, ray.direction);
         if (base::is_zero(throughput))
             break;

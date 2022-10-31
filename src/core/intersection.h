@@ -8,6 +8,7 @@
 #include "base/fp.h"
 #include "base/vec.h"
 #include "base/utils.h"
+#include "core/ray.h"
 
 using base::Vec2f;
 using base::Vec3f;
@@ -26,7 +27,6 @@ struct Intersection {
     Vec3f dpdv;
     Vec3f dpdx;
     Vec3f dpdy;
-    Vec3f refined_point;
     Vec3f N;
     Vec3f shading_normal;
     Vec3f tangent;
@@ -36,6 +36,7 @@ struct Intersection {
     Vec3f wi;
     Vec3f bary;
     Vec2f uv;
+    Ray*  ray;
     float ray_t = std::numeric_limits<float>::max();
     bool  backface;
     bool  is_light;
@@ -56,6 +57,15 @@ struct Intersection {
 
     inline Vec3f to_world(const Vec3f v) const {
         return frame.to_world(v);
+    }
+
+    inline void calculate_differentials() {
+        float tx, ty;
+        if (!plane_intersect(*ray, P, N, tx) || !plane_intersect(*ray, P, N, ty))
+            return;
+        
+        dpdx = base::normalize(ray->origin_dx + tx * ray->direction_dx - P);
+        dpdy = base::normalize(ray->origin_dy + ty * ray->direction_dy - P);
     }
 };
 
