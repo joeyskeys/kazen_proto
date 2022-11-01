@@ -245,10 +245,10 @@ void KazenRenderServices::globals_from_hit(
 
     //sg.dPdu = base::to_osl_vec3(isect.tangent);
     //sg.dPdv = base::to_osl_vec3(isect.bitangent);
-    sg.dPdu = isect.dpdu;
-    sg.dPdv = isect.dpdv;
-    sg.dPdx = isect.dpdx;
-    sg.dPdy = isect.dpdy;
+    sg.dPdu = base::to_osl_vec3(isect.to_local(isect.dpdu));
+    sg.dPdv = base::to_osl_vec3(isect.to_local(isect.dpdv));
+    sg.dPdx = base::to_osl_vec3(isect.to_local(isect.dpdx));
+    sg.dPdy = base::to_osl_vec3(isect.to_local(isect.dpdy));
 
     sg.I = base::to_osl_vec3(isect.to_local(r.direction));
     sg.backfacing = sg.N.dot(sg.I) > 0;

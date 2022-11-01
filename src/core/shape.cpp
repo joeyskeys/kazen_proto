@@ -159,6 +159,8 @@ void Sphere::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
 }
 
 void Sphere::post_hit(Intersection& isect) const {
+    // TODO : Calculate the hit position with uv from embree to get more
+    // accurate result.
     Shape::post_hit(isect);
     auto up_in_world = local_to_world.apply(Vec3f(0.f, 1.f, 0.f), true);
     auto forward_in_world = local_to_world.apply(Vec3f(0.f, 0.f, -1.f), true);
@@ -187,8 +189,8 @@ void Sphere::post_hit(Intersection& isect) const {
 
     isect.dpdu = local_to_world.apply(base::normalize(Vec3f{-constants::two_pi<float>() * local_pos.z(), 0, constants::two_pi<float>() * local_pos.x()}));
     isect.dpdv = local_to_world.apply(base::normalize(Vec3f{local_pos.y() * cosphi, -center_n_radius[3] * std::sin(theta), local_pos.y() * sinphi}));
-    isect.dpdx = isect.tangent;
-    isect.dpdy = isect.bitangent;
+    //isect.dpdx = isect.tangent;
+    //isect.dpdy = isect.bitangent;
 
     if (is_light)
         isect.light_id = light->light_id;
@@ -597,7 +599,6 @@ void TriangleMesh::sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const {
 }
 
 void TriangleMesh::post_hit(Intersection& isect) const {
-    Shape::post_hit(isect);
     auto idx = indice[isect.prim_id];
     auto v1 = verts[idx.x()], v2 = verts[idx.y()], v3 = verts[idx.z()];
     isect.tangent = local_to_world.apply(base::normalize(v2 - v1), true);
@@ -606,6 +607,8 @@ void TriangleMesh::post_hit(Intersection& isect) const {
     isect.shader_name = shader_name;
     auto bary_x = 1. - isect.uv[0] - isect.uv[1];
     isect.P = local_to_world.apply(bary_x * v1 + isect.uv[0] * v2 + isect.uv[1] * v3);
+    // We need P setup for differential calculation
+    Shape::post_hit(isect);
 
     if (norms.size() > 0) {
         isect.shading_normal = base::normalize(bary_x * norms[idx[0]] + isect.uv[0] * norms[idx[1]]
