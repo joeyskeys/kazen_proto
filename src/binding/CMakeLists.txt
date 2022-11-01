@@ -14,6 +14,7 @@ set(SRC_FILES
     ../core/integrator.cpp
     ../core/light.cpp
     ../core/light_path.cpp
+    ../core/ray.cpp
     ../core/renderer.cpp
     ../core/sampler.cpp
     ../core/scene.cpp
