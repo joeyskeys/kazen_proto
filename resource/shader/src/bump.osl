@@ -1,0 +1,18 @@
+
+shader bump
+[[
+    string node_name = "bump",
+    string category = "bump",
+    string help = "bump node"
+]]
+(
+    color normalmap = color(0)
+    [[
+        string label = "Normal Map",
+        int connectable = 1
+    ]]
+)
+{
+    normal lookup_normal = (normal)clamp(normalmap, 0, 1) * 2 - 1;
+    return normalize(lookup_normal);
+}
