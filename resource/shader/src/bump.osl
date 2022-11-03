@@ -6,13 +6,13 @@ shader bump
     string help = "bump node"
 ]]
 (
-    color normalmap = color(0)
+    string nmlpath = "../texture/normalmap.png"
     [[
-        string label = "Normal Map",
-        int connectable = 1
+        string label = "Normal map file path",
+        int connectable = 0
     ]]
 )
 {
-    normal lookup_normal = (normal)clamp(normalmap, 0, 1) * 2 - 1;
+    normal lookup_normal = (normal)texture(filename, u, v) * 2 - 1;
     return normalize(lookup_normal);
 }
