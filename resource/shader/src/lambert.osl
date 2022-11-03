@@ -9,8 +9,14 @@ shader kp_lambert
     [[
         string label = "Base Color",
         int connectable = 1
+    ]],
+    normal bump_normal = normal(0, 1, 0)
+    [[
+        string label = "Normal mapping",
+        int connectable = 1
     ]]
 )
 {
-    Ci = base_color * diffuse(N);
+    N = bump_normal;
+    Ci = base_color * diffuse(bump_normal);
 }

@@ -26,18 +26,15 @@ namespace constants = boost::math::constants;
 
 RGBSpectrum Diffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const DiffuseParams*>(data);
-    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
-    //return 1.f;
+    auto n = base::to_vec3(params->N);
+    sample.pdf = std::max(base::dot(sample.wo, n), 0.f) * constants::one_div_pi<float>();
     return constants::one_div_pi<float>();
 }
 
 RGBSpectrum Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
-    auto params = reinterpret_cast<const DiffuseParams*>(data);
     sample.wo = sample_hemisphere(Vec2f(rand[0], rand[1]));
-    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
-    //return 1.f;
-    return constants::one_div_pi<float>();
+    return eval(data, sg, sample);
 }
 
 RGBSpectrum Phong::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
