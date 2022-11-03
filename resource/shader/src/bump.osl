@@ -10,9 +10,11 @@ shader bump
     [[
         string label = "Normal map file path",
         int connectable = 0
-    ]]
+    ]],
+    output normal out_normal = normal(0, 1, 0)
 )
 {
-    normal lookup_normal = (normal)texture(filename, u, v) * 2 - 1;
-    return normalize(lookup_normal);
+    normal nml = (normal)texture(nmlpath, u, v) * 2 - 1;
+    out_normal = normalize(normal(nml.x, nml.z, nml.y));
+    Ci = 0;
 }

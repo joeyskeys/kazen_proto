@@ -69,12 +69,18 @@ shader kp_dinsey_brdf
     [[
         string label = "Bump mapping",
         int connectable = 1
+    ]],
+    normal bump_normal = normal(0, 1, 0)
+    [[
+        string label = "Normal mapping",
+        int connectable = 1
     ]]
 )
 {
     // Calculate bumped normal
     //N = normalize(calculatenormal(P + (vector)N * bump_offset));
-    N = normalize(calculatenormal(P + (vector)N * noise(P)));
+    //N = normalize(calculatenormal(P + (vector)N * noise(P)));
+    N = bump_normal;
 
     // Utility variables
     float diffuse_weight = 1 - clamp(metallic, 0, 1);
