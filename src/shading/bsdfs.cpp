@@ -28,7 +28,7 @@ RGBSpectrum Diffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSa
     auto params = reinterpret_cast<const DiffuseParams*>(data);
     auto n = base::to_vec3(params->N);
     sample.pdf = std::max(base::dot(sample.wo, n), 0.f) * constants::one_div_pi<float>();
-    return constants::one_div_pi<float>();
+    return sample.pdf;
 }
 
 RGBSpectrum Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
