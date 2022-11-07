@@ -269,6 +269,24 @@ void EmbreeAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
         RTC_FORMAT_FLOAT3, t->verts.data(), 0, sizeof(Vec3f), t->verts.size());
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0,
         RTC_FORMAT_UINT3, t->indice.data(), 0, sizeof(Vec3i), t->indice.size());
+    
+    /*
+    // TODO : find out if there's any option to let embree calculate the interpolated
+    // uv directly.
+    // If triangle mesh have uv
+    if (t->uvs.size() > 0) {
+        rtcSetGeometryVertexAttributeCount(geom, 2);
+        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 1,
+            RTC_FORMAT_FLOAT2, t->uvs.data(), 0, sizeof(Vec2f), t->uvs.size());
+        if (t->uv_idx.size() > 0) {
+            rtcSetGeometryTopologyCount(geom, 2);
+            rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 1,
+                RTC_FORMAT_UINT, t->uv_idx.data(), 0, sizeof(int), t->uv_idx.size());
+            rtcSetGeometryVertexAttributeTopology(geom, 1, 1);
+        }
+    }
+    */
+
     rtcCommitGeometry(geom);
     //rtcAttachGeometryByID(m_scene, geom, hitables->size() - 1);
     

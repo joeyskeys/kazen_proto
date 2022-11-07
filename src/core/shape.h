@@ -183,6 +183,7 @@ public:
     std::vector<Vec3f>  verts;
     std::vector<Vec3f>  norms;
     std::vector<Vec2f>  uvs;
+    std::vector<Vec3i>  uv_idx;
     std::vector<Vec3i>  indice;
     DiscrectPDF         m_dpdf;
     float               m_area;

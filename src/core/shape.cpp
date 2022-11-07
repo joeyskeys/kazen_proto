@@ -618,6 +618,7 @@ void TriangleMesh::post_hit(Intersection& isect) const {
         isect.shading_normal = isect.N;
 
     auto uv1 = uvs[idx.x()], uv2 = uvs[idx.y()], uv3 = uvs[idx.z()];
+    isect.uv = bary_x * uv1 + isect.uv[0] * uv2 + isect.uv[1] * uv3;
     auto duv13 = uv1 - uv3, duv23 = uv2 - uv3;
     auto dp13 = v1 - v3, dp23 = v2 - v3;
     float determinant = duv13[0] * duv23[1] - duv13[1] * duv23[0];
