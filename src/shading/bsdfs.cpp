@@ -144,9 +144,11 @@ RGBSpectrum Reflection::eval(const void* data, const OSL::ShaderGlobals& sg, BSD
 RGBSpectrum Reflection::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Specular;
     auto params = reinterpret_cast<const ReflectionParams*>(data);
-    auto cos_theta_i = -cos_theta(base::to_vec3(sg.I));
+    auto n = base::to_vec3(sg.N);
+    auto i = -base::to_vec3(sg.I);
+    auto cos_theta_i = base::dot(n, i);
     if (cos_theta_i > 0) {
-        sample.wo = reflect(base::to_vec3(-sg.I), base::to_vec3(sg.N));
+        sample.wo = reflect(i, n);
         sample.pdf = 1.f;
         //return fresnel(cos_theta_i, params->eta, 1.f);
         return 1.f;
@@ -167,15 +169,16 @@ RGBSpectrum Refraction::eval(const void* data, const OSL::ShaderGlobals& sg, BSD
 RGBSpectrum Refraction::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Specular;
     auto params = reinterpret_cast<const RefractionParams*>(data);
-    auto cos_theta_i = -cos_theta(base::to_vec3(sg.I));
     auto n = base::to_vec3(sg.N);
+    auto i = -base::to_vec3(sg.I);
+    auto cos_theta_i = base::dot(n, i);
     auto eta = params->eta;
 
     if (cos_theta_i < 0.f) {
         eta = 1. / eta;
         n = -n;
     }
-    sample.wo = refract(base::to_vec3(sg.I), n, eta);
+    sample.wo = refract(i, n, eta);
 
     if (base::is_zero(sample.wo)) {
         sample.pdf = 0.f;
@@ -199,26 +202,26 @@ RGBSpectrum Transparent::sample(const void* data, const OSL::ShaderGlobals& sg, 
 }
 
 RGBSpectrum Translucent::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
+    sample.pdf = std::max(base::dot(sample.wo, base::to_vec3(sg.N)), 0.f) * constants::one_div_pi<float>();
     return constants::one_div_pi<float>();
 }
 
 RGBSpectrum Translucent::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     sample.wo = -sample_hemisphere(base::head<2>(rand));
-    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
+    sample.pdf = std::max(base::dot(sample.wo, base::to_vec3(sg.N)), 0.f) * constants::one_div_pi<float>();
     return constants::one_div_pi<float>();
 }
 
 RGBSpectrum Emission::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
+    sample.pdf = std::max(base::dot(sample.wo, base::to_vec3(sg.N)), 0.f) * constants::one_div_pi<float>();
     return 1.f;
 }
 
 RGBSpectrum Emission::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     sample.wo = sample_hemisphere();
-    sample.pdf = std::max(cos_theta(sample.wo), 0.f) * constants::one_div_pi<float>();
+    sample.pdf = std::max(base::dot(sample.wo, base::to_vec3(sg.N)), 0.f) * constants::one_div_pi<float>();
     return 1.f;
 }
 
@@ -238,7 +241,7 @@ RGBSpectrum KpMirror::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFS
 RGBSpectrum KpMirror::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
     sample.mode = ScatteringMode::Specular;
 
-    sample.wo = reflect(base::to_vec3(-sg.I));
+    sample.wo = reflect(base::to_vec3(-sg.I), base::to_vec3(sg.N));
     sample.pdf = 1.f;
     return 1.f;
 }
@@ -253,22 +256,23 @@ RGBSpectrum KpDielectric::sample(const void* data, const OSL::ShaderGlobals& sg,
     sample.mode = ScatteringMode::Specular;
     sample.pdf = 1.f;
     auto params = reinterpret_cast<const KpDielectricParams*>(data);
-    auto cos_theta_i = cos_theta(base::to_vec3(-sg.I));
+    auto i = -base::to_vec3(sg.I);
+    auto n = base::to_vec3(sg.N);
+    auto cos_theta_i = base::dot(i, n);
     auto f = fresnel(cos_theta_i, params->ext_ior, params->int_ior);
 
     auto sp = random3f();
     if (sp.x() < f) {
-        sample.wo = reflect(base::to_vec3(-sg.I));
+        sample.wo = reflect(i, n);
     }
     else {
-        auto n = base::to_vec3(sg.N);
         auto fac = params->int_ior / params->ext_ior;
         if (cos_theta_i < 0.f) {
             fac = params->ext_ior / params->int_ior;
             n = -n;
         }
 
-        sample.wo = refract(base::to_vec3(sg.I), n, fac);
+        sample.wo = refract(-i, n, fac);
     }
     return 1.f;
 }
@@ -276,8 +280,9 @@ RGBSpectrum KpDielectric::sample(const void* data, const OSL::ShaderGlobals& sg,
 RGBSpectrum KpMicrofacet::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
     auto params = reinterpret_cast<const KpMicrofacetParams*>(data);
     auto wi = base::to_vec3(-sg.I);
-    auto cos_theta_i = cos_theta(base::to_vec3(-sg.I));
-    auto cos_theta_o = cos_theta(sample.wo);
+    auto n = base::to_vec3(sg.N);
+    auto cos_theta_i = base::dot(wi, n);
+    auto cos_theta_o = base::dot(sample.wo, n);
     if (cos_theta_i <= 0 || cos_theta_o <= 0)
         return 0.f;
 
