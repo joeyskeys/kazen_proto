@@ -34,6 +34,7 @@ target_link_libraries(pyzen PRIVATE
     ${ASSIMP_LIBRARIES}
     ${TBB_LIBRARIES}
     ${OIIO_LIBRARIES}
+    ${OCIO_LIBRARIES}
     ${OSL_LIBRARIES}
     ${Pugixml_LIBRARIES}
     ${EMBREE_LIBRARIES})

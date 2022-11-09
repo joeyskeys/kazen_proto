@@ -46,6 +46,9 @@ endif(WIN32)
 find_package(OIIO REQUIRED)
 include_directories(${OIIO_INCLUDE_DIRS})
 
+find_package(OCIO REQUIRED)
+include_directories(${OCIO_INCLUDE_DIRS})
+
 find_package(TBB REQUIRED)
 include_directories(${TBB_INCLUDE_DIRS})
 
@@ -140,6 +143,7 @@ target_link_libraries(kazen_proto_lib
     ${Boost_LIBRARIES}
     ${TBB_LIBRARIES}
     ${Pugixml_LIBRARIES}
+    ${OCIO_LIBRARIES}
     ${OSL_LIBRARIES}
     ${EMBREE_LIBRARIES})
 
