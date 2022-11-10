@@ -2,6 +2,8 @@ find_path(OCIO_INCLUDE_DIRS OpenColorIO/OpenColorIO.h
     HINTS
         /usr
         /usr/local
+        ${OCIO_ROOT}
+        $ENV{OCIO_ROOT}
     PATH_SUFFIXES
         include)
 
@@ -9,6 +11,8 @@ find_library(OCIO_LIB OpenColorIO
     HINTS
         /usr
         /usr/local
+        ${OCIO_ROOT}
+        $ENV{OCIO_ROOT}
     PATH_SUFFIXES
         lib)
 

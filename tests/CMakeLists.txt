@@ -15,3 +15,4 @@ target_link_libraries(shape_test
 
 add_subdirectory(basic_tests)
 add_subdirectory(render_tests)
+add_subdirectory(libusage_tests)
