@@ -141,6 +141,13 @@ float fresnel_trans_dielectric(const float eta, const float cos_theta_i) {
     }
 }
 
+inline float fresnel_first_moment_x2(const float eta) {
+    return
+        eta < 1.f
+            ? 0.919317 + eta * (-3.4793 + eta * (6.75335 + eta * (-7.80989 + eta * (4.98554 - eta * 1.36881))))
+            : -9.23372 + eta * (22.2272 + eta * (-20.9292 + eta * (10.2291 + eta * (-2.54396 + eta * 0.254913))));
+}
+
 inline float schlick_weight(float coso) {
     return std::pow(std::clamp(1. - coso, 0., 1.), 5.);
 }
