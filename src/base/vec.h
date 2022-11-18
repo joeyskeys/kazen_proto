@@ -862,6 +862,14 @@ inline Vec<T, N> lerp(const Vec<T, N>& a, const Vec<T, N>& b, const Vec<T, N>& t
     return tmp;
 }
 
+template <typename T, uint N>
+inline Vec<T, N> sqrt(const Vec<T, N>& v) {
+    Vec<T, N> tmp;
+    for (int i = 0; i < N; i++)
+        tmp[i] = std::sqrt(v[i]);
+    return tmp;
+}
+
 // Comparison
 template <typename T, uint N>
 inline bool is_zero(const Vec<T, N>& v) {

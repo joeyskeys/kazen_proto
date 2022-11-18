@@ -148,6 +148,20 @@ inline float fresnel_first_moment_x2(const float eta) {
             : -9.23372 + eta * (22.2272 + eta * (-20.9292 + eta * (10.2291 + eta * (-2.54396 + eta * 0.254913))));
 }
 
+inline float fresnel_internel_diffuse_reflectance(const float eta) {
+    const float rcp_eta = 1. / eta;
+    const float rcp_eta2 = square(rcp_eta);
+    // The eta > 1 part is same as the equation presented in the paper
+    // "A Practical Model for Subsurface Light Transport" page 3 equation for
+    // Fdr
+    // This implementation is copied from appleseed and dunno where the
+    // eta < 1 part is from
+    return
+        eta < 1
+            ? -0.4399 + 0.7099 * rcp_eta - 0.3319 * rcp_eta2 + 0.0636 * rcp_eta * rcp_eta2
+            : -1.4399 * rcp_eta2 + 0.7099 * rcp_eta + 0.6681 + 0.0636 * eta;
+}
+
 inline float schlick_weight(float coso) {
     return std::pow(std::clamp(1. - coso, 0., 1.), 5.);
 }
