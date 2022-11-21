@@ -126,24 +126,24 @@ static inline void power_heuristic(RGBSpectrum* w, float* pdf, RGBSpectrum ow, f
 class CompositeClosure {
 public:
     CompositeClosure()
-        : bsdf_count(0)
+        : closure_count(0)
         , byte_count(0)
     {}
 
     template <typename Params>
-    bool add_bsdf(const ClosureID& id, const RGBSpectrum& w, const Params* params) {
-        if (bsdf_count >= max_closure)
+    bool add_closure(const ClosureID& id, const RGBSpectrum& w, const Params* params) {
+        if (closure_count >= max_closure)
             return false;
         if (byte_count + sizeof(Params) > max_size) return false;
 
-        weights[bsdf_count] = w;
-        //bsdfs[bsdf_count] = new (pool.data() + byte_count) Type(params);
-        bsdf_ids[bsdf_count] = id;
-        bsdf_params[bsdf_count] = new (pool.data() + byte_count) Params{};
-        //bsdf_params[bsdf_count] = params;
-        memcpy(bsdf_params[bsdf_count], params, sizeof(Params));
+        weights[closure_count] = w;
+        //bsdfs[closure_count] = new (pool.data() + byte_count) Type(params);
+        closure_ids[closure_count] = id;
+        closure_params[closure_count] = new (pool.data() + byte_count) Params{};
+        //closure_params[closure_count] = params;
+        memcpy(closure_params[closure_count], params, sizeof(Params));
 
-        bsdf_count++;
+        closure_count++;
         byte_count += sizeof(Params);
         return true;
     }
@@ -151,7 +151,7 @@ public:
     virtual void compute_pdfs(const OSL::ShaderGlobals& sg, const RGBSpectrum& beta, bool cut_off) {
         float w = 1.f / base::sum(beta);
         float weight_sum = 0;
-        for (int i = 0; i < bsdf_count; i++) {
+        for (int i = 0; i < closure_count; i++) {
             //pdfs[i] = dot(weights[i], beta) * bsdfs[i]->albedo(sg) * w;
             pdfs[i] = dot(weights[i], beta) * w;
             weight_sum += pdfs[i];
@@ -173,16 +173,20 @@ public:
     virtual RGBSpectrum eval(const OSL::ShaderGlobals& sg, BSDFSample& sample) const;
 
 private:
-    uint bsdf_count, byte_count;
+    uint closure_count, byte_count;
     //std::array<BSDF*, max_closure> bsdfs;
-    std::array<ClosureID, max_closure> bsdf_ids;
-    std::array<void*, max_closure> bsdf_params;
+    std::array<ClosureID, max_closure> closure_ids;
+    std::array<void*, max_closure> closure_params;
     std::array<float, max_closure> pdfs;
     std::array<RGBSpectrum, max_closure> weights;
     std::array<char, max_size> pool;
 };
 
 class SurfaceCompositeClosure : public CompositeClosure {
+
+};
+
+class SubsurfaceCompositeClosure : public CompositeClosure {
 
 };
 
@@ -199,8 +203,12 @@ struct ShadingResult {
     // put it into the composite closure. The Le will be set
     // when processing the closure tree and a diffuse EDF will
     // be added into the closure stack for future sampling.
-    RGBSpectrum             Le = RGBSpectrum{0};
-    SurfaceCompositeClosure surface;
+    RGBSpectrum                 Le = RGBSpectrum{0};
+    SurfaceCompositeClosure     surface;
+
+    // BSSRDF composite closure is a seperate part, filtered
+    // out during process_closure procudure
+    SubsurfaceCompositeClosure  bssrdf;
 };
 
 void register_closures(OSL::ShadingSystem *shadingsys);

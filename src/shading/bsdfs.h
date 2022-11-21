@@ -43,6 +43,13 @@ struct MicrofacetParams {
     int refract;
 };
 
+struct SubsurfaceParams {
+    OSL::Vec3   N;
+    OSL::Vec3   albedo;
+    OSL::Vec3   transmission_color;
+    float       transmission_depth, anisotropy;
+};
+
 struct ReflectionParams {
     OSL::Vec3 N;
     float eta;

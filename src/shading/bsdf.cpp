@@ -26,23 +26,23 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, BSDFSample& s
 
     // An extra 0.9999999 to ensure sampled index don't overflow
     //auto sp = random3f();
-    uint idx = sp[3] * 0.9999999f * bsdf_count;
-    auto id = bsdf_ids[idx];
+    uint idx = sp[3] * 0.9999999f * closure_count;
+    auto id = closure_ids[idx];
     if (get_sample_func(id) == nullptr)
         return ret;
 
-    ret = weights[idx] * get_sample_func(id)(bsdf_params[idx], sg,
+    ret = weights[idx] * get_sample_func(id)(closure_params[idx], sg,
         sample, base::head<3>(sp)) / pdfs[idx];
     sample.pdf *= pdfs[idx];
 
     // Add up contributions from other bsdfs
-    for (int i = 0; i < bsdf_count; i++) {
+    for (int i = 0; i < closure_count; i++) {
         if (i == idx) continue;
         float bsdf_pdf = 0;
-        auto other_id = bsdf_ids[i];
+        auto other_id = closure_ids[i];
         BSDFSample other_sample = sample;
         RGBSpectrum bsdf_weight = weights[i] * get_eval_func(other_id)(
-            bsdf_params[i], sg, other_sample);
+            closure_params[i], sg, other_sample);
         //power_heuristic(&ret, &sample.pdf, bsdf_weight, other_sample.pdf, pdfs[i]);
         ret += bsdf_weight;
         sample.pdf += pdfs[i] * other_sample.pdf;
@@ -54,10 +54,10 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, BSDFSample& s
 RGBSpectrum CompositeClosure::eval(const OSL::ShaderGlobals& sg, BSDFSample& sample) const {
     RGBSpectrum ret{0};
     float pdf = 0;
-    for (int i = 0; i < bsdf_count; i++) {
-        auto id = bsdf_ids[i];
+    for (int i = 0; i < closure_count; i++) {
+        auto id = closure_ids[i];
         RGBSpectrum bsdf_weight = weights[i] * get_eval_func(id)(
-            bsdf_params[i], sg, sample);
+            closure_params[i], sg, sample);
         //power_heuristic(&ret, &pdf, bsdf_weight, sample.pdf, pdfs[i]);
         ret += bsdf_weight;
         pdf += pdfs[i] * sample.pdf;
@@ -144,16 +144,16 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
             if (!light_only) {
                 bool status = false;
                 switch (comp->id) {
-                    case DiffuseID:         status = ret.surface.add_bsdf<DiffuseParams>(DiffuseID, cw, comp->as<DiffuseParams>());
+                    case DiffuseID:         status = ret.surface.add_closure<DiffuseParams>(DiffuseID, cw, comp->as<DiffuseParams>());
                         break;
 
-                    case WardID:            status = ret.surface.add_bsdf<WardParams>(WardID, cw, comp->as<WardParams>());
+                    case WardID:            status = ret.surface.add_closure<WardParams>(WardID, cw, comp->as<WardParams>());
                         break;
 
-                    case ReflectionID:      status = ret.surface.add_bsdf<ReflectionParams>(ReflectionID, cw, comp->as<ReflectionParams>());
+                    case ReflectionID:      status = ret.surface.add_closure<ReflectionParams>(ReflectionID, cw, comp->as<ReflectionParams>());
                         break;
 
-                    case RefractionID:      status = ret.surface.add_bsdf<RefractionParams>(RefractionID, cw, comp->as<RefractionParams>());
+                    case RefractionID:      status = ret.surface.add_closure<RefractionParams>(RefractionID, cw, comp->as<RefractionParams>());
                         break;
 
                     case MicrofacetID: {
@@ -161,76 +161,79 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                         const MicrofacetParams* params = comp->as<MicrofacetParams>();
                         if (params->dist == u_ggx) {
                             switch (params->refract) {
-                                case 0: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXReflID, cw, params); break;
-                                case 1: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXRefrID, cw, params); break;
-                                case 2: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetGGXBothID, cw, params); break;
-                                case 0: status = ret.surface.add_bsdf<Kp
+                                case 0: status = ret.surface.add_closure<MicrofacetParams>(MicrofacetGGXReflID, cw, params); break;
+                                case 1: status = ret.surface.add_closure<MicrofacetParams>(MicrofacetGGXRefrID, cw, params); break;
+                                case 2: status = ret.surface.add_closure<MicrofacetParams>(MicrofacetGGXBothID, cw, params); break;
+                                case 0: status = ret.surface.add_closure<Kp
                             }
                         }
                         else if (params->dist == u_beckmann || params->dist == u_default) {
                             switch (params->refract) {
-                                case 0: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetBeckmannReflID, cw, params); break;
-                                case 1: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetBeckmannRefrID, cw, params); break;
-                                case 2: status = ret.surface.add_bsdf<MicrofacetParams>(MicrofacetBeckmannBothID, cw, params); break;
+                                case 0: status = ret.surface.add_closure<MicrofacetParams>(MicrofacetBeckmannReflID, cw, params); break;
+                                case 1: status = ret.surface.add_closure<MicrofacetParams>(MicrofacetBeckmannRefrID, cw, params); break;
+                                case 2: status = ret.surface.add_closure<MicrofacetParams>(MicrofacetBeckmannBothID, cw, params); break;
                             }
                         }
                         break;
                         */
                         const MicrofacetParams* params = comp->as<MicrofacetParams>();
                         switch (params->refract) {
-                            case 0: status = ret.surface.add_bsdf<MicrofacetParams>(KpGlossID, cw, params); break;
-                            case 1: status = ret.surface.add_bsdf<MicrofacetParams>(KpGlassID, cw, params); break;
-                            case 2: status = ret.surface.add_bsdf<MicrofacetParams>(KpGlassID, cw, params); break;
+                            case 0: status = ret.surface.add_closure<MicrofacetParams>(KpGlossID, cw, params); break;
+                            case 1: status = ret.surface.add_closure<MicrofacetParams>(KpGlassID, cw, params); break;
+                            case 2: status = ret.surface.add_closure<MicrofacetParams>(KpGlassID, cw, params); break;
                         }
                         break;
                     }
 
-                    case EmissionID:        status = ret.surface.add_bsdf<EmptyParams>(EmissionID, cw, comp->as<EmptyParams>());
+                    case SubsurfaceID:      status = ret.bssrdf.add_closure<SubsurfaceParams>(SubsurfaceID, cw, comp->as<SubsurfaceParams>());
                         break;
 
-                    case BackgroundID:      status = ret.surface.add_bsdf<EmptyParams>(BackgroundID, cw, comp->as<EmptyParams>());
+                    case EmissionID:        status = ret.surface.add_closure<EmptyParams>(EmissionID, cw, comp->as<EmptyParams>());
                         break;
 
-                    case KpMirrorID:        status = ret.surface.add_bsdf<EmptyParams>(KpMirrorID, cw, comp->as<EmptyParams>());
+                    case BackgroundID:      status = ret.surface.add_closure<EmptyParams>(BackgroundID, cw, comp->as<EmptyParams>());
                         break;
 
-                    case KpDielectricID:    status = ret.surface.add_bsdf<KpDielectricParams>(KpDielectricID, cw, comp->as<KpDielectricParams>());
+                    case KpMirrorID:        status = ret.surface.add_closure<EmptyParams>(KpMirrorID, cw, comp->as<EmptyParams>());
                         break;
 
-                    case KpMicrofacetID:    status = ret.surface.add_bsdf<KpMicrofacetParams>(KpMicrofacetID, cw, comp->as<KpMicrofacetParams>());
+                    case KpDielectricID:    status = ret.surface.add_closure<KpDielectricParams>(KpDielectricID, cw, comp->as<KpDielectricParams>());
+                        break;
+
+                    case KpMicrofacetID:    status = ret.surface.add_closure<KpMicrofacetParams>(KpMicrofacetID, cw, comp->as<KpMicrofacetParams>());
                         break;
 
                     // Weight for emission is different
-                    case KpEmitterID:       status = ret.surface.add_bsdf<KpEmitterParams>(KpEmitterID, RGBSpectrum{1}, comp->as<KpEmitterParams>());
+                    case KpEmitterID:       status = ret.surface.add_closure<KpEmitterParams>(KpEmitterID, RGBSpectrum{1}, comp->as<KpEmitterParams>());
                         break;
 
                     case KpPrincipleDiffuseID: {
-                        status = ret.surface.add_bsdf<DiffuseParams>(KpPrincipleDiffuseID, cw, comp->as<DiffuseParams>());
+                        status = ret.surface.add_closure<DiffuseParams>(KpPrincipleDiffuseID, cw, comp->as<DiffuseParams>());
                         break;
                     }
                     
                     case KpPrincipleRetroID: {
-                        status = ret.surface.add_bsdf<KpPrincipleRetroParams>(KpPrincipleRetroID, cw, comp->as<KpPrincipleRetroParams>());
+                        status = ret.surface.add_closure<KpPrincipleRetroParams>(KpPrincipleRetroID, cw, comp->as<KpPrincipleRetroParams>());
                         break;
                     }
 
                     case KpPrincipleFakeSSID: {
-                        status = ret.surface.add_bsdf<KpPrincipleFakeSSParams>(KpPrincipleFakeSSID, cw, comp->as<KpPrincipleFakeSSParams>());
+                        status = ret.surface.add_closure<KpPrincipleFakeSSParams>(KpPrincipleFakeSSID, cw, comp->as<KpPrincipleFakeSSParams>());
                         break;
                     }
 
                     case KpPrincipleSheenID: {
-                        status = ret.surface.add_bsdf<KpPrincipleSheenParams>(KpPrincipleSheenID, cw, comp->as<KpPrincipleSheenParams>());
+                        status = ret.surface.add_closure<KpPrincipleSheenParams>(KpPrincipleSheenID, cw, comp->as<KpPrincipleSheenParams>());
                         break;
                     }
 
                     case KpPrincipleSpecularReflectionID: {
-                        status = ret.surface.add_bsdf<KpPrincipleSpecularParams>(KpPrincipleSpecularReflectionID, cw, comp->as<KpPrincipleSpecularParams>());
+                        status = ret.surface.add_closure<KpPrincipleSpecularParams>(KpPrincipleSpecularReflectionID, cw, comp->as<KpPrincipleSpecularParams>());
                         break;
                     }
 
                     case KpPrincipleClearcoatID: {
-                        status = ret.surface.add_bsdf<KpPrincipleClearcoatParams>(KpPrincipleClearcoatID, cw, comp->as<KpPrincipleClearcoatParams>());
+                        status = ret.surface.add_closure<KpPrincipleClearcoatParams>(KpPrincipleClearcoatID, cw, comp->as<KpPrincipleClearcoatParams>());
                         break;
                     }
                 }
