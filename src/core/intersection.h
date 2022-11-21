@@ -45,7 +45,7 @@ struct Intersection {
     size_t geom_id;
     size_t prim_id;
     std::string shader_name;
-    OSL::ShaderGroupRef shader;
+    std::string bssrdf_name;
 
     Vec3f adaptive_offset_point(int64_t initial_mag);
     Vec3f offset_point1() const;

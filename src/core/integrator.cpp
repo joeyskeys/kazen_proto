@@ -129,6 +129,8 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext* rctx) const
         auto shader_ptr = (*shaders)[isect.shader_name];
         if (shader_ptr == nullptr)
             throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", isect.shader_name));
+
+
         shadingsys->execute(*ctx, *shader_ptr, sg);
         ShadingResult ret;
         process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
@@ -398,6 +400,18 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         auto shader_ptr = (*shaders)[its.shader_name];
         if (shader_ptr == nullptr)
             throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", its.shader_name));
+
+        // Currently we only add bssrdf support for path integrator
+        OSL::ShaderGroupRef bssrdf_ptr = nullptr;
+        if (isect.bssrdf_name.size() > 0) {
+            bssrdf_ptr = (*shaders)[isect.bssrdf_name];
+
+            // BSSRDF is not necessary but nullptr for given bssrdf name indicates
+            // there's a problem
+            if (bssrdf_ptr)
+                throw std::runtime_error(fmt::format("Bssrdf for name : {} does not exist..", isect.bssrdf_name));
+        }
+
         shadingsys->execute(*ctx, *shader_ptr, sg);
         ShadingResult ret, light_ret;
         process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
@@ -486,6 +500,14 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         p.record(EReflection, its, throughput, Li, sp, ray.direction);
         if (base::is_zero(throughput))
             break;
+
+        // Account for subsurface scattering if applicable
+        if (bssrdf_ptr) {
+            auto sp = sampler_ptr->random4f();
+            // Question : put bssrdf closure into shading result or create
+            // aother shading result?
+            //auto f = ;
+        }
 
         if (!accel_ptr->intersect(ray, its)) {
             if (background_shader) {

@@ -69,7 +69,7 @@ public:
 
     void setup(Scene* scene) override;
 
-    OSL::ShadingSystem* shadingsys;
+    OSL::ShadingSystem*     shadingsys;
     std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
     OSL::ShaderGroupRef     background_shader;
     OSL::PerThreadInfo*     thread_info;
