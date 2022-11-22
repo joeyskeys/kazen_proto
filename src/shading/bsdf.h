@@ -65,6 +65,9 @@ enum ClosureID {
     KpPrincipleClearcoatID,
     KpPrincipleBSSRDFID,
 
+    // BSSRDFs
+    KpDipoleID,
+
     NumClosureIDs
 };
 
@@ -96,6 +99,13 @@ struct BSDFSample {
     float bssrdf_r;
     float bssrdf_idx;
     ScatteringMode::Mode mode;
+};
+
+struct BSSRDFSample {
+    Vec3f po;
+    Vec3f wo;
+    float pdf;
+    SurfaceCompositeClosure* sampled_brdf;
 };
 
 static inline void power_heuristic(RGBSpectrum* w, float* pdf, RGBSpectrum ow, float opdf, float b) {

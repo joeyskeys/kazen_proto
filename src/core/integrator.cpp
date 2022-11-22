@@ -376,6 +376,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
     float lpdf, mpdf = 1.f;
     float mis_weight = 1.f;
     BSDFSample bsdf_sample;
+    BSSRDFSample bssrdf_sample;
     //bsdf_sample.pdf = 0;
     bool last_bounce_specular = true;
 
@@ -502,11 +503,29 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
             break;
 
         // Account for subsurface scattering if applicable
+        // Here's a major design difference between pbrt-v3 and appleseed.
+        // The former use bssrdf to sample a out-going point and get the bsdf,
+        // use that bsdf to get the next direction. While in appleseed the
+        // out-going direction is sampled directly in bssrdf.
+        // And also the bssrdf model is kinda different.
+        // This results the difference in the integrator.
+        // TODO : Look into direct & indirect subsurface scattering comp.
         if (bssrdf_ptr) {
             auto sp = sampler_ptr->random4f();
             // Question : put bssrdf closure into shading result or create
             // aother shading result?
-            //auto f = ;
+            auto f = ret.bssrdf.sample(sg, bssrdf_sample, sp);
+            if (f.is_zero() || bssrdf_sample.pdf == 0) break;
+
+            throughput *= f;
+            // throughput /= bssrdf_sample.pdf;
+            // Li += throughput * uniform_sample_light();
+
+            sp = sampler_ptr->random4f();
+            auto brdf_f = bssrdf_sample.sampled_brdf->sample(sg, bsdf_sample, sp);
+            throughput *= brdf_f;
+            // how to convert this to world space
+            //ray = Ray(bssrdf_sample.po, bssrdf_sample.wo);
         }
 
         if (!accel_ptr->intersect(ray, its)) {

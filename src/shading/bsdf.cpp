@@ -9,6 +9,7 @@
 #include "core/sampling.h"
 #include "shading/bsdf.h"
 #include "shading/bsdfs.h"
+#include "shading/bssrdfs.h"
 
 using OSL::TypeDesc;
 
@@ -234,6 +235,11 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
 
                     case KpPrincipleClearcoatID: {
                         status = ret.surface.add_closure<KpPrincipleClearcoatParams>(KpPrincipleClearcoatID, cw, comp->as<KpPrincipleClearcoatParams>());
+                        break;
+                    }
+
+                    case KpDipoleID: {
+                        status = ret.bssrdf.add_closure<KpDipoleParams>(KpDipoleID, cw, comp->as<KpDipoleParams>());
                         break;
                     }
                 }

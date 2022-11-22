@@ -16,7 +16,7 @@ namespace constants = boost::math::constants;
  * https://www.solidangle.com/research/s2013_bssrdf_slides.pdf
  */
 
-struct DipoleParams {
+struct KpDipoleParams {
     OSL::Vec3 N;
     OSL::Vec3 sigma_a;
     OSL::Vec3 sigma_s;
@@ -28,9 +28,9 @@ struct DipoleParams {
 // Checkout "A Practical Model for Subsurface Light Transport" page 3 formular 5
 // https://graphics.stanford.edu/papers/bssrdf/bssrdf.pdf
 static RGBSpectrum Sd(const Vec3f& pi, const Vec3f& wi, const Vec3f& po,
-    const Vec3f& wo, const DipoleParams* params,
+    const Vec3f& wo, const KpDipoleParams* params,
     std::function<RGBSpectrum(const Vec3f&, const Vec3f&,
-        const Vec3f&, const Vec3f&, const DipoleParams*)>& eval_profile_func)
+        const Vec3f&, const Vec3f&, const KpDipoleParams*)>& eval_profile_func)
 {
     auto Rd = eval_profile_func(pi, wi, po, wo, params);
     auto n = base::to_vec3(params->N);
