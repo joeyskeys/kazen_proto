@@ -93,6 +93,16 @@ inline Vec<T, N> abs(const Vec<T, N>& v) {
 }
 
 template <typename T, size_t N>
+inline Vec<T, N> square(const Vec<T, N>& v) {
+    return enoki::sqr(v);
+}
+
+template <typename T, size_t N>
+inline Vec<T, N> sqrt(const Vec<T, N>& v) {
+    return enoki::sqrt(v);
+}
+
+template <typename T, size_t N>
 inline Vec<T, N> exp(const Vec<T, N>& v) {
     return enoki::exp(v);
 }
@@ -323,6 +333,16 @@ inline Vec<T, N> abs(const Vec<T, N>& v) {
 }
 
 template <typename T, int N>
+inline Vec<T, N> square(const Vec<T, N>& v) {
+    return v * v;
+}
+
+template <typename T, int N>
+inline Vec<T, N> sqrt(const Vec<T, N>& v) {
+    return v.sqrt();
+}
+
+template <typename T, int N>
 inline Vec<T, N> exp(const Vec<T, N>& v) {
     return v.exp();
 }
@@ -522,6 +542,24 @@ public:
         return *this;
     }
 
+    auto operator +(const T s) const {
+        Vec tmp;
+        for (int i = 0; i < N; i++)
+            tmp[i] = arr[i] + s;
+        
+        return tmp;
+    }
+
+    auto operator +=(const T s) const {
+        for (auto& e : arr)
+            e += s;
+        return *this;
+    }
+
+    friend inline auto operator +(const T s, const Vec& rhs) {
+        return rhs + s;
+    }
+
     auto operator -() const {
         Vec tmp;
         for (int i = 0; i < N; i++)
@@ -540,6 +578,26 @@ public:
         for (int i = 0; i < N; i++)
             arr[i] -= rhs.arr[i];
         return *this;
+    }
+
+    auto operator -(const T s) const {
+        Vec tmp;
+        for (int i = 0; i < N; i++)
+            tmp[i] = arr[i] - s;
+        return tmp;
+    }
+
+    auto operator -=(const T s) const {
+        for (auto& e : arr)
+            e += s;
+        return *this;
+    }
+
+    friend auto operator -(const T s, const Vec& rhs) {
+        Vec tmp;
+        for (int i = 0; i < N; i++)
+            tmp[i] = s - rhs[i];
+        return tmp;
     }
 
     auto operator *(const T s) const {
@@ -707,7 +765,7 @@ public:
     }
 
     inline auto length() const {
-        return sqrt(length_squared());
+        return std::sqrt(length_squared());
     }
 
     inline auto sum() const {
@@ -720,6 +778,20 @@ public:
         Vec tmp;
         for (int i = 0; i < N; i++)
             tmp.arr[i] = std::abs(arr[i]);
+        return tmp;
+    }
+
+    inline auto square() const {
+        Vec tmp;
+        for (int i = 0; i < N; i++)
+            tmp[i] = arr[i] * arr[i];
+        return tmp;
+    }
+
+    inline auto sqrt() const {
+        Vec tmp;
+        for (int i = 0; i < N; i++)
+            tmp[i] = std::sqrt(arr[i]);
         return tmp;
     }
 
@@ -845,6 +917,16 @@ inline Vec<T, N> abs(const Vec<T, N>& v) {
 }
 
 template <typename T, uint N>
+inline Vec<T, N> square(const Vec<T, N>& v) {
+    return v.square();
+}
+
+template <typename T, uint N>
+inline Vec<T, N> sqrt(const Vec<T, N>& v) {
+    return v.sqrt();
+}
+
+template <typename T, uint N>
 inline Vec<T, N> exp(const Vec<T, N>& v) {
     return v.exp();
 }
@@ -859,14 +941,6 @@ inline Vec<T, N> lerp(const Vec<T, N>& a, const Vec<T, N>& b, const Vec<T, N>& t
     Vec<T, N> tmp;
     for (int i = 0; i < N; i++)
         tmp[i] = std::lerp(a[i], b[i], t[i]);
-    return tmp;
-}
-
-template <typename T, uint N>
-inline Vec<T, N> sqrt(const Vec<T, N>& v) {
-    Vec<T, N> tmp;
-    for (int i = 0; i < N; i++)
-        tmp[i] = std::sqrt(v[i]);
     return tmp;
 }
 

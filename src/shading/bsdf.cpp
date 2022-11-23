@@ -13,9 +13,10 @@
 
 using OSL::TypeDesc;
 
-RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec4f& sp) const {
+RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& sp) const {
     float acc = 0;
     RGBSpectrum ret{0};
+    auto bsdf_sample = reinterpret_cast<BSDFSample*>(sample);
 
     /*
         * The mixture bsdf implementation differs between renderers.
@@ -33,39 +34,49 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, BSDFSample& s
         return ret;
 
     ret = weights[idx] * get_sample_func(id)(closure_params[idx], sg,
-        sample, base::head<3>(sp)) / pdfs[idx];
-    sample.pdf *= pdfs[idx];
+        *bsdf_sample, base::head<3>(sp)) / pdfs[idx];
+    bsdf_sample->pdf *= pdfs[idx];
 
     // Add up contributions from other bsdfs
     for (int i = 0; i < closure_count; i++) {
         if (i == idx) continue;
         float bsdf_pdf = 0;
         auto other_id = closure_ids[i];
-        BSDFSample other_sample = sample;
+        BSDFSample other_sample = *bsdf_sample;
         RGBSpectrum bsdf_weight = weights[i] * get_eval_func(other_id)(
             closure_params[i], sg, other_sample);
         //power_heuristic(&ret, &sample.pdf, bsdf_weight, other_sample.pdf, pdfs[i]);
         ret += bsdf_weight;
-        sample.pdf += pdfs[i] * other_sample.pdf;
+        bsdf_sample->pdf += pdfs[i] * other_sample.pdf;
     }
 
     return ret;
 };
 
-RGBSpectrum CompositeClosure::eval(const OSL::ShaderGlobals& sg, BSDFSample& sample) const {
+RGBSpectrum CompositeClosure::eval(const OSL::ShaderGlobals& sg, void* sample) const {
     RGBSpectrum ret{0};
     float pdf = 0;
+    auto bsdf_sample = reinterpret_cast<BSDFSample*>(sample);
+
     for (int i = 0; i < closure_count; i++) {
         auto id = closure_ids[i];
         RGBSpectrum bsdf_weight = weights[i] * get_eval_func(id)(
-            closure_params[i], sg, sample);
+            closure_params[i], sg, *bsdf_sample);
         //power_heuristic(&ret, &pdf, bsdf_weight, sample.pdf, pdfs[i]);
         ret += bsdf_weight;
-        pdf += pdfs[i] * sample.pdf;
+        pdf += pdfs[i] * bsdf_sample->pdf;
     }
 
-    sample.pdf = pdf;
+    bsdf_sample->pdf = pdf;
     return ret;
+}
+
+RGBSpectrum SubsurfaceCompositeClosure::sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const {
+
+}
+
+RGBSpectrum SubsurfaceCompositeClosure::eval(const OSL::ShaderGlobals& sg, void* sample) const {
+
 }
 
 namespace

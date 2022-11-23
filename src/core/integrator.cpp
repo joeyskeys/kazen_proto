@@ -140,7 +140,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext* rctx) const
             Li += throughput * ret.Le;
 
         BSDFSample sample;
-        auto sampled_f = ret.surface.sample(sg, sample, sampler_ptr->random4f());
+        auto sampled_f = ret.surface.sample(sg, &sample, sampler_ptr->random4f());
         if (sample.mode != ScatteringMode::Specular) {
             auto light_cnt = lights->size();
             if (light_cnt == 0)
@@ -171,7 +171,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext* rctx) const
                 //float cos_theta_v = dot(light_dir, isect.N);
                 float cos_theta_v = dot(light_dir, isect.shading_normal);
                 sample.wo = isect.to_local(light_dir);
-                auto f = ret.surface.eval(sg, sample);
+                auto f = ret.surface.eval(sg, &sample);
                 //recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
                 Li += throughput * (f * Ls * cos_theta_v) * lights->size();
             }
@@ -235,7 +235,7 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext* rctx) cons
             return Li;
         throughput /= prob;
 
-        auto f = ret.surface.sample(sg, sample, sampler_ptr->random4f());
+        auto f = ret.surface.sample(sg, &sample, sampler_ptr->random4f());
         throughput *= f;
         ray = Ray(its.P, its.to_world(sample.wo));
         if (!accel_ptr->intersect(ray, its))
@@ -283,7 +283,7 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext* rctx) const
             p.record(EEmission, its, throughput, Li);
         }
 
-        auto sampled_f = ret.surface.sample(sg, sample, sampler_ptr->random4f());
+        auto sampled_f = ret.surface.sample(sg, &sample, sampler_ptr->random4f());
         if (sample.mode != ScatteringMode::Specular) {
             is_specular = false;
             auto light_cnt = lights->size();
@@ -305,7 +305,7 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext* rctx) const
                 //float cos_theta_v = dot(light_dir, isect.N);
                 float cos_theta_v = dot(light_dir, its.shading_normal);
                 sample.wo = its.to_local(light_dir);
-                auto f = ret.surface.eval(sg, sample);
+                auto f = ret.surface.eval(sg, &sample);
                 //recorder->print(rctx, fmt::format("cos theta : {}, f : {}, Ls : {}, light_pdf : {}", cos_theta_v, f, Ls, light_pdf));
                 Li += throughput * f * Ls * cos_theta_v / pdf;
             }
@@ -404,13 +404,13 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
 
         // Currently we only add bssrdf support for path integrator
         OSL::ShaderGroupRef bssrdf_ptr = nullptr;
-        if (isect.bssrdf_name.size() > 0) {
-            bssrdf_ptr = (*shaders)[isect.bssrdf_name];
+        if (its.bssrdf_name.size() > 0) {
+            bssrdf_ptr = (*shaders)[its.bssrdf_name];
 
             // BSSRDF is not necessary but nullptr for given bssrdf name indicates
             // there's a problem
             if (bssrdf_ptr)
-                throw std::runtime_error(fmt::format("Bssrdf for name : {} does not exist..", isect.bssrdf_name));
+                throw std::runtime_error(fmt::format("Bssrdf for name : {} does not exist..", its.bssrdf_name));
         }
 
         shadingsys->execute(*ctx, *shader_ptr, sg);
@@ -461,7 +461,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
                 float cos_theta_v = dot(light_dir, its.shading_normal);
                 if (cos_theta_v > 0.) {
                     bsdf_sample.wo = its.to_local(light_dir);
-                    auto f = ret.surface.eval(sg, bsdf_sample);
+                    auto f = ret.surface.eval(sg, &bsdf_sample);
                     mis_weight = power_heuristic(1, lpdf, 1, bsdf_sample.pdf);
                     mis_weight = std::isnan(mis_weight) ? 0.f : mis_weight;
                     Li += mis_weight * throughput * Ls * f * cos_theta_v / pdf;
@@ -487,7 +487,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         * 3. Sampling material to get next direction
         * *********************************************/
         auto sp = sampler_ptr->random4f();
-        auto f = ret.surface.sample(sg, bsdf_sample, sp);
+        auto f = ret.surface.sample(sg, &bsdf_sample, sp);
         last_bounce_specular = bsdf_sample.mode == ScatteringMode::Specular;
         throughput *= f;
         mpdf = bsdf_sample.pdf;
@@ -514,7 +514,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
             auto sp = sampler_ptr->random4f();
             // Question : put bssrdf closure into shading result or create
             // aother shading result?
-            auto f = ret.bssrdf.sample(sg, bssrdf_sample, sp);
+            auto f = ret.bssrdf.sample(sg, &bssrdf_sample, sp);
             if (f.is_zero() || bssrdf_sample.pdf == 0) break;
 
             throughput *= f;
@@ -522,7 +522,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
             // Li += throughput * uniform_sample_light();
 
             sp = sampler_ptr->random4f();
-            auto brdf_f = bssrdf_sample.sampled_brdf->sample(sg, bsdf_sample, sp);
+            auto brdf_f = bssrdf_sample.sampled_brdf->sample(sg, &bsdf_sample, sp);
             throughput *= brdf_f;
             // how to convert this to world space
             //ray = Ray(bssrdf_sample.po, bssrdf_sample.wo);

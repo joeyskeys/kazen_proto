@@ -92,6 +92,8 @@ public:
     }
 };
 
+class SurfaceCompositeClosure;
+
 struct BSDFSample {
     // A BSDF sampling parameter pack
     Vec3f wo;
@@ -179,8 +181,9 @@ public:
         }
     }
 
-    virtual RGBSpectrum sample(const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec4f& rand) const;
-    virtual RGBSpectrum eval(const OSL::ShaderGlobals& sg, BSDFSample& sample) const;
+    // Sample type may differ, make these function pure virtual ones
+    virtual RGBSpectrum sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const;
+    virtual RGBSpectrum eval(const OSL::ShaderGlobals& sg, void* sample) const;
 
 private:
     uint closure_count, byte_count;
@@ -197,7 +200,9 @@ class SurfaceCompositeClosure : public CompositeClosure {
 };
 
 class SubsurfaceCompositeClosure : public CompositeClosure {
-
+public:
+    RGBSpectrum sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const override;
+    RGBSpectrum eval(const OSL::ShaderGlobals& sg, void* sample) const override;
 };
 
 class EmissionCompositeClosure : public CompositeClosure {
@@ -205,6 +210,7 @@ class EmissionCompositeClosure : public CompositeClosure {
 };
 
 class BackgroundCompositeClosure : public CompositeClosure {
+
 };
 
 struct ShadingResult {

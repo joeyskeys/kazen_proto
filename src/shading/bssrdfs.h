@@ -49,7 +49,7 @@ static RGBSpectrum Sd(const Vec3f& pi, const Vec3f& wi, const Vec3f& po,
 }
 
 static RGBSpectrum standard_dipole_eval_profile(const Vec3f& pi, const Vec3f& wi,
-    const Vec3f& po, const Vec3f& wo, const DipoleParams* params)
+    const Vec3f& po, const Vec3f& wo, const KpDipoleParams* params)
 {
     const float sqr_radius = base::length_squared(pi - po);
 
@@ -67,7 +67,7 @@ static RGBSpectrum standard_dipole_eval_profile(const Vec3f& pi, const Vec3f& wi
     auto sigma_tr = base::to_vec3(params->sigma_tr);
 
     auto zr = 1. / sigma_t_prime;
-    auto zv = -zr * (1.f + (4.f / 3.f) * a);
+    auto zv = -zr * (1.f + (4.f / 3.f) * A);
 
     auto dr = base::sqrt(sqr_radius + zr * zr);
     auto dv = base::sqrt(sqr_radius + zv * zv);
