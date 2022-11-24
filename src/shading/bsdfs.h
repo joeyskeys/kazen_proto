@@ -701,7 +701,7 @@ using bsdf_sample_func = std::function<RGBSpectrum(const void*, const OSL::Shade
 // cpp 17 inlined constexpr variables will have external linkage and
 // have only one copy among all included files
 inline bsdf_eval_func get_bsdf_eval_func(ClosureID id) {
-    static std::array<eval_func, 29> eval_functions {
+    static std::array<bsdf_eval_func, 29> eval_functions {
         Diffuse::eval,
         Phong::eval,
         nullptr,
@@ -737,7 +737,7 @@ inline bsdf_eval_func get_bsdf_eval_func(ClosureID id) {
 }
 
 inline bsdf_sample_func get_bsdf_sample_func(ClosureID id) {
-    static std::array<sample_func, 29> sample_functions {
+    static std::array<bsdf_sample_func, 29> sample_functions {
         Diffuse::sample,
         Phong::sample,
         nullptr,
