@@ -693,14 +693,14 @@ struct KpPrincipleBSSRDF {
     }
 };
 
-using eval_func = std::function<RGBSpectrum(const void*, const OSL::ShaderGlobals&,
+using bsdf_eval_func = std::function<RGBSpectrum(const void*, const OSL::ShaderGlobals&,
     BSDFSample&)>;
-using sample_func = std::function<RGBSpectrum(const void*, const OSL::ShaderGlobals&,
+using bsdf_sample_func = std::function<RGBSpectrum(const void*, const OSL::ShaderGlobals&,
     BSDFSample&, const Vec3f)>;
 
 // cpp 17 inlined constexpr variables will have external linkage and
 // have only one copy among all included files
-inline eval_func get_eval_func(ClosureID id) {
+inline bsdf_eval_func get_bsdf_eval_func(ClosureID id) {
     static std::array<eval_func, 29> eval_functions {
         Diffuse::eval,
         Phong::eval,
@@ -736,7 +736,7 @@ inline eval_func get_eval_func(ClosureID id) {
     return eval_functions[id];
 }
 
-inline sample_func get_sample_func(ClosureID id) {
+inline bsdf_sample_func get_bsdf_sample_func(ClosureID id) {
     static std::array<sample_func, 29> sample_functions {
         Diffuse::sample,
         Phong::sample,

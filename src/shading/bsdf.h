@@ -185,7 +185,7 @@ public:
     virtual RGBSpectrum sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const;
     virtual RGBSpectrum eval(const OSL::ShaderGlobals& sg, void* sample) const;
 
-private:
+protected:
     uint closure_count, byte_count;
     //std::array<BSDF*, max_closure> bsdfs;
     std::array<ClosureID, max_closure> closure_ids;
