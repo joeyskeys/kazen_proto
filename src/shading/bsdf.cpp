@@ -90,7 +90,7 @@ RGBSpectrum SubsurfaceCompositeClosure::sample(const OSL::ShaderGlobals& sg, voi
         if (i == idx) continue;
         float bsdf_pdf = 0;
         auto other_id = closure_ids[i];
-        BSDFSample other_sample = *bssrdf_sample;
+        BSSRDFSample other_sample = *bssrdf_sample;
         RGBSpectrum bsdf_weight = weights[i] * get_bssrdf_eval_func(other_id)(
             closure_params[i], sg, other_sample);
         ret += bsdf_weight;
@@ -103,7 +103,7 @@ RGBSpectrum SubsurfaceCompositeClosure::sample(const OSL::ShaderGlobals& sg, voi
 RGBSpectrum SubsurfaceCompositeClosure::eval(const OSL::ShaderGlobals& sg, void* sample) const {
     RGBSpectrum ret{0};
     float pdf = 0;
-    auto bssrdf_sample = reinterpret_cast<BSDFSample*>(sample);
+    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(sample);
 
     for (int i = 0; i < closure_count; i++) {
         auto id = closure_ids[i];
