@@ -1,9 +1,15 @@
+
 #include "shading/bssrdfs.h"
+#include "shading/context.h"
 
-RGBSpectrum KpDipole::eval(const void* data, const OSL::ShaderGlobals& sg, BSSRDFSample& sample) {
-
+static bool find_po(ShadingContext* ctx, bssrdf_profile_sample_func& profle_func, const Vec3f& rand) {
+    const float disk_radius = profle_func(ctx.data, rand[0]);
 }
 
-RGBSpectrum KpDipole::sample(const void* data, const OSL::ShaderGlobals& sg, BSSRDFSample& sample, const Vec3f& rand) {
+RGBSpectrum KpDipole::eval(ShadingContext* ctx) {
+    
+}
+
+RGBSpectrum KpDipole::sample(ShadingContext* ctx, const Vec3f& rand) {
 
 }
