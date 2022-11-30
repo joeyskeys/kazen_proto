@@ -1,12 +1,14 @@
 
 #include "base/utils.h"
 #include "base/vec.h"
+#include "shading/bsdf.h"
 #include "shading/bssrdfs.h"
 #include "shading/context.h"
 
-static bool find_po(ShadingContext* ctx, bssrdf_profile_sample_func& profle_func, const Vec3f& rand) {
+static bool find_po(ShadingContext* ctx, bssrdf_profile_sample_func& profile_func, const Vec4f& rand) {
     auto dipole_params = reinterpret_cast<KpDipoleParams*>(ctx->data);
-    const float disk_radius = profle_func(ctx.data, rand[0]);
+    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
+    const float disk_radius = profile_func(ctx.data, rand[0]);
 
     if (disk_radius == 0.f)
         return false;
@@ -46,12 +48,33 @@ static bool find_po(ShadingContext* ctx, bssrdf_profile_sample_func& profle_func
     }
 
     // Randomly chose one intersection
+    if (found_intersection == 0)
+        return false;
+    else if (found_intersection == 1) {
+        bssrdf_sample->po = isects[0].P;
+        return true;
+    }
+    else {
+        uint idx = rand[3] * max_intersection_cnt * 0.999999f;
+        bssrdf_sample->po = isects[idx];
+        return true;
+    }
+}
+
+static bool sample_dipole(ShadingContext* ctx, bssrdf_profile_sample_func& profile_func, const Vec4f& rand) {
+    auto found_po = find_po(ctx, profile_func, rand);
+    if (!found_po)
+        return false;
+
+    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
+    // We need to unify the interfaces now
+    auto f = bssrdf_sample->sampled_brdf->sample();
 }
 
 RGBSpectrum KpDipole::eval(ShadingContext* ctx) {
     
 }
 
-RGBSpectrum KpDipole::sample(ShadingContext* ctx, const Vec3f& rand) {
+RGBSpectrum KpDipole::sample(ShadingContext* ctx, const Vec4f& rand) {
 
 }
