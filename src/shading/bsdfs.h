@@ -8,6 +8,7 @@
 #include "base/utils.h"
 #include "core/sampling.h"
 #include "shading/bsdf.h"
+#include "shading/context.h"
 #include "shading/fresnel.h"
 #include "shading/microfacet.h"
 
@@ -117,8 +118,8 @@ struct KpPrincipleBSSRDFParams {
 };
 
 struct Diffuse {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(DiffuseParams, N),
@@ -130,8 +131,8 @@ struct Diffuse {
 };
 
 struct Phong {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(PhongParams, N),
@@ -144,8 +145,8 @@ struct Phong {
 };
 
 struct OrenNayar {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(OrenNayarParams, N),
@@ -158,8 +159,8 @@ struct OrenNayar {
 };
 
 struct Ward {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(WardParams, N),
@@ -372,8 +373,8 @@ using MicrofacetBeckmannBoth = Microfacet<BeckmannDist, 2>;
 // Just convert it to KpGloss & KpGlass in process_closures function.
 
 struct Reflection {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(ReflectionParams, N),
@@ -386,8 +387,8 @@ struct Reflection {
 };
 
 struct Refraction {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(RefractionParams, N),
@@ -400,8 +401,8 @@ struct Refraction {
 };
 
 struct Transparent {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_FINISH_PARAM(EmptyParams)
@@ -412,8 +413,8 @@ struct Transparent {
 };
 
 struct Translucent {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_FINISH_PARAM(EmptyParams)
@@ -424,8 +425,8 @@ struct Translucent {
 };
 
 struct Emission {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_FINISH_PARAM(EmptyParams)
@@ -436,8 +437,8 @@ struct Emission {
 };
 
 struct Background {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_FINISH_PARAM(EmptyParams)
@@ -448,8 +449,8 @@ struct Background {
 };
 
 struct KpMirror {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_FINISH_PARAM(EmptyParams)
@@ -460,8 +461,8 @@ struct KpMirror {
 };
 
 struct KpDielectric {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_FLOAT_PARAM(KpDielectricParams, int_ior),
@@ -474,8 +475,8 @@ struct KpDielectric {
 };
 
 struct KpMicrofacet {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_FLOAT_PARAM(KpMicrofacetParams, alpha),
@@ -490,8 +491,8 @@ struct KpMicrofacet {
 };
 
 struct KpEmitter {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_FLOAT_PARAM(KpEmitterParams, albedo),
@@ -503,8 +504,8 @@ struct KpEmitter {
 };
 
 struct KpGloss {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(KpRoughParams, N),
@@ -520,8 +521,8 @@ struct KpGloss {
 };
 
 struct KpGlass {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(KpRoughParams, N),
@@ -597,8 +598,8 @@ private:
 };
 
 struct KpPrincipleDiffuse {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(DiffuseParams, N),
@@ -610,8 +611,8 @@ struct KpPrincipleDiffuse {
 };
 
 struct KpPrincipleRetro {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(KpPrincipleRetroParams, N),
@@ -624,8 +625,8 @@ struct KpPrincipleRetro {
 };
 
 struct KpPrincipleFakeSS {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_FLOAT_PARAM(KpPrincipleFakeSSParams, roughness),
@@ -637,8 +638,8 @@ struct KpPrincipleFakeSS {
 };
 
 struct KpPrincipleSheen {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(KpPrincipleSheenParams, N),
@@ -650,8 +651,8 @@ struct KpPrincipleSheen {
 };
 
 struct KpPrincipleSpecularReflection {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_COLOR_PARAM(KpPrincipleSpecularParams, F0),
@@ -668,8 +669,8 @@ struct KpPrincipleSpecularReflection {
 };
 
 struct KpPrincipleClearcoat {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(KpPrincipleClearcoatParams, N),
@@ -682,8 +683,8 @@ struct KpPrincipleClearcoat {
 };
 
 struct KpPrincipleBSSRDF {
-    static RGBSpectrum eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample);
-    static RGBSpectrum sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, const Vec3f&);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_FINISH_PARAM(KpPrincipleBSSRDFParams)
@@ -693,10 +694,8 @@ struct KpPrincipleBSSRDF {
     }
 };
 
-using bsdf_eval_func = std::function<RGBSpectrum(const void*, const OSL::ShaderGlobals&,
-    BSDFSample&)>;
-using bsdf_sample_func = std::function<RGBSpectrum(const void*, const OSL::ShaderGlobals&,
-    BSDFSample&, const Vec3f)>;
+using bsdf_eval_func = std::function<RGBSpectrum(ShadingContext*)>;
+using bsdf_sample_func = std::function<RGBSpectrum(ShadingContext*, const Vec3f&)>;
 
 // cpp 17 inlined constexpr variables will have external linkage and
 // have only one copy among all included files

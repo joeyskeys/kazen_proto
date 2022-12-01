@@ -24,21 +24,22 @@ namespace constants = boost::math::constants;
 // conversion is everywhere in the shading related calculation, for sake of both
 // code clarity and performance, a unified way of vector calculation must be done
 
-RGBSpectrum Diffuse::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    auto params = reinterpret_cast<const DiffuseParams*>(data);
+RGBSpectrum Diffuse::eval(ShadingContext* ctx) {
+    auto params = reinterpret_cast<const DiffuseParams*>(ctx->data);
     auto n = base::to_vec3(params->N);
     sample.pdf = std::max(base::dot(sample.wo, n), 0.f) * constants::one_div_pi<float>();
     return sample.pdf;
 }
 
-RGBSpectrum Diffuse::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum Diffuse::sample(ShadingContext* ctx, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
     sample.wo = sample_hemisphere(Vec2f(rand[0], rand[1]));
-    return eval(data, sg, sample);
+    return eval(ctx);
 }
 
-RGBSpectrum Phong::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
-    auto params = reinterpret_cast<const PhongParams*>(data);
+RGBSpectrum Phong::eval(ShadingContext* ctx) {
+    auto params = reinterpret_cast<const PhongParams*>(ctx->data);
+    auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     float cos_ni = cos_theta(sample.wo);
     float cos_no = base::dot(base::to_vec3(-params->N), base::to_vec3(sg.I));
     if (cos_ni > 0 && cos_no > 0) {
@@ -54,9 +55,10 @@ RGBSpectrum Phong::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSamp
     return sample.pdf = 0;
 }
 
-RGBSpectrum Phong::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum Phong::sample(ShadingContext* ctx, const Vec3f& rand) {
     sample.mode = ScatteringMode::Diffuse;
-    auto params = reinterpret_cast<const PhongParams*>(data);
+    auto params = reinterpret_cast<const PhongParams*>(ctx->data);
+    auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     float cos_no = base::dot(base::to_vec3(-params->N), base::to_vec3(sg.I));
     if (cos_no > 0) {
         Vec3f R = base::to_vec3((2 * cos_no) * params->N + sg.I);
@@ -74,11 +76,11 @@ RGBSpectrum Phong::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSa
     return sample.pdf = 0;
 }
 
-RGBSpectrum OrenNayar::eval(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample) {
+RGBSpectrum OrenNayar::eval(ShadingContext* ctx) {
     return 0;
 }
 
-RGBSpectrum OrenNayar::sample(const void* data, const OSL::ShaderGlobals& sg, BSDFSample& sample, const Vec3f& rand) {
+RGBSpectrum OrenNayar::sample(ShadingContext* ctx, const Vec3f& rand) {
     return 0;
 }
 

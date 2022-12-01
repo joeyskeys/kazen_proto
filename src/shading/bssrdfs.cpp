@@ -68,7 +68,8 @@ static bool sample_dipole(ShadingContext* ctx, bssrdf_profile_sample_func& profi
 
     auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
     // We need to unify the interfaces now
-    auto f = bssrdf_sample->sampled_brdf->sample();
+    auto f = bssrdf_sample->sampled_brdf->sample(ctx, base::head<3>(rand));
+    return f;
 }
 
 RGBSpectrum KpDipole::eval(ShadingContext* ctx) {
