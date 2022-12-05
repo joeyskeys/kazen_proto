@@ -8,7 +8,28 @@
 static bool find_po(ShadingContext* ctx, bssrdf_profile_sample_func& profile_func, const Vec4f& rand) {
     auto dipole_params = reinterpret_cast<KpDipoleParams*>(ctx->data);
     auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
-    const float disk_radius = profile_func(ctx.data, rand[0]);
+
+    // Choose a projection axis
+    Frame frame;
+    float u = rand[0];
+    if (u < 0.5f) {
+        frame = Frame(ctx->frame.s, ctx->frame.t, ctx->frame.n);
+        u = u * 2;
+    }
+    else if (u < 0.75f) {
+        frame = Frame(ctx->frame.t, ctx->frame.n, ctx->frame.s);
+        u = (u - 0.5f) * 4;
+    }
+    else {
+        frame = Frame(ctx->frame.n, ctx->frame.s, ctx->frame.t);
+        u = (u - 0.75f) * 4;
+    }
+
+    // A simple strategy to sample a channel
+    // Not enough random number here available, so reuse one from frame sampling
+    // But in the coming bsdf sampling, we still need another Vec3 random numbers
+    size_t ch = 3 * 0.99999f * u;
+    const float disk_radius = profile_func(ctx.data, ch, rand[1]);
 
     if (disk_radius == 0.f)
         return false;
@@ -16,20 +37,9 @@ static bool find_po(ShadingContext* ctx, bssrdf_profile_sample_func& profile_fun
     if (disk_radius >= dipole_params->max_radius)
         return false;
 
-    auto phi = constants::two_pi<float>() * rand[1];
+    auto phi = constants::two_pi<float>() * rand[2];
     auto disk_point = Vec3f{disk_radius * std::cos(phi), 0.f, disk_radius * std::sin(phi)};
 
-    // Choose a projection axis
-    Frame frame;
-    if (rand[2] < 0.5f) {
-        frame = Frame(ctx->frame.s, ctx->frame.t, ctx->frame.n);
-    }
-    else if (rand[2] < 0.75f) {
-        frame = Frame(ctx->frame.t, ctx->frame.n, ctx->frame.s);
-    }
-    else {
-        frame = Frame(ctx->frame.n, ctx->frame.s, ctx->frame.t);
-    }
 
     auto h = std::sqrt(square(dipole_params->max_radius) - square(disk_radius));
     auto hn = h * frame.n;
@@ -61,10 +71,10 @@ static bool find_po(ShadingContext* ctx, bssrdf_profile_sample_func& profile_fun
     }
 }
 
-static bool sample_dipole(ShadingContext* ctx, bssrdf_profile_sample_func& profile_func, const Vec4f& rand) {
+static RGBSpectrum sample_dipole(ShadingContext* ctx, bssrdf_profile_sample_func& profile_func, const Vec4f& rand) {
     auto found_po = find_po(ctx, profile_func, rand);
     if (!found_po)
-        return false;
+        return 0;
 
     auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
     // We need to unify the interfaces now
@@ -72,10 +82,16 @@ static bool sample_dipole(ShadingContext* ctx, bssrdf_profile_sample_func& profi
     return f;
 }
 
+static inline float sample_dipole_profile_func(const void* data, uint32_t ch, const float u) {
+    auto dipole_params = reinterpret_cast<KpDipoleParams*>(data)
+    // TODO : We need to sample a channel, use fixed first channel for now
+    return sample_exponential_distribution(dipole_params->sigma_tr[ch], u);
+}
+
 RGBSpectrum KpDipole::eval(ShadingContext* ctx) {
     
 }
 
 RGBSpectrum KpDipole::sample(ShadingContext* ctx, const Vec4f& rand) {
-
+    return sample_dipole(ctx, sample_dipole_profile_func, rand);
 }

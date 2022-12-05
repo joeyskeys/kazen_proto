@@ -226,3 +226,9 @@ inline std::string load_file(const fs::path& path) {
 
     return buffer;
 }
+
+float sample_exponential_distribution(const float t, const float u) {
+    assert(u >= 0.f);
+    assert(u < 1);
+    return -std::log(1.f - u) / t;
+}

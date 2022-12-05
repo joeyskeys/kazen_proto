@@ -105,7 +105,7 @@ struct KpDipole {
 
 // This function type is used as a profile sampling function prototype, called
 // in bssrdf sample function
-using bssrdf_profile_sample_func = std::function<float(const void*, const float);
+using bssrdf_profile_sample_func = std::function<float(const void*, uint32_t, const float);
 
 using bssrdf_eval_func = std::function<RGBSpectrum(ShadingContext*)>;
 using bssrdf_sample_func = std::function<RGBSpectrum(ShadingContext*, const Vec4f&)>;
