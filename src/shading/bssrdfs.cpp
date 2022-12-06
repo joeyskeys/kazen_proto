@@ -71,8 +71,16 @@ static bool find_po(ShadingContext* ctx, bssrdf_profile_sample_func& profile_fun
     }
 }
 
-static RGBSpectrum sample_dipole(ShadingContext* ctx, bssrdf_profile_sample_func& profile_func, const Vec4f& rand) {
-    auto found_po = find_po(ctx, profile_func, rand);
+static inline float sample_standard_dipole_func(const void* data, uint32_t ch, const float u) {
+    auto dipole_params = reinterpret_cast<KpDipoleParams*>(data)
+    // TODO : We need to sample a channel, use fixed first channel for now
+    return sample_exponential_distribution(dipole_params->sigma_tr[ch], u);
+}
+
+static RGBSpectrum sample_dipole(ShadingContext* ctx, bssrdf_profile_sample_func& profile_sample_func,
+    const Vec4f& rand)
+{
+    auto found_po = find_po(ctx, profile_samplefunc, rand);
     if (!found_po)
         return 0;
 
@@ -82,16 +90,61 @@ static RGBSpectrum sample_dipole(ShadingContext* ctx, bssrdf_profile_sample_func
     return f;
 }
 
-static inline float sample_dipole_profile_func(const void* data, uint32_t ch, const float u) {
-    auto dipole_params = reinterpret_cast<KpDipoleParams*>(data)
-    // TODO : We need to sample a channel, use fixed first channel for now
-    return sample_exponential_distribution(dipole_params->sigma_tr[ch], u);
+static RGBSpectrum eval_standard_dipole_func(const void* data, const Vec3f& pi,
+    const Vec3f& wi, const Vec3f& po, const Vec3f& wo)
+{
+    auto params = reinterpret_cast<KpDipoleParams*>(data);
+    const float sqr_radius = base::length_squared(pi - po);
+    if (sqr_radius > square(params->max_radius))
+        return 0;
+
+    const float Fdr = fresnel_internel_diffuse_reflectance(params->eta);
+    const float A = (1. + Fdr) / (1. - Fdr);
+
+    // Here's a design decision to consider:
+    // Each vector arithmetic operation could be a small for loop (or not if
+    // vectorization library is used), write code in this way saves typing but
+    // could be a penalty to performance.
+    auto sigma_a = base::to_vec3(params->sigma_a);
+    auto sigma_s = base::to_vec3(params->sigma_s);
+    auto sigma_s_prime = sigma_s * (1. - params->g);
+    auto sigma_t_prime = sigma_s_prime + sigma_a;
+    auto sigma_tr = base::to_vec3(params->sigma_tr);
+
+    auto zr = 1. / sigma_t_prime;
+    auto zv = -zr * (1.f + (4.f / 3.f) * A);
+
+    auto dr = base::sqrt(sqr_radius + zr * zr);
+    auto dv = base::sqrt(sqr_radius + zv * zv);
+
+    auto rcp_dr = 1. / dr;
+    auto rcp_dv = 1. / dv;
+    auto sigma_tr_dr = sigma_tr * dr;
+    auto sigma_tr_dv = sigma_tr * dv;
+    auto kr = zr * (sigma_tr_dr + 1.f) * base::square(rcp_dr);
+    auto kv = zv * (sigma_tr_dv + 1.f) * base::square(rcp_dv);
+    auto er = base::exp(-sigma_tr_dr) * rcp_dr;
+    auto ev = base::exp(-sigma_tr_dv) * rcp_dv;
+    
+    return constants::one_div_pi<float>() * 0.25 * (kr * er - kv * ev);
+}
+
+static RGBSpectrum eval_dipole(ShadingContext* ctx, bssrdf_profile_eval_func& profile_eval_func)
+{
+    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
+    auto ret = profile_eval_func(ctx->data, Vec3f(0.f), bssrdf_sample->wi,
+        bssrdf_sample->po, bssrdf_sample->wo);
+
+    // We have a problem here, since bssrdf involes "two shading point", we'll have
+    // two normals and two directions(for wi & wo). Should we still use the shading
+    // space representation of directions?
+    //auto cos_on = std::min(std::abs(base::dot(bssrdf_sample->)))
 }
 
 RGBSpectrum KpDipole::eval(ShadingContext* ctx) {
-    
+    return eval_dipole(ctx, eval_standard_dipole_func)
 }
 
 RGBSpectrum KpDipole::sample(ShadingContext* ctx, const Vec4f& rand) {
-    return sample_dipole(ctx, sample_dipole_profile_func, rand);
+    return sample_dipole(ctx, sample_standard_dipole_func, rand);
 }

@@ -104,6 +104,7 @@ struct BSDFSample {
 };
 
 struct BSSRDFSample {
+    Vec3f wi;
     Vec3f po;
     Vec3f wo;
     float pdf;

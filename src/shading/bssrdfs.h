@@ -48,42 +48,6 @@ static RGBSpectrum Sd(const Vec3f& pi, const Vec3f& wi, const Vec3f& po,
     return Rd * fi * fo / c;
 }
 
-static RGBSpectrum standard_dipole_eval_profile(const Vec3f& pi, const Vec3f& wi,
-    const Vec3f& po, const Vec3f& wo, const KpDipoleParams* params)
-{
-    const float sqr_radius = base::length_squared(pi - po);
-
-    const float Fdr = fresnel_internel_diffuse_reflectance(params->eta);
-    const float A = (1. + Fdr) / (1. - Fdr);
-
-    // Here's a design decision to consider:
-    // Each vector arithmetic operation could be a small for loop (or not if
-    // vectorization library is used), write code in this way saves typing but
-    // could be a penalty to performance.
-    auto sigma_a = base::to_vec3(params->sigma_a);
-    auto sigma_s = base::to_vec3(params->sigma_s);
-    auto sigma_s_prime = sigma_s * (1. - params->g);
-    auto sigma_t_prime = sigma_s_prime + sigma_a;
-    auto sigma_tr = base::to_vec3(params->sigma_tr);
-
-    auto zr = 1. / sigma_t_prime;
-    auto zv = -zr * (1.f + (4.f / 3.f) * A);
-
-    auto dr = base::sqrt(sqr_radius + zr * zr);
-    auto dv = base::sqrt(sqr_radius + zv * zv);
-
-    auto rcp_dr = 1. / dr;
-    auto rcp_dv = 1. / dv;
-    auto sigma_tr_dr = sigma_tr * dr;
-    auto sigma_tr_dv = sigma_tr * dv;
-    auto kr = zr * (sigma_tr_dr + 1.f) * base::square(rcp_dr);
-    auto kv = zv * (sigma_tr_dv + 1.f) * base::square(rcp_dv);
-    auto er = base::exp(-sigma_tr_dr) * rcp_dr;
-    auto ev = base::exp(-sigma_tr_dv) * rcp_dv;
-    
-    return constants::one_div_pi<float>() * 0.25 * (kr * er - kv * ev);
-}
-
 struct KpDipole {
     static RGBSpectrum eval(ShadingContext* ctx);
     static RGBSpectrum sample(ShadingContext* ctx, const Vec4f&);
@@ -105,9 +69,11 @@ struct KpDipole {
 
 // This function type is used as a profile sampling function prototype, called
 // in bssrdf sample function
+using bssrdf_profile_eval_func = std::function<RGBSpectrum(const void*, );
 using bssrdf_profile_sample_func = std::function<float(const void*, uint32_t, const float);
 
-using bssrdf_eval_func = std::function<RGBSpectrum(ShadingContext*)>;
+using bssrdf_eval_func = std::function<RGBSpectrum(ShadingContext*, const Vec3f&,
+    const Vec3f&, const Vec3f&, const Vec3f&)>;
 using bssrdf_sample_func = std::function<RGBSpectrum(ShadingContext*, const Vec4f&)>;
 
 inline bssrdf_eval_func get_bssrdf_eval_func(ClosureID id) {
