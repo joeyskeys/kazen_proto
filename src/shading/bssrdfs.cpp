@@ -131,6 +131,7 @@ static RGBSpectrum eval_standard_dipole_func(const void* data, const Vec3f& pi,
 
 static RGBSpectrum eval_dipole(ShadingContext* ctx, bssrdf_profile_eval_func& profile_eval_func)
 {
+    auto dipole_params = reinterpret_cast<KpDipoleParams*>(ctx->data);
     auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
     auto ret = profile_eval_func(ctx->data, Vec3f(0.f), bssrdf_sample->wi,
         bssrdf_sample->po, bssrdf_sample->wo);
@@ -138,7 +139,17 @@ static RGBSpectrum eval_dipole(ShadingContext* ctx, bssrdf_profile_eval_func& pr
     // We have a problem here, since bssrdf involes "two shading point", we'll have
     // two normals and two directions(for wi & wo). Should we still use the shading
     // space representation of directions?
-    //auto cos_on = std::min(std::abs(base::dot(bssrdf_sample->)))
+    auto cos_on = std::min(std::abs(cos(bssrdf_sample->wo)), 1.f);
+    auto fo = fresnel_trans_dielectric(dipole_params->eta, cos_on);
+    auto cos_in = std::min(std::abs(cos(ctx->isect_i.wi)), 1.f);
+    auto fi = fresnel_trans_dielectric(dipole_params->eta, cos_on);
+
+    // Noramlization factor
+    // checkout "A Quantized-Diffusion Model for Rendering Translucent Materials" page 6
+    // equation 14
+    auto c = 1.f - fresnel_first_moment_x2(dipole_params->eta);
+
+    return ret * fo * fi / c;
 }
 
 RGBSpectrum KpDipole::eval(ShadingContext* ctx) {

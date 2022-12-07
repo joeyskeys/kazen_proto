@@ -104,9 +104,9 @@ struct BSDFSample {
 };
 
 struct BSSRDFSample {
-    Vec3f wi;
     Vec3f po;
     Vec3f wo;
+    Frame frame;
     float pdf;
     SurfaceCompositeClosure* sampled_brdf;
 };
