@@ -12,11 +12,11 @@
 // really affect much.
 // Frame is not needed, isect_i contains the frame of incoming point, closure_sample for
 // BSSRDF contains the frame of outcoming point.
-class ShadingContext {
-    void*   data;
-    OSL::ShaderGlobals* sg,
-    void*   closure_sample;
-    Accel*  accel;
-    Intersection* isect_i;
+struct ShadingContext {
+    void*               data;
+    OSL::ShaderGlobals* sg;
+    void*               closure_sample;
+    Accelerator*        accel;
+    Intersection*       isect_i;
     //Frame   frame;
 };

@@ -42,30 +42,30 @@ RGBSpectrum Diffuse::sample(ShadingContext* ctx, const Vec3f& rand) {
 RGBSpectrum Phong::eval(ShadingContext* ctx) {
     auto params = reinterpret_cast<const PhongParams*>(ctx->data);
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
-    float cos_ni = cos_theta(sample.wo);
-    float cos_no = base::dot(base::to_vec3(-params->N), base::to_vec3(sg.I));
+    float cos_ni = cos_theta(sample->wo);
+    float cos_no = base::dot(base::to_vec3(-params->N), base::to_vec3(ctx->sg->I));
     if (cos_ni > 0 && cos_no > 0) {
-        Vec3f R = base::to_vec3((2 * cos_no) * params->N + sg.I);
-        float cos_ri = base::dot(R, sample.wo);
+        Vec3f R = base::to_vec3((2 * cos_no) * params->N + ctx->sg->I);
+        float cos_ri = base::dot(R, sample->wo);
         if (cos_ri > 0) {
-            sample.pdf = (params->exponent + 1) * constants::one_div_two_pi<float>()
+            sample->pdf = (params->exponent + 1) * constants::one_div_two_pi<float>()
                 * std::pow(cos_ri, params->exponent);
             return cos_ni * (params->exponent + 2) / (params->exponent + 1);
         }
     }
 
-    return sample.pdf = 0;
+    return sample->pdf = 0;
 }
 
 RGBSpectrum Phong::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto params = reinterpret_cast<const PhongParams*>(ctx->data);
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Diffuse;
-    float cos_no = base::dot(base::to_vec3(-params->N), base::to_vec3(sg.I));
+    float cos_no = base::dot(base::to_vec3(-params->N), base::to_vec3(ctx->sg->I));
     if (cos_no > 0) {
-        Vec3f R = base::to_vec3((2 * cos_no) * params->N + sg.I);
+        Vec3f R = base::to_vec3((2 * cos_no) * params->N + ctx->sg->I);
         sample->wo = sample_hemisphere_with_exponent(Vec2f(rand[0], rand[1]), params->exponent);
-        auto v_cos_theta = sample.wo.y();
+        auto v_cos_theta = sample->wo.y();
         sample->wo = local_to_world(sample->wo, R);
         float cos_ni = dot(base::to_vec3(params->N), sample->wo);
         if (cos_ni > 0) {
@@ -89,7 +89,7 @@ RGBSpectrum OrenNayar::sample(ShadingContext* ctx, const Vec3f& rand) {
 RGBSpectrum Ward::eval(ShadingContext* ctx) {
     auto params = reinterpret_cast<const WardParams*>(ctx->data);
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
-    auto wi = base::to_vec3(-sg.I);
+    auto wi = base::to_vec3(-ctx->sg->I);
     auto cos_theta_i = cos_theta(wi);
     auto cos_theta_o = cos_theta(sample->wo);
     if (cos_theta_i <= 0 || cos_theta_o <= 0)
@@ -111,7 +111,7 @@ RGBSpectrum Ward::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto params = reinterpret_cast<const WardParams*>(ctx->data);
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Diffuse;
-    auto wi = base::to_vec3(-sg.I);
+    auto wi = base::to_vec3(-ctx->sg->I);
     auto cos_theta_i = cos_theta(wi);
     if (cos_theta_i <= 0)
         return 0.f;
@@ -152,8 +152,8 @@ RGBSpectrum Reflection::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto params = reinterpret_cast<const ReflectionParams*>(ctx->data);
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Specular;
-    auto n = base::to_vec3(sg.N);
-    auto i = -base::to_vec3(sg.I);
+    auto n = base::to_vec3(ctx->sg->N);
+    auto i = -base::to_vec3(ctx->sg->I);
     auto cos_theta_i = base::dot(n, i);
     if (cos_theta_i > 0) {
         sample->wo = reflect(i, n);
@@ -179,8 +179,8 @@ RGBSpectrum Refraction::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto params = reinterpret_cast<const RefractionParams*>(ctx->data);
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Specular;
-    auto n = base::to_vec3(sg.N);
-    auto i = -base::to_vec3(sg.I);
+    auto n = base::to_vec3(ctx->sg->N);
+    auto i = -base::to_vec3(ctx->sg->I);
     auto cos_theta_i = base::dot(n, i);
     auto eta = params->eta;
 
@@ -208,14 +208,14 @@ RGBSpectrum Transparent::eval(ShadingContext* ctx) {
 RGBSpectrum Transparent::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Specular;
-    sample->wo = base::to_vec3(sg.I);
+    sample->wo = base::to_vec3(ctx->sg->I);
     sample->pdf = 1.f;
     return 1.f;
 }
 
 RGBSpectrum Translucent::eval(ShadingContext* ctx) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
-    sample->pdf = std::max(base::dot(sample->wo, base::to_vec3(sg.N)), 0.f) * constants::one_div_pi<float>();
+    sample->pdf = std::max(base::dot(sample->wo, base::to_vec3(ctx->sg->N)), 0.f) * constants::one_div_pi<float>();
     return constants::one_div_pi<float>();
 }
 
@@ -223,13 +223,13 @@ RGBSpectrum Translucent::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Diffuse;
     sample->wo = -sample_hemisphere(base::head<2>(rand));
-    sample->pdf = std::max(base::dot(sample->wo, base::to_vec3(sg.N)), 0.f) * constants::one_div_pi<float>();
+    sample->pdf = std::max(base::dot(sample->wo, base::to_vec3(ctx->sg->N)), 0.f) * constants::one_div_pi<float>();
     return constants::one_div_pi<float>();
 }
 
 RGBSpectrum Emission::eval(ShadingContext* ctx) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
-    sample->pdf = std::max(base::dot(sample->wo, base::to_vec3(sg.N)), 0.f) * constants::one_div_pi<float>();
+    sample->pdf = std::max(base::dot(sample->wo, base::to_vec3(ctx->sg->N)), 0.f) * constants::one_div_pi<float>();
     return 1.f;
 }
 
@@ -237,7 +237,7 @@ RGBSpectrum Emission::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Diffuse;
     sample->wo = sample_hemisphere();
-    sample->pdf = std::max(base::dot(sample->wo, base::to_vec3(sg.N)), 0.f) * constants::one_div_pi<float>();
+    sample->pdf = std::max(base::dot(sample->wo, base::to_vec3(ctx->sg->N)), 0.f) * constants::one_div_pi<float>();
     return 1.f;
 }
 
@@ -258,7 +258,7 @@ RGBSpectrum KpMirror::eval(ShadingContext* ctx) {
 RGBSpectrum KpMirror::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Specular;
-    sample->wo = reflect(base::to_vec3(-sg.I), base::to_vec3(sg.N));
+    sample->wo = reflect(base::to_vec3(-ctx->sg->I), base::to_vec3(ctx->sg->N));
     sample->pdf = 1.f;
     return 1.f;
 }
@@ -273,15 +273,15 @@ RGBSpectrum KpDielectric::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Specular;
     sample->pdf = 1.f;
-    auto params = reinterpret_cast<const KpDielectricParams*>(data);
-    auto i = -base::to_vec3(sg.I);
-    auto n = base::to_vec3(sg.N);
+    auto params = reinterpret_cast<const KpDielectricParams*>(ctx->data);
+    auto i = -base::to_vec3(ctx->sg->I);
+    auto n = base::to_vec3(ctx->sg->N);
     auto cos_theta_i = base::dot(i, n);
     auto f = fresnel(cos_theta_i, params->ext_ior, params->int_ior);
 
     auto sp = random3f();
     if (sp.x() < f) {
-        sample.wo = reflect(i, n);
+        sample->wo = reflect(i, n);
     }
     else {
         auto fac = params->int_ior / params->ext_ior;
@@ -290,16 +290,16 @@ RGBSpectrum KpDielectric::sample(ShadingContext* ctx, const Vec3f& rand) {
             n = -n;
         }
 
-        sample.wo = refract(-i, n, fac);
+        sample->wo = refract(-i, n, fac);
     }
     return 1.f;
 }
 
 RGBSpectrum KpMicrofacet::eval(ShadingContext* ctx) {
-    auto params = reinterpret_cast<const KpMicrofacetParams*>(data);
+    auto params = reinterpret_cast<const KpMicrofacetParams*>(ctx->data);
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
-    auto wi = base::to_vec3(-sg.I);
-    auto n = base::to_vec3(sg.N);
+    auto wi = base::to_vec3(-ctx->sg->I);
+    auto n = base::to_vec3(ctx->sg->N);
     auto cos_theta_i = base::dot(wi, n);
     auto cos_theta_o = base::dot(sample->wo, n);
     if (cos_theta_i <= 0 || cos_theta_o <= 0)
@@ -318,26 +318,27 @@ RGBSpectrum KpMicrofacet::eval(ShadingContext* ctx) {
 }
 
 RGBSpectrum KpMicrofacet::sample(ShadingContext* ctx, const Vec3f& rand) {
-    sample.mode = ScatteringMode::Diffuse;
-    auto params = reinterpret_cast<const KpMicrofacetParams*>(data);
+    auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
+    sample->mode = ScatteringMode::Diffuse;
+    auto params = reinterpret_cast<const KpMicrofacetParams*>(ctx->data);
     auto ks = 1. - params->kd;
-    auto wi = base::to_vec3(-sg.I);
+    auto wi = base::to_vec3(-ctx->sg->I);
 
     if (randomf() < ks) {
         auto n = BeckmannMDF(random2f(), params->alpha);
-        sample.wo = reflect(wi, n);
+        sample->wo = reflect(wi, n);
     }
     else {
-        sample.wo = to_cosine_hemisphere(random2f());
+        sample->wo = to_cosine_hemisphere(random2f());
     }
 
-    return eval(data, sg, sample) * cos_theta(sample.wo);
+    return eval(ctx) * cos_theta(sample->wo);
 }
 
 RGBSpectrum KpEmitter::eval(ShadingContext* ctx) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->pdf = 1;
-    auto params = reinterpret_cast<const KpEmitterParams*>(data);
+    auto params = reinterpret_cast<const KpEmitterParams*>(ctx->data);
     return params->albedo;
 }
 
@@ -345,7 +346,7 @@ RGBSpectrum KpEmitter::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Diffuse;
     sample->pdf = 1;
-    auto params = reinterpret_cast<const KpEmitterParams*>(data);
+    auto params = reinterpret_cast<const KpEmitterParams*>(ctx->data);
     return params->albedo;
 }
 
@@ -355,8 +356,8 @@ static const OSL::ustring u_default("default");
 
 RGBSpectrum KpGloss::eval(ShadingContext* ctx) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
-    auto params = reinterpret_cast<const MicrofacetParams*>(data);
-    auto wi = base::to_vec3(-sg.I);
+    auto params = reinterpret_cast<const MicrofacetParams*>(ctx->data);
+    auto wi = base::to_vec3(-ctx->sg->I);
     auto cos_theta_i = cos_theta(wi);
     auto cos_theta_o = cos_theta(sample->wo);
     if (cos_theta_i <= 0 || cos_theta_o <= 0)
@@ -376,7 +377,7 @@ RGBSpectrum KpGloss::eval(ShadingContext* ctx) {
     if (params->dist == u_beckmann) {
         auto mdf = MicrofacetInterface<BeckmannDist>(wi, params->xalpha, params->yalpha);
         D = mdf.D(m);
-        G = mdf.G(sample.wo);
+        G = mdf.G(sample->wo);
         F = fresnel_refl_dielectric(params->eta, base::dot(m, wi));
         sample->pdf = mdf.pdf(m);
     }
@@ -396,7 +397,7 @@ RGBSpectrum KpGloss::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const MicrofacetParams*>(ctx->data);
-    auto wi = base::to_vec3(-sg.I);
+    auto wi = base::to_vec3(-ctx->sg->I);
     auto cos_theta_i = cos_theta(wi);
     if (cos_theta_i <= 0)
         return 0.f;
@@ -428,7 +429,7 @@ RGBSpectrum KpGloss::sample(ShadingContext* ctx, const Vec3f& rand) {
         const float G = mdf.G(sample->wo);
         const float F = fresnel_refl_dielectric(params->eta, std::abs(base::dot(m, wi)));
 
-        sample.pdf = mdf.pdf(m);
+        sample->pdf = mdf.pdf(m);
     }
 
     return D * G * F / (4.f * cos_theta_i * cos_theta(sample->wo));
@@ -436,8 +437,8 @@ RGBSpectrum KpGloss::sample(ShadingContext* ctx, const Vec3f& rand) {
 
 RGBSpectrum KpGlass::eval(ShadingContext* ctx) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
-    auto params = reinterpret_cast<const MicrofacetParams*>(data);
-    auto wi = base::to_vec3(-sg.I);
+    auto params = reinterpret_cast<const MicrofacetParams*>(ctx->data);
+    auto wi = base::to_vec3(-ctx->sg->I);
     auto cos_theta_i = cos_theta(wi);
     auto cos_theta_o = cos_theta(sample->wo);
     auto eta = params->eta;
@@ -489,7 +490,7 @@ RGBSpectrum KpGlass::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const MicrofacetParams*>(ctx->data);
-    auto wi = base::to_vec3(-sg.I);
+    auto wi = base::to_vec3(-ctx->sg->I);
     auto cos_theta_i = cos_theta(wi);
     float eta = params->eta;
     if (eta == 1.f) {
@@ -557,9 +558,9 @@ RGBSpectrum KpGlass::sample(ShadingContext* ctx, const Vec3f& rand) {
 
 RGBSpectrum KpPrincipleDiffuse::eval(ShadingContext* ctx) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
-    auto params = reinterpret_cast<const DiffuseParams*>(data);
-    auto wi = base::to_vec3(-sg.I);
-    auto n = base::to_vec3(sg.N);
+    auto params = reinterpret_cast<const DiffuseParams*>(ctx->data);
+    auto wi = base::to_vec3(-ctx->sg->I);
+    auto n = base::to_vec3(ctx->sg->N);
     auto cos_theta_o = base::dot(n, sample->wo);
     auto cos_theta_i = base::dot(n, wi);
     if (cos_theta_o <= 0 || cos_theta_i <= 0)
@@ -575,14 +576,14 @@ RGBSpectrum KpPrincipleDiffuse::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Diffuse;
     sample->wo = sample_hemisphere(base::head<2>(rand));
-    return eval(data, sg, sample);
+    return eval(ctx);
 }
 
 RGBSpectrum KpPrincipleRetro::eval(ShadingContext* ctx) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
-    auto params = reinterpret_cast<const KpPrincipleRetroParams*>(data);
-    auto wi = base::to_vec3(-sg.I);
-    auto n = base::to_vec3(sg.N);
+    auto params = reinterpret_cast<const KpPrincipleRetroParams*>(ctx->data);
+    auto wi = base::to_vec3(-ctx->sg->I);
+    auto n = base::to_vec3(ctx->sg->N);
     auto cos_theta_o = base::dot(n, sample->wo);
     auto cos_theta_i = base::dot(n, wi);
     if (cos_theta_o <= 0 || cos_theta_i <= 0)
@@ -605,7 +606,7 @@ RGBSpectrum KpPrincipleRetro::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Diffuse;
     sample->wo = sample_hemisphere(base::head<2>(rand));
-    return eval(data, sg, sample);
+    return eval(ctx);
 }
 
 RGBSpectrum KpPrincipleFakeSS::eval(ShadingContext* ctx) {
@@ -614,7 +615,7 @@ RGBSpectrum KpPrincipleFakeSS::eval(ShadingContext* ctx) {
     // TODO : read Hanrahan's paper in detail
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     auto params = reinterpret_cast<const KpPrincipleFakeSSParams*>(ctx->data);
-    auto wi = base::to_vec3(-sg.I);
+    auto wi = base::to_vec3(-ctx->sg->I);
     auto wh = base::normalize(wi + sample->wo);
     auto cos_theta_h = base::dot(wh, sample->wo);
 
@@ -623,7 +624,7 @@ RGBSpectrum KpPrincipleFakeSS::eval(ShadingContext* ctx) {
     auto schlick_weight = [](auto cos_theta_v) {
         return std::pow(1. - cos_theta_v, 5.);
     };
-    auto n = base::to_vec3(sg.N);
+    auto n = base::to_vec3(ctx->sg->N);
     auto abs_cos_theta_o = std::abs(base::dot(n, sample->wo));
     auto abs_cos_theta_i = std::abs(base::dot(n, wi));
     float fi = schlick_weight(abs_cos_theta_i);
@@ -640,14 +641,14 @@ RGBSpectrum KpPrincipleFakeSS::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Diffuse;
     sample->wo = sample_hemisphere(base::head<2>(rand));
-    return eval(data, sg, sample);
+    return eval(ctx);
 }
 
 RGBSpectrum KpPrincipleSheen::eval(ShadingContext* ctx) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     auto params = reinterpret_cast<const KpPrincipleSheenParams*>(ctx->data);
-    auto wi = base::to_vec3(-sg.I);
-    auto n = base::to_vec3(sg.N);
+    auto wi = base::to_vec3(-ctx->sg->I);
+    auto n = base::to_vec3(ctx->sg->N);
     auto cos_theta_o = base::dot(n, sample->wo);
     auto cos_theta_i = base::dot(n, wi);
     if (cos_theta_o <= 0 || cos_theta_i <= 0)
@@ -666,7 +667,7 @@ RGBSpectrum KpPrincipleSheen::sample(ShadingContext* ctx, const Vec3f& rand) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Diffuse;
     sample->wo = sample_hemisphere(base::head<2>(rand));
-    return eval(data, sg, sample);
+    return eval(ctx);
 }
 
 static RGBSpectrum disney_fresnel_eval(
@@ -681,9 +682,9 @@ static RGBSpectrum disney_fresnel_eval(
 
 RGBSpectrum KpPrincipleSpecularReflection::eval(ShadingContext* ctx) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
-    auto params = reinterpret_cast<const KpPrincipleSpecularParams*>(data);
-    auto wi = base::to_vec3(-sg.I);
-    auto n = base::to_vec3(sg.N);
+    auto params = reinterpret_cast<const KpPrincipleSpecularParams*>(ctx->data);
+    auto wi = base::to_vec3(-ctx->sg->I);
+    auto n = base::to_vec3(ctx->sg->N);
     auto cos_theta_o = base::dot(n, sample->wo);
     auto cos_theta_i = base::dot(n, wi);
     if (cos_theta_i * cos_theta_o < 0.)
@@ -700,7 +701,7 @@ RGBSpectrum KpPrincipleSpecularReflection::eval(ShadingContext* ctx) {
     auto D = std::min(4.f, mdf.D(wh));
     auto G = mdf.G(sample->wo);
     auto F = base::lerp(base::to_vec3(params->F0), RGBSpectrum{1},
-        RGBSpectrum{fresnel_schlick(params->eta, cos_om)});
+        RGBSpectrum(fresnel_schlick(params->eta, cos_om)));
     //auto F = disney_fresnel_eval(params->F0, base::dot(sample.wo, wh),
         //params->eta, params->metallic);
     //auto F = base::lerp(base::to_vec3(params->F0), RGBSpectrum{1}, schlick_weight(cos_om));
@@ -716,11 +717,11 @@ RGBSpectrum KpPrincipleSpecularReflection::sample(ShadingContext* ctx, const Vec
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
     sample->mode = ScatteringMode::Diffuse;
     auto params = reinterpret_cast<const KpPrincipleSpecularParams*>(ctx->data);
-    auto wi = base::to_vec3(-sg.I);
+    auto wi = base::to_vec3(-ctx->sg->I);
     auto mdf = MicrofacetInterface<GGXDist>(wi, params->xalpha, params->yalpha);
     const Vec3f wh = mdf.sample_m(rand);
     sample->wo = reflect(wi, wh);
-    return eval(data, sg, sample);
+    return eval(ctx);
 }
 
 // Following two functions are less general and just put it here
@@ -748,9 +749,9 @@ static inline float clearcoat_g1(const float cos_theta_v) {
 
 RGBSpectrum KpPrincipleClearcoat::eval(ShadingContext* ctx) {
     auto sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
-    auto params = reinterpret_cast<const KpPrincipleClearcoatParams*>(data);
-    auto wi = base::to_vec3(-sg.I);
-    auto n = base::to_vec3(sg.N);
+    auto params = reinterpret_cast<const KpPrincipleClearcoatParams*>(ctx->data);
+    auto wi = base::to_vec3(-ctx->sg->I);
+    auto n = base::to_vec3(ctx->sg->N);
     auto cos_theta_o = base::dot(n, sample->wo);
     auto cos_theta_i = base::dot(n, wi);
     if (cos_theta_i <= 0 || cos_theta_o <= 0)
@@ -784,10 +785,10 @@ RGBSpectrum KpPrincipleClearcoat::sample(ShadingContext* ctx, const Vec3f& rand)
     float sin_phi_v, cos_phi_v;
     sincosf(phi, &sin_phi_v, &cos_phi_v);
     Vec3f wh{sin_theta_v * cos_phi_v, cos_theta_v, sin_theta_v * sin_phi_v};
-    auto wi = base::to_vec3(-sg.I);
-    sample.wo = reflect(wi, wh);
+    auto wi = base::to_vec3(-ctx->sg->I);
+    sample->wo = reflect(wi, wh);
 
-    return eval(data, sg, sample);
+    return eval(ctx);
 }
 
 RGBSpectrum KpPrincipleBSSRDF::eval(ShadingContext* ctx) {
@@ -839,5 +840,5 @@ RGBSpectrum KpPrincipleBSSRDF::sample(ShadingContext* ctx, const Vec3f& rand) {
     // traced BSSRDF wo is calculated in the volume integrator.
     sample->wo = sample_hemisphere(Vec2f{u, rand[2]});
 
-    return eval(data, sg, sample);
+    return eval(ctx);
 }
