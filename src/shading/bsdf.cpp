@@ -13,10 +13,11 @@
 
 using OSL::TypeDesc;
 
-RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& sp) const {
+//RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& sp) const {
+RGBSpectrum CompositeClosure::sample(ShadingContext* ctx, const Vec4f& sp) const {
     float acc = 0;
     RGBSpectrum ret{0};
-    auto bsdf_sample = reinterpret_cast<BSDFSample*>(sample);
+    auto bsdf_sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
 
     /*
         * The mixture bsdf implementation differs between renderers.
@@ -33,8 +34,8 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, void* sample,
     if (get_bsdf_sample_func(id) == nullptr)
         return ret;
 
-    ret = weights[idx] * get_bsdf_sample_func(id)(closure_params[idx], sg,
-        *bsdf_sample, base::head<3>(sp)) / pdfs[idx];
+    ctx->data = closure_params[idx];
+    ret = weights[idx] * get_bsdf_sample_func(id)(ctx, base::head<3>(sp)) / pdfs[idx];
     bsdf_sample->pdf *= pdfs[idx];
 
     // Add up contributions from other bsdfs
@@ -43,8 +44,8 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, void* sample,
         float bsdf_pdf = 0;
         auto other_id = closure_ids[i];
         BSDFSample other_sample = *bsdf_sample;
-        RGBSpectrum bsdf_weight = weights[i] * get_bsdf_eval_func(other_id)(
-            closure_params[i], sg, other_sample);
+        ctx->data = closure_params[i];
+        RGBSpectrum bsdf_weight = weights[i] * get_bsdf_eval_func(other_id)(ctx);
         //power_heuristic(&ret, &sample.pdf, bsdf_weight, other_sample.pdf, pdfs[i]);
         ret += bsdf_weight;
         bsdf_sample->pdf += pdfs[i] * other_sample.pdf;
@@ -53,15 +54,16 @@ RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, void* sample,
     return ret;
 };
 
-RGBSpectrum CompositeClosure::eval(const OSL::ShaderGlobals& sg, void* sample) const {
+//RGBSpectrum CompositeClosure::eval(const OSL::ShaderGlobals& sg, void* sample) const {
+RGBSpectrum CompositeClosure::eval(ShadingContext* ctx) const {
     RGBSpectrum ret{0};
     float pdf = 0;
-    auto bsdf_sample = reinterpret_cast<BSDFSample*>(sample);
+    auto bsdf_sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
 
     for (int i = 0; i < closure_count; i++) {
         auto id = closure_ids[i];
-        RGBSpectrum bsdf_weight = weights[i] * get_bsdf_eval_func(id)(
-            closure_params[i], sg, *bsdf_sample);
+        ctx->data = closure_params[i];
+        RGBSpectrum bsdf_weight = weights[i] * get_bsdf_eval_func(id)(ctx);
         //power_heuristic(&ret, &pdf, bsdf_weight, sample.pdf, pdfs[i]);
         ret += bsdf_weight;
         pdf += pdfs[i] * bsdf_sample->pdf;
@@ -71,18 +73,19 @@ RGBSpectrum CompositeClosure::eval(const OSL::ShaderGlobals& sg, void* sample) c
     return ret;
 }
 
-RGBSpectrum SubsurfaceCompositeClosure::sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const {
+//RGBSpectrum SubsurfaceCompositeClosure::sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const {
+RGBSpectrum SubsurfaceCompositeClosure::sample(ShadingContext* ctx, const Vec4f& rand) const {
     float acc = 0;
     RGBSpectrum ret{0};
-    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(sample);
+    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
 
     uint idx = rand[3] * 0.9999999f * closure_count;
     auto id = closure_ids[idx];
     if (get_bssrdf_sample_func(id) == nullptr)
         return ret;
 
-    ret = weights[idx] * get_bssrdf_sample_func(id)(closure_params[idx], sg,
-        *bssrdf_sample, base::head<3>(rand)) / pdfs[idx];
+    ctx->data = closure_params[idx];
+    ret = weights[idx] * get_bssrdf_sample_func(id)(ctx, rand) / pdfs[idx];
     bssrdf_sample->pdf *= pdfs[idx];
 
     // Add up contributions from other bsdfs
@@ -91,8 +94,8 @@ RGBSpectrum SubsurfaceCompositeClosure::sample(const OSL::ShaderGlobals& sg, voi
         float bsdf_pdf = 0;
         auto other_id = closure_ids[i];
         BSSRDFSample other_sample = *bssrdf_sample;
-        RGBSpectrum bsdf_weight = weights[i] * get_bssrdf_eval_func(other_id)(
-            closure_params[i], sg, other_sample);
+        ctx->data = closure_params[i];
+        RGBSpectrum bsdf_weight = weights[i] * get_bssrdf_eval_func(other_id)(ctx);
         ret += bsdf_weight;
         bssrdf_sample->pdf += pdfs[i] * other_sample.pdf;
     }
@@ -100,15 +103,17 @@ RGBSpectrum SubsurfaceCompositeClosure::sample(const OSL::ShaderGlobals& sg, voi
     return ret;
 }
 
-RGBSpectrum SubsurfaceCompositeClosure::eval(const OSL::ShaderGlobals& sg, void* sample) const {
+//RGBSpectrum SubsurfaceCompositeClosure::eval(const OSL::ShaderGlobals& sg, void* sample) const {
+RGBSpectrum SubsurfaceCompositeClosure::eval(ShadingContext* ctx) const {
     RGBSpectrum ret{0};
     float pdf = 0;
-    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(sample);
+    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
 
     for (int i = 0; i < closure_count; i++) {
         auto id = closure_ids[i];
+        ctx->data = closure_params[i];
         RGBSpectrum bsdf_weight = weights[i] * get_bssrdf_eval_func(id)(
-            closure_params[i], sg, *bssrdf_sample);
+            ctx);
         //power_heuristic(&ret, &pdf, bsdf_weight, sample.pdf, pdfs[i]);
         ret += bsdf_weight;
         pdf += pdfs[i] * bssrdf_sample->pdf;

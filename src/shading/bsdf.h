@@ -10,6 +10,7 @@
 #include "core/hitable.h"
 #include "core/intersection.h"
 #include "core/spectrum.h"
+#include "shading/context.h"
 
 enum ClosureID {
     /************
@@ -183,8 +184,10 @@ public:
     }
 
     // Sample type may differ, make these function pure virtual ones
-    virtual RGBSpectrum sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const;
-    virtual RGBSpectrum eval(const OSL::ShaderGlobals& sg, void* sample) const;
+    //virtual RGBSpectrum sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const;
+    //virtual RGBSpectrum eval(const OSL::ShaderGlobals& sg, void* sample) const;
+    virtual RGBSpectrum sample(ShadingContext*, const Vec4f&) const;
+    virtual RGBSpectrum eval(ShadingContext*) const;
 
 protected:
     uint closure_count, byte_count;
@@ -202,8 +205,10 @@ class SurfaceCompositeClosure : public CompositeClosure {
 
 class SubsurfaceCompositeClosure : public CompositeClosure {
 public:
-    RGBSpectrum sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const override;
-    RGBSpectrum eval(const OSL::ShaderGlobals& sg, void* sample) const override;
+    //RGBSpectrum sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const override;
+    //RGBSpectrum eval(const OSL::ShaderGlobals& sg, void* sample) const override;
+    RGBSpectrum sample(ShadingContext*, const Vec4f&) const override;
+    RGBSpectrum eval(ShadingContext*) const override;
 };
 
 class EmissionCompositeClosure : public CompositeClosure {
