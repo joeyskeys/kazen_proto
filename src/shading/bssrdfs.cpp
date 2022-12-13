@@ -5,23 +5,24 @@
 #include "shading/bssrdfs.h"
 #include "shading/context.h"
 
-static bool find_po(ShadingContext* ctx, bssrdf_profile_sample_func& profile_func, const Vec4f& rand) {
+static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profile_func, const Vec4f& rand) {
     auto dipole_params = reinterpret_cast<KpDipoleParams*>(ctx->data);
     auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
 
     // Choose a projection axis
     Frame frame;
+    auto isect_frame = ctx->isect_i->frame;
     float u = rand[0];
     if (u < 0.5f) {
-        frame = Frame(ctx->frame.s, ctx->frame.t, ctx->frame.n);
+        frame = Frame(isect_frame.s, isect_frame.t, isect_frame.n);
         u = u * 2;
     }
     else if (u < 0.75f) {
-        frame = Frame(ctx->frame.t, ctx->frame.n, ctx->frame.s);
+        frame = Frame(isect_frame.t, isect_frame.n, isect_frame.s);
         u = (u - 0.5f) * 4;
     }
     else {
-        frame = Frame(ctx->frame.n, ctx->frame.s, ctx->frame.t);
+        frame = Frame(isect_frame.n, isect_frame.s, isect_frame.t);
         u = (u - 0.75f) * 4;
     }
 
@@ -29,7 +30,7 @@ static bool find_po(ShadingContext* ctx, bssrdf_profile_sample_func& profile_fun
     // Not enough random number here available, so reuse one from frame sampling
     // But in the coming bsdf sampling, we still need another Vec3 random numbers
     size_t ch = 3 * 0.99999f * u;
-    const float disk_radius = profile_func(ctx.data, ch, rand[1]);
+    const float disk_radius = profile_func(ctx->data, ch, rand[1]);
 
     if (disk_radius == 0.f)
         return false;
@@ -66,31 +67,31 @@ static bool find_po(ShadingContext* ctx, bssrdf_profile_sample_func& profile_fun
     }
     else {
         uint idx = rand[3] * max_intersection_cnt * 0.999999f;
-        bssrdf_sample->po = isects[idx];
+        bssrdf_sample->po = isects[idx].P;
         return true;
     }
 }
 
-static inline float sample_standard_dipole_func(const void* data, uint32_t ch, const float u) {
-    auto dipole_params = reinterpret_cast<KpDipoleParams*>(data)
+static inline float sample_standard_dipole_func(void* data, uint32_t ch, const float u) {
+    auto dipole_params = reinterpret_cast<KpDipoleParams*>(data);
     // TODO : We need to sample a channel, use fixed first channel for now
     return sample_exponential_distribution(dipole_params->sigma_tr[ch], u);
 }
 
-static RGBSpectrum sample_dipole(ShadingContext* ctx, bssrdf_profile_sample_func& profile_sample_func,
+static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sample_func& profile_sample_func,
     const Vec4f& rand)
 {
-    auto found_po = find_po(ctx, profile_samplefunc, rand);
+    auto found_po = find_po(ctx, profile_sample_func, rand);
     if (!found_po)
         return 0;
 
     auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
     // We need to unify the interfaces now
-    auto f = bssrdf_sample->sampled_brdf->sample(ctx, base::head<3>(rand));
+    auto f = bssrdf_sample->sampled_brdf->sample(ctx, rand);
     return f;
 }
 
-static RGBSpectrum eval_standard_dipole_func(const void* data, const Vec3f& pi,
+static RGBSpectrum eval_standard_dipole_func(void* data, const Vec3f& pi,
     const Vec3f& wi, const Vec3f& po, const Vec3f& wo)
 {
     auto params = reinterpret_cast<KpDipoleParams*>(data);
@@ -129,19 +130,19 @@ static RGBSpectrum eval_standard_dipole_func(const void* data, const Vec3f& pi,
     return constants::one_div_pi<float>() * 0.25 * (kr * er - kv * ev);
 }
 
-static RGBSpectrum eval_dipole(ShadingContext* ctx, bssrdf_profile_eval_func& profile_eval_func)
+static RGBSpectrum eval_dipole(ShadingContext* ctx, const bssrdf_profile_eval_func& profile_eval_func)
 {
     auto dipole_params = reinterpret_cast<KpDipoleParams*>(ctx->data);
     auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
-    auto ret = profile_eval_func(ctx->data, Vec3f(0.f), bssrdf_sample->wi,
+    auto ret = profile_eval_func(ctx->data, Vec3f(0.f), ctx->isect_i->wi,
         bssrdf_sample->po, bssrdf_sample->wo);
 
     // We have a problem here, since bssrdf involes "two shading point", we'll have
     // two normals and two directions(for wi & wo). Should we still use the shading
     // space representation of directions?
-    auto cos_on = std::min(std::abs(cos(bssrdf_sample->wo)), 1.f);
+    auto cos_on = std::min(std::abs(cos_theta(bssrdf_sample->wo)), 1.f);
     auto fo = fresnel_trans_dielectric(dipole_params->eta, cos_on);
-    auto cos_in = std::min(std::abs(cos(ctx->isect_i.wi)), 1.f);
+    auto cos_in = std::min(std::abs(cos_theta(ctx->isect_i->wi)), 1.f);
     auto fi = fresnel_trans_dielectric(dipole_params->eta, cos_on);
 
     // Noramlization factor
@@ -153,7 +154,7 @@ static RGBSpectrum eval_dipole(ShadingContext* ctx, bssrdf_profile_eval_func& pr
 }
 
 RGBSpectrum KpDipole::eval(ShadingContext* ctx) {
-    return eval_dipole(ctx, eval_standard_dipole_func)
+    return eval_dipole(ctx, eval_standard_dipole_func);
 }
 
 RGBSpectrum KpDipole::sample(ShadingContext* ctx, const Vec4f& rand) {
