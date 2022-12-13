@@ -12,11 +12,13 @@
 #include "core/light.h"
 #include "core/light_path.h"
 #include "core/sampler.h"
+#include "shading/context.h"
 #include "shading/renderservices.h"
 
 class Scene;
 class Camera;
 class Film;
+class ShadingContext;
 
 class Integrator {
 public:
@@ -74,6 +76,8 @@ public:
     OSL::ShaderGroupRef     background_shader;
     OSL::PerThreadInfo*     thread_info;
     OSL::ShadingContext*    ctx;
+    // This is somewhat redundant, consider put osl ctx into the ctx
+    mutable ShadingContext  shading_ctx;
 };
 
 class WhittedIntegrator : public OSLBasedIntegrator {

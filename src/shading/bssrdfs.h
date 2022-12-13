@@ -1,7 +1,7 @@
 #pragma once
 
 #include <boost/math/constants/constants.hpp>
-#include <OSL/oslclosure.h>
+#include <OSL/genclosure.h>
 
 #include "shading/bssrdfs.h"
 #include "shading/fresnel.h"
