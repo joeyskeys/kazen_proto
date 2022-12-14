@@ -15,15 +15,17 @@ float weak_white_furnace_test(const MDFInterface& mdf,
 {
     auto V = mdf.wi;
     float integral = 0.f;
+    float dtheta = 0.05f;
+    float dphi = 0.05f;
 
-    for (int i = 0; i < theta_span; ++i) {
-        auto theta = i / theta_span * constants::half_pi<float>();
-        double c_theta, s_theta;
-        sincos(theta, &c_theta, &s_theta);
-        for (int j = 0; j < phi_span; ++j) {
-            auto phi = j / phi_span * constants::two_pi<float>();
-            double c_phi, s_phi;
-            sincos(phi, &c_phi, &s_phi);
+    for (int i = 0; i * dtheta < constants::pi<float>(); ++i) {
+        auto theta = i * dtheta;
+        float c_theta, s_theta;
+        sincosf(theta, &s_theta, &c_theta);
+        for (int j = 0; j * dphi < constants::two_pi<float>(); ++j) {
+            auto phi = j * dphi;
+            float c_phi, s_phi;
+            sincosf(phi, &s_phi, &c_phi);
             auto L = Vec3f{c_phi * s_theta, c_theta, s_phi * s_theta};
             auto H = base::normalize(V + L);
 
@@ -33,5 +35,10 @@ float weak_white_furnace_test(const MDFInterface& mdf,
         }
     }
 
-    return integral / theta_span / phi_span;
+    return integral * dtheta * dphi;
 }
+
+float fixed_beckmann_white_furnace_test(const float, const float);
+float fixed_beckmann_aniso_white_furnace_test(const float, const float, const float);
+float fixed_ggx_white_furnace_test(const float, const float);
+float fixed_ggx_white_furnace_test(const float, const float, const float);

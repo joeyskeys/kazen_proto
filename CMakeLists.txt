@@ -114,6 +114,7 @@ set(CORE_HEADERS
     src/shading/querier.h
     src/shading/renderservices.h
     src/shading/shader.h
+    src/shading/white_furnace.h
     src/shading/microfacet.h)
 
 set(CORE_SOURCES
@@ -136,6 +137,7 @@ set(CORE_SOURCES
     src/shading/querier.cpp
     src/shading/renderservices.cpp
     src/shading/shader.cpp
+    src/shading/white_furnace.cpp
     src/shading/microfacet.cpp)
 
 add_library(kazen_proto_lib
