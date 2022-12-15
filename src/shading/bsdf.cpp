@@ -167,6 +167,9 @@ void register_closures(OSL::ShadingSystem *shadingsys) {
     register_closure<KpPrincipleSheen>(*shadingsys);
     register_closure<KpPrincipleSpecularReflection>(*shadingsys);
     register_closure<KpPrincipleClearcoat>(*shadingsys);
+
+    // BSSRDFs
+    register_closure<KpDipole>(*shadingsys);
 }
 
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only) {

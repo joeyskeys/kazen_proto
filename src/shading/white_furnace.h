@@ -10,8 +10,7 @@ using base::Vec3f;
 namespace constants = boost::math::constants;
 
 template <typename MDFInterface>
-float weak_white_furnace_test(const MDFInterface& mdf,
-    const uint32_t phi_span, const uint32_t theta_span)
+float weak_white_furnace_test(const MDFInterface& mdf)
 {
     auto V = mdf.wi;
     float integral = 0.f;

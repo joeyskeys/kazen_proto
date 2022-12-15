@@ -1,0 +1,25 @@
+surface rough
+    [[ string description = "Wax like material" ]]
+(
+    color Cs = color(0.7, 0.5, 0.4)
+        [[  string description = "Base color",
+            float UImin = 0, float UImax = 1 ]],
+    color s = 1
+        [[  string description = "Specular color",
+            float UImin = 0, float UImax = 1 ]],
+    color tr = color(0.5, 0.6, 0.7)
+        [[  string description = "Translucent color",
+            float UImin = 0, float UImax = 1 ]],
+    float max_radius = 1.5
+        [[  string description = "Max diffusion radius",
+            float UImin = 0, float UImax = 10 ]],
+    float eta = 1.5
+        [[  string description = "Index of refraction",
+            float UImin = 0, float UImax = 2 ]],
+    float g = 0.5
+        [[  string description = "Scattering coefficient",
+            float UImin = 0, float UImax = 1 ]]
+)
+{
+    Ci = Cs * (diffuse(N) + kp_dipole(N, Cs, s, tr, max_radius, eta, g));
+}
