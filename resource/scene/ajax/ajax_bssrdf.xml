@@ -19,7 +19,7 @@
     </Materials>
 
     <Objects>
-        <Mesh filename="string meshes/ajax.obj" shader_name="rough"/>
+        <Mesh filename="string meshes/ajax.obj" shader_name="wax_mat"/>
         <Mesh filename="string meshes/light.obj" shader_name="emitter" is_light="bool true" radiance="float3 1 1 1" intensity="float 20"/>
     </Objects>
 

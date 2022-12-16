@@ -617,18 +617,24 @@ void TriangleMesh::post_hit(Intersection& isect) const {
     else
         isect.shading_normal = isect.N;
 
-    auto uv1 = uvs[idx.x()], uv2 = uvs[idx.y()], uv3 = uvs[idx.z()];
-    isect.uv = bary_x * uv1 + isect.uv[0] * uv2 + isect.uv[1] * uv3;
-    auto duv13 = uv1 - uv3, duv23 = uv2 - uv3;
-    auto dp13 = v1 - v3, dp23 = v2 - v3;
-    float determinant = duv13[0] * duv23[1] - duv13[1] * duv23[0];
-    bool degenerate = std::abs(determinant) < 1e-8;
-    if (!degenerate) {
-        float inv = 1 / determinant;
-        isect.dpdu = base::normalize((duv23[1] * dp13 - duv13[1] * dp23) * inv);
-        isect.dpdv = base::normalize((-duv23[0] * dp13 + duv13[0] * dp23) * inv);
+    if (uvs.size() > 0) {
+        auto uv1 = uvs[idx.x()], uv2 = uvs[idx.y()], uv3 = uvs[idx.z()];
+        isect.uv = bary_x * uv1 + isect.uv[0] * uv2 + isect.uv[1] * uv3;
+        auto duv13 = uv1 - uv3, duv23 = uv2 - uv3;
+        auto dp13 = v1 - v3, dp23 = v2 - v3;
+        float determinant = duv13[0] * duv23[1] - duv13[1] * duv23[0];
+        bool degenerate = std::abs(determinant) < 1e-8;
+        if (!degenerate) {
+            float inv = 1 / determinant;
+            isect.dpdu = base::normalize((duv23[1] * dp13 - duv13[1] * dp23) * inv);
+            isect.dpdv = base::normalize((-duv23[0] * dp13 + duv13[0] * dp23) * inv);
+        }
+        if (degenerate || base::cross(isect.dpdu, isect.dpdv).length_squared() == 0) {
+            isect.dpdu = isect.tangent;
+            isect.dpdv = isect.bitangent;
+        }
     }
-    if (degenerate || base::cross(isect.dpdu, isect.dpdv).length_squared() == 0) {
+    else {
         isect.dpdu = isect.tangent;
         isect.dpdv = isect.bitangent;
     }
@@ -682,10 +688,13 @@ static std::shared_ptr<TriangleMesh> process_mesh(aiMesh* mesh, const aiScene* s
     }
 
     // Now only checks the first uv set
-    auto uv_cnt = mesh->mNumVertices;
-    std::vector<Vec2f> uvs(mesh->mNumVertices);
-    for (uint i = 0; i < uv_cnt; i++) {
-        uvs[i] = Vec2f{mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y};
+    std::vector<Vec2f> uvs;
+    if (mesh->mTextureCoords[0]) {
+        auto uv_cnt = mesh->mNumVertices;
+        uvs.resize(mesh->mNumVertices);
+        for (uint i = 0; i < uv_cnt; i++) {
+            uvs[i] = Vec2f{mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y};
+        }
     }
 
     for (uint i = 0; i < mesh->mNumFaces; i++) {
