@@ -1,3 +1,9 @@
+find_package(Imath CONFIG)
+if (NOT TARGET Imath::Imath)
+    find_package(Ilmbase CONFIG)
+endif()
+find_package(OpenEXR CONFIG)
+
 find_path(OPENEXR_INCLUDE_DIR OpenEXR/OpenEXRConfig.h
     HINTS
         ${OPENEXR_ROOT}
@@ -7,57 +13,58 @@ find_path(OPENEXR_INCLUDE_DIR OpenEXR/OpenEXRConfig.h
     PATH_SUFFIXES
         include)
 
+
 find_library(OPENEXR_HALF_LIBRARY Half
     HINTS
-        /usr
-        /usr/local
         ${OPENEXR_ROOT}
         $ENV{OPENEXR_ROOT}
+        /usr
+        /usr/local
     PATH_SUFFIXES
         lib)
     
 find_library(OPENEXR_ILMTHREAD_LIBRARY IlmThread
     HINTS
-        /usr
-        /usr/local
         ${OPENEXR_ROOT}
         $ENV{OPENEXR_ROOT}
+        /usr
+        /usr/local
     PATH_SUFFIXES
         lib)
 
 find_library(OPENEXR_ILMIMF_LIBRARY IlmImf
     HINTS
-        /usr
-        /usr/local
         ${OPENEXR_ROOT}
         $ENV{OPENEXR_ROOT}
+        /usr
+        /usr/local
     PATH_SUFFIXES
         lib)
 
 find_library(OPENEXR_ILMIMFUTIL_LIBRARY IlmImfUtil
     HINTS
-        /usr
-        /usr/local
         ${OPENEXR_ROOT}
         $ENV{OPENEXR_ROOT}
+        /usr
+        /usr/local
     PATH_SUFFIXES
         lib)
 
 find_library(OPENEXR_IEX_LIBRARY Iex
     HINTS
-        /usr
-        /usr/local
         ${OPENEXR_ROOT}
         $ENV{OPENEXR_ROOT}
+        /usr
+        /usr/local
     PATH_SUFFIXES
         lib)
 
 find_library(OPENEXR_IEXMATH_LIBRARY IexMath
     HINTS
-        /usr
-        /usr/local
         ${OPENEXR_ROOT}
         $ENV{OPENEXR_ROOT}
+        /usr
+        /usr/local
     PATH_SUFFIXES
         lib)
 

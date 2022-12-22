@@ -1,5 +1,7 @@
 find_path(OIIO_INCLUDE_DIRS OpenImageIO/imageio.h
     HINTS
+        ${OIIO_ROOT}
+        $ENV{OIIO_ROOT}
         /usr
         /usr/local
     PATH_SUFFIXES
@@ -7,6 +9,8 @@ find_path(OIIO_INCLUDE_DIRS OpenImageIO/imageio.h
 
 find_library(OIIO_LIB OpenImageIO
     HINTS
+        ${OIIO_ROOT}
+        $ENV{OIIO_ROOT}
         /usr
         /usr/local
     PATH_SUFFIXES

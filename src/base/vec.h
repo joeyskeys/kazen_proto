@@ -448,14 +448,14 @@ public:
     Vec(const OSL::Vec2& v) {
         static_assert(N == 2);
 
-        for (int i = 0; i < N; i++)
+        for (size_t i = 0; i < N; i++)
             arr[i] = v[i];
     }
 
     Vec(const OSL::Vec3& v) {
         static_assert(N >= 3);
 
-        for (int i = 0; i < N; i++)
+        for (size_t i = 0; i < N; i++)
             arr[i] = v[i];
 
         if constexpr (N == 4)

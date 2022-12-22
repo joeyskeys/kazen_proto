@@ -4,8 +4,6 @@
 #include <iostream>
 #include <type_traits>
 
-#include <OSL/Imathx/ImathMatrix.h>
-
 #include "base/vec.h"
 #include "base/utils.h"
 
