@@ -95,6 +95,7 @@ void OSLBasedIntegrator::setup(Scene* scene) {
     thread_info = shadingsys->create_thread_info();
     ctx = shadingsys->get_context(thread_info);
     shading_ctx.accel = scene->accelerator.get();
+    shading_ctx.shaders = shaders;
 }
 
 WhittedIntegrator::WhittedIntegrator()
@@ -419,19 +420,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         if (shader_ptr == nullptr)
             throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", its.shader_name));
 
-        // Currently we only add bssrdf support for path integrator
-        OSL::ShaderGroupRef bssrdf_ptr = nullptr;
-        if (its.bssrdf_name.size() > 0) {
-            bssrdf_ptr = (*shaders)[its.bssrdf_name];
-
-            // BSSRDF is not necessary but nullptr for given bssrdf name indicates
-            // there's a problem
-            if (bssrdf_ptr)
-                throw std::runtime_error(fmt::format("Bssrdf for name : {} does not exist..", its.bssrdf_name));
-        }
-
         shadingsys->execute(*ctx, *shader_ptr, sg);
-        ShadingResult ret, light_ret;
+        ShadingResult ret, light_ret, bssrdf_ret;
         process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
         ret.surface.compute_pdfs(sg, throughput, false);
 
@@ -527,7 +517,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         // And also the bssrdf model is kinda different.
         // This results the difference in the integrator.
         // TODO : Look into direct & indirect subsurface scattering comp.
-        if (bssrdf_ptr) {
+        if (ret.bssrdf) {
             auto sp = sampler_ptr->random4f();
             // Question : put bssrdf closure into shading result or create
             // aother shading result?
@@ -539,7 +529,17 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
             // Li += throughput * uniform_sample_light();
 
             sp = sampler_ptr->random4f();
-            auto brdf_f = bssrdf_sample.sampled_brdf->sample(&shading_ctx, sp);
+            //auto brdf_f = bssrdf_sample.sampled_brdf->sample(&shading_ctx, sp);
+            shadingsys->execute(*ctx, *(bssrdf_sample.sampled_shader), sg);
+            process_closure(bssrdf_ret, sg.Ci, RGBSpectrum{1}, false);
+            bssrdf_sample.sampled_closure = &bssrdf_ret.surface;
+            ShadingContext bssrdf_ctx(shading_ctx);
+            bssrdf_ctx.closure_sample = &bsdf_sample;
+            Intersection isect_o;
+            isect_o.P = bssrdf_sample.po;
+            bssrdf_ctx.isect_i = &isect_o;
+
+            auto brdf_f = bssrdf_sample.sampled_closure->sample(&bssrdf_ctx, sp);
             throughput *= brdf_f;
             // how to convert this to world space
             //ray = Ray(bssrdf_sample.po, bssrdf_sample.wo);

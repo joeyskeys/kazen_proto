@@ -109,7 +109,8 @@ struct BSSRDFSample {
     Vec3f wo;
     Frame frame;
     float pdf;
-    SurfaceCompositeClosure* sampled_brdf;
+    SurfaceCompositeClosure* sampled_closure;
+    OSL::ShaderGroup* sampled_shader;
 };
 
 static inline void power_heuristic(RGBSpectrum* w, float* pdf, RGBSpectrum ow, float opdf, float b) {
@@ -188,6 +189,10 @@ public:
     //virtual RGBSpectrum eval(const OSL::ShaderGlobals& sg, void* sample) const;
     virtual RGBSpectrum sample(ShadingContext*, const Vec4f&) const;
     virtual RGBSpectrum eval(ShadingContext*) const;
+
+    operator bool() const {
+        return closure_count > 0;
+    }
 
 protected:
     uint closure_count, byte_count;

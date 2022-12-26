@@ -18,5 +18,5 @@ struct ShadingContext {
     void*               closure_sample;
     Accelerator*        accel;
     Intersection*       isect_i;
-    //Frame   frame;
+    std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
 };

@@ -1,3 +1,4 @@
+#include <OSL/oslexec.h>
 
 #include "base/utils.h"
 #include "base/vec.h"
@@ -44,7 +45,7 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
 
     auto h = std::sqrt(square(dipole_params->max_radius) - square(disk_radius));
     auto hn = h * frame.n;
-    auto entry_pt = disk_point + hn;
+    auto entry_pt = ctx->isect_i->P + disk_point + hn;
     auto ray_dir = base::normalize(-hn);
 
     const static int max_intersection_cnt = 10;
@@ -53,7 +54,8 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     auto start_pt = entry_pt;
     for (int i = 0; i < max_intersection_cnt; i++) {
         Ray r(start_pt, ray_dir);
-        ctx->accel->intersect(r, isects[i]);
+        if (!ctx->accel->intersect(r, isects[i]))
+            break;
         start_pt = isects[i].P;
         ++found_intersection;
     }
@@ -63,13 +65,13 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
         return false;
     else if (found_intersection == 1) {
         bssrdf_sample->po = isects[0].P;
-        return true;
     }
     else {
-        uint idx = rand[3] * max_intersection_cnt * 0.999999f;
+        uint idx = rand[3] * found_intersection * 0.999999f;
         bssrdf_sample->po = isects[idx].P;
-        return true;
+        bssrdf_sample->sampled_shader = (*(ctx->shaders))[isects[idx].shader_name].get();
     }
+    return true;
 }
 
 static inline float sample_standard_dipole_func(void* data, uint32_t ch, const float u) {
@@ -87,7 +89,7 @@ static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sampl
 
     auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
     // We need to unify the interfaces now
-    auto f = bssrdf_sample->sampled_brdf->sample(ctx, rand);
+    auto f = bssrdf_sample->sampled_closure->sample(ctx, rand);
     return f;
 }
 

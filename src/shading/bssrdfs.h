@@ -80,12 +80,12 @@ inline bssrdf_eval_func get_bssrdf_eval_func(ClosureID id) {
     static std::array<bssrdf_eval_func, 1> eval_functions {
         KpDipole::eval
     };
-    return eval_functions[id];
+    return eval_functions[id - KpDipoleID];
 }
 
 inline bssrdf_sample_func get_bssrdf_sample_func(ClosureID id) {
     static std::array<bssrdf_sample_func, 1> sample_functions {
         KpDipole::sample
     };
-    return sample_functions[id];
+    return sample_functions[id - KpDipoleID];
 }
