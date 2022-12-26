@@ -60,7 +60,6 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 find_package(OpenEXR REQUIRED)
 include_directories(${ILMBASE_INCLUDES})
-include_directories(${IMATH_INCLUDES})
 include_directories(${OPENEXR_INCLUDES})
 
 find_package(OSL REQUIRED)
@@ -217,5 +216,5 @@ add_custom_command(
 install(FILES ${OSL_HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/shader/include)
 install(DIRECTORY ${CMAKE_BINARY_DIR}/shader DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/resource/texture DESTINATION ${CMAKE_INSTALL_PREFIX})
-install(TARGETS kazen DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/)
+#install(TARGETS kazen DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/)
 install(DIRECTORY resource/scene/ DESTINATION ${CMAKE_INSTALL_PREFIX}/scene)
