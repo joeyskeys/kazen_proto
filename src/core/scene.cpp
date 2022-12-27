@@ -13,7 +13,6 @@
 #include <frozen/set.h>
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
-#include <OpenImageIO/texture.h>
 
 #include "scene.h"
 #include "shading/shader.h"

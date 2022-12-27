@@ -70,4 +70,8 @@ TEST_CASE("Vector operations", "[single-file]") {
     // Comparison
     auto v10 = Vec3f{0, 0, 0};
     REQUIRE(is_zero(v10) == true);
+
+    // Conversion
+    OSL::Vec3 osl_v3{1, 1, 0};
+    REQUIRE(base::to_vec3(osl_v3) == v2);
 }

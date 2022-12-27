@@ -1,5 +1,6 @@
 #pragma once
 
+#include <OSL/oslconfig.h>
 #include <OSL/oslexec.h>
 #include <OSL/rendererservices.h>
 #include <OpenImageIO/texture.h>
