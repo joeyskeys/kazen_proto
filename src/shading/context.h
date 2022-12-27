@@ -1,10 +1,22 @@
 #pragma once
 
+#include <unordered_map>
+
 #include <OSL/oslclosure.h>
 
 #include "base/utils.h"
 #include "core/accel.h"
 #include "core/intersection.h"
+
+using ShaderMap = std::unordered_map<std::string, OSL::ShaderGroupRef>;
+
+struct ShadingEngine {
+    OSL::ShadingSystem*     osl_shading_sys;
+    OSL::PerThreadInfo*     osl_thread_info;
+    OSL::ShadingContext*    osl_shading_ctx;
+    OSL::ShaderGroupRef     background_shader;
+    ShaderMap*              shaders;
+};
 
 // Need to refactor the structure and make clear that where does each piece of information
 // store.
@@ -19,4 +31,5 @@ struct ShadingContext {
     Accelerator*        accel;
     Intersection*       isect_i;
     std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
+    ShadingEngine*      engine;
 };
