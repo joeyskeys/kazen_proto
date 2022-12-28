@@ -69,7 +69,7 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     else {
         uint idx = rand[3] * found_intersection * 0.999999f;
         bssrdf_sample->po = isects[idx].P;
-        bssrdf_sample->sampled_shader = (*(ctx->shaders))[isects[idx].shader_name].get();
+        bssrdf_sample->sampled_shader = (*(ctx->engine_ptr->shaders))[isects[idx].shader_name];
     }
     return true;
 }
