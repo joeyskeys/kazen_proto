@@ -89,13 +89,24 @@ RGBSpectrum AmbientOcclusionIntegrator::Li(const Ray& r, const RecordContext* rc
 
 void OSLBasedIntegrator::setup(Scene* scene) {
     Integrator::setup(scene);
+    /*
     shadingsys = scene->shadingsys.get();
     shaders = &scene->shaders;
     background_shader = scene->background_shader;
     thread_info = shadingsys->create_thread_info();
     ctx = shadingsys->get_context(thread_info);
+    */
+    shading_ctx.engine_ptr = &shading_engine;
+    shading_engine.osl_shading_sys = scene->shadingsys.get();
+    shading_engine.osl_thread_info = scene->shadingsys->create_thread_info();
+    shading_engine.osl_shading_ctx = scene->shadingsys->get_context(
+        shading_engine.osl_thread_info);
+    shading_engine.background_shader = scene->background_shader;
+    shading_engine.shaders = &scene->shaders;
+
+    
     shading_ctx.accel = scene->accelerator.get();
-    shading_ctx.shaders = shaders;
+    //shading_ctx.shaders = shaders;
 }
 
 WhittedIntegrator::WhittedIntegrator()
@@ -129,12 +140,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext* rctx) const
         }
 
         KazenRenderServices::globals_from_hit(sg, ray, isect);
-        auto shader_ptr = (*shaders)[isect.shader_name];
-        if (shader_ptr == nullptr)
-            throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", isect.shader_name));
-
-
-        shadingsys->execute(*ctx, *shader_ptr, sg);
+        shading_engine.execute(isect.shader_name, sg);
         ShadingResult ret;
         process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
         ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
@@ -161,10 +167,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext* rctx) const
             lrec.shading_pt = isect.P;
             light_dir = -lrec.get_light_dir();
             KazenRenderServices::globals_from_lightrec(lighting_sg, lrec);
-            auto light_shader = (*shaders)[light_ptr->shader_name];
-            if (light_shader == nullptr)
-                throw std::runtime_error(fmt::format("Light shader for name : {} does not exist..", light_ptr->shader_name));
-            shadingsys->execute(*ctx, *light_shader, sg);
+            shading_engine.execute(light_ptr->shader_name, sg);
             ShadingResult lighting_ret;
             process_closure(lighting_ret, sg.Ci, RGBSpectrum{1}, false);
             lighting_ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
@@ -223,9 +226,8 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext* rctx) cons
     
     while (true) {
         KazenRenderServices::globals_from_hit(sg, ray, its);
-        auto shader_ptr = (*shaders)[its.shader_name];
         ShadingResult ret;
-        shadingsys->execute(*ctx, *shader_ptr, sg);
+        shading_engine.execute(its.shader_name, sg);
         process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
         ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
         shading_ctx.sg = &sg;
@@ -280,9 +282,8 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext* rctx) const
 
     while (true) {
         KazenRenderServices::globals_from_hit(sg, ray, its);
-        auto shader_ptr = (*shaders)[its.shader_name];
         ShadingResult ret;
-        shadingsys->execute(*ctx, *shader_ptr, sg);
+        shading_engine.execute(its.shader_name, sg);
         process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
         ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
         shading_ctx.sg = &sg;
@@ -302,9 +303,8 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext* rctx) const
                 return RGBSpectrum(0.f);
 
             auto light_ptr = get_random_light(sampler_ptr->randomf(), pdf);
-            auto light_shader_ptr = (*shaders)[light_ptr->shader_name];
             ShadingResult light_ret;
-            shadingsys->execute(*ctx, *light_shader_ptr, sg);
+            shading_engine.execute(light_ptr->shader_name, sg);
             process_closure(light_ret, sg.Ci, RGBSpectrum{1}, false);
             light_ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
             light_ptr->prepare(light_ret.Le);
@@ -379,8 +379,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
     OSL::ShaderGlobals sg;
     shading_ctx.sg = &sg;
     if (!accel_ptr->intersect(r, its)) {
-        if (background_shader) {
-            shadingsys->execute(*ctx, *background_shader, sg);
+        if (shading_engine.background_shader) {
+            shading_engine.execute(shading_engine.background_shader, sg);
             KazenRenderServices::globals_from_miss(sg, r, its);
             return process_bg_closure(sg.Ci);
         }
@@ -416,11 +416,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
 
     for (int depth = 1; depth < max_depth; ++depth) {
         KazenRenderServices::globals_from_hit(sg, ray, its);
-        auto shader_ptr = (*shaders)[its.shader_name];
-        if (shader_ptr == nullptr)
-            throw std::runtime_error(fmt::format("Shader for name : {} does not exist..", its.shader_name));
-
-        shadingsys->execute(*ctx, *shader_ptr, sg);
+        shading_engine.execute(its.shader_name, sg);
         ShadingResult ret, light_ret, bssrdf_ret;
         process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
         ret.surface.compute_pdfs(sg, throughput, false);
@@ -431,8 +427,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
             //throw std::runtime_error(fmt::format("Light shader for name : {} does not existj..", light_ptr->shader_name));
         if (light_ptr != nullptr) {
             // Now we don't explicitly need a light in scene
-            auto light_shader = (*shaders)[light_ptr->shader_name];
-            shadingsys->execute(*ctx, *light_shader, sg);
+            shading_engine.execute(light_ptr->shader_name, sg);
             process_closure(light_ret, sg.Ci, RGBSpectrum{1}, false);
             light_ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
             light_ptr->prepare(light_ret.Le);
@@ -530,7 +525,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
 
             sp = sampler_ptr->random4f();
             //auto brdf_f = bssrdf_sample.sampled_brdf->sample(&shading_ctx, sp);
-            shadingsys->execute(*ctx, *(bssrdf_sample.sampled_shader), sg);
+            shading_engine.execute(bssrdf_sample.sampled_shader, sg);
             process_closure(bssrdf_ret, sg.Ci, RGBSpectrum{1}, false);
             bssrdf_sample.sampled_closure = &bssrdf_ret.surface;
             ShadingContext bssrdf_ctx(shading_ctx);
@@ -546,9 +541,9 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         }
 
         if (!accel_ptr->intersect(ray, its)) {
-            if (background_shader) {
+            if (shading_engine.background_shader) {
                 KazenRenderServices::globals_from_miss(sg, ray, its);
-                shadingsys->execute(*ctx, *background_shader, sg);
+                shading_engine.execute(shading_engine.background_shader, sg);
                 Li += throughput * process_bg_closure(sg.Ci);
             }
             p.record(EBackground, its, throughput, Li);
