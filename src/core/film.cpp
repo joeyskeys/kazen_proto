@@ -30,7 +30,7 @@ Film::Film()
     , height(600)
     , filename("test.jpg")
 {
-    output = OIIO::ImageOutput::create(filename);
+    output = OIIO::ImageOutput::create(filename.c_str());
     spec = OIIO::ImageSpec(width, height, 3, OIIO::TypeDesc::UINT8);
 }
 
@@ -39,7 +39,7 @@ Film::Film(unsigned int w, unsigned int h, const std::string& f)
     , height(h)
     , filename(f)
 {
-    output = OIIO::ImageOutput::create(f);
+    output = OIIO::ImageOutput::create(f.c_str());
 }
 
 Film::Film(unsigned int w, unsigned int h, std::string&& f)
@@ -47,7 +47,7 @@ Film::Film(unsigned int w, unsigned int h, std::string&& f)
     , height(h)
     , filename(f)
 {
-    output = OIIO::ImageOutput::create(f);
+    output = OIIO::ImageOutput::create(f.c_str());
 }
 
 bool Film::write(void* data, OIIO::TypeDesc pixel_format)
