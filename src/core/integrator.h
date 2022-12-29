@@ -71,12 +71,15 @@ public:
 
     void setup(Scene* scene) override;
 
+    /*
     OSL::ShadingSystem*     shadingsys;
     std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;
     OSL::ShaderGroupRef     background_shader;
     OSL::PerThreadInfo*     thread_info;
     OSL::ShadingContext*    ctx;
+    */
     // This is somewhat redundant, consider put osl ctx into the ctx
+    ShadingEngine           shading_engine;
     mutable ShadingContext  shading_ctx;
 };
 

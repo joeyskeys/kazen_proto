@@ -110,7 +110,7 @@ struct BSSRDFSample {
     Frame frame;
     float pdf;
     SurfaceCompositeClosure* sampled_closure;
-    OSL::ShaderGroup* sampled_shader;
+    OSL::ShaderGroupRef sampled_shader;
 };
 
 static inline void power_heuristic(RGBSpectrum* w, float* pdf, RGBSpectrum ow, float opdf, float b) {
