@@ -516,6 +516,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
             auto sp = sampler_ptr->random4f();
             // Question : put bssrdf closure into shading result or create
             // aother shading result?
+            shading_ctx.closure_sample = &bssrdf_sample;
             auto f = ret.bssrdf.sample(&shading_ctx, sp);
             if (f.is_zero() || bssrdf_sample.pdf == 0) break;
 
@@ -525,16 +526,20 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
 
             sp = sampler_ptr->random4f();
             //auto brdf_f = bssrdf_sample.sampled_brdf->sample(&shading_ctx, sp);
+            KazenRenderServices::globals_from_hit(sg, ray, shading_ctx.isect_o);
             shading_engine.execute(bssrdf_sample.sampled_shader, sg);
             process_closure(bssrdf_ret, sg.Ci, RGBSpectrum{1}, false);
             bssrdf_sample.sampled_closure = &bssrdf_ret.surface;
+            /*
             ShadingContext bssrdf_ctx(shading_ctx);
             bssrdf_ctx.closure_sample = &bsdf_sample;
             Intersection isect_o;
             isect_o.P = bssrdf_sample.po;
             bssrdf_ctx.isect_i = &isect_o;
+            */
 
-            auto brdf_f = bssrdf_sample.sampled_closure->sample(&bssrdf_ctx, sp);
+            shading_ctx.closure_sample = &bsdf_sample;
+            auto brdf_f = bssrdf_sample.sampled_closure->sample(&shading_ctx, sp);
             throughput *= brdf_f;
             // how to convert this to world space
             //ray = Ray(bssrdf_sample.po, bssrdf_sample.wo);

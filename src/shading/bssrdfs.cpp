@@ -61,36 +61,20 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     }
 
     // Randomly chose one intersection
+    uint idx = 0;
     if (found_intersection == 0)
         return false;
     else if (found_intersection == 1) {
-        bssrdf_sample->po = isects[0].P;
+        bssrdf_sample->po = isects[idx].P;
+        ctx->isect_o = isects[idx];
     }
     else {
-        uint idx = rand[3] * found_intersection * 0.999999f;
+        idx = rand[3] * found_intersection * 0.999999f;
         bssrdf_sample->po = isects[idx].P;
-        bssrdf_sample->sampled_shader = (*(ctx->engine_ptr->shaders))[isects[idx].shader_name];
+        ctx->isect_o = isects[idx];
     }
+    bssrdf_sample->sampled_shader = (*(ctx->engine_ptr->shaders))[isects[idx].shader_name];
     return true;
-}
-
-static inline float sample_standard_dipole_func(void* data, uint32_t ch, const float u) {
-    auto dipole_params = reinterpret_cast<KpDipoleParams*>(data);
-    // TODO : We need to sample a channel, use fixed first channel for now
-    return sample_exponential_distribution(dipole_params->sigma_tr[ch], u);
-}
-
-static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sample_func& profile_sample_func,
-    const Vec4f& rand)
-{
-    auto found_po = find_po(ctx, profile_sample_func, rand);
-    if (!found_po)
-        return 0;
-
-    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
-    // We need to unify the interfaces now
-    auto f = bssrdf_sample->sampled_closure->sample(ctx, rand);
-    return f;
 }
 
 static RGBSpectrum eval_standard_dipole_func(void* data, const Vec3f& pi,
@@ -155,10 +139,27 @@ static RGBSpectrum eval_dipole(ShadingContext* ctx, const bssrdf_profile_eval_fu
     return ret * fo * fi / c;
 }
 
+static inline float sample_standard_dipole_func(void* data, uint32_t ch, const float u) {
+    auto dipole_params = reinterpret_cast<KpDipoleParams*>(data);
+    return sample_exponential_distribution(dipole_params->sigma_tr[ch], u);
+}
+
+static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sample_func& profile_sample_func,
+    const bssrdf_profile_eval_func& profile_eval_func, const Vec4f& rand)
+{
+    auto found_po = find_po(ctx, profile_sample_func, rand);
+    if (!found_po)
+        return 0;
+
+    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
+    return eval_dipole(ctx, profile_eval_func);
+}
+
 RGBSpectrum KpDipole::eval(ShadingContext* ctx) {
     return eval_dipole(ctx, eval_standard_dipole_func);
 }
 
 RGBSpectrum KpDipole::sample(ShadingContext* ctx, const Vec4f& rand) {
-    return sample_dipole(ctx, sample_standard_dipole_func, rand);
+    return sample_dipole(ctx, sample_standard_dipole_func,
+        eval_standard_dipole_func, rand);
 }
