@@ -509,9 +509,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         // The former use bssrdf to sample a out-going point and get the bsdf,
         // use that bsdf to get the next direction. While in appleseed the
         // out-going direction is sampled directly in bssrdf.
-        // And also the bssrdf model is kinda different.
-        // This results the difference in the integrator.
-        // TODO : Look into direct & indirect subsurface scattering comp.
+        // Update: will take the path of appleseed, do osl execution in the
+        // bssrdf and update related fields, code now is kinda messy..
         if (ret.bssrdf) {
             auto sp = sampler_ptr->random4f();
             // Question : put bssrdf closure into shading result or create
@@ -525,18 +524,10 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
             // Li += throughput * uniform_sample_light();
 
             sp = sampler_ptr->random4f();
-            //auto brdf_f = bssrdf_sample.sampled_brdf->sample(&shading_ctx, sp);
             KazenRenderServices::globals_from_hit(sg, ray, shading_ctx.isect_o);
             shading_engine.execute(bssrdf_sample.sampled_shader, sg);
             process_closure(bssrdf_ret, sg.Ci, RGBSpectrum{1}, false);
             bssrdf_sample.sampled_closure = &bssrdf_ret.surface;
-            /*
-            ShadingContext bssrdf_ctx(shading_ctx);
-            bssrdf_ctx.closure_sample = &bsdf_sample;
-            Intersection isect_o;
-            isect_o.P = bssrdf_sample.po;
-            bssrdf_ctx.isect_i = &isect_o;
-            */
 
             shading_ctx.closure_sample = &bsdf_sample;
             auto brdf_f = bssrdf_sample.sampled_closure->sample(&shading_ctx, sp);

@@ -5,6 +5,7 @@
 #include "shading/bsdf.h"
 #include "shading/bssrdfs.h"
 #include "shading/context.h"
+#include "shading/renderservices.h"
 
 static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profile_func, const Vec4f& rand) {
     auto dipole_params = reinterpret_cast<KpDipoleParams*>(ctx->data);
@@ -64,15 +65,12 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     uint idx = 0;
     if (found_intersection == 0)
         return false;
-    else if (found_intersection == 1) {
-        bssrdf_sample->po = isects[idx].P;
-        ctx->isect_o = isects[idx];
-    }
-    else {
+    else if (found_intersection > 1) {
         idx = rand[3] * found_intersection * 0.999999f;
-        bssrdf_sample->po = isects[idx].P;
-        ctx->isect_o = isects[idx];
     }
+
+    bssrdf_sample->po = isects[idx].P;
+    ctx->isect_o = isects[idx];
     bssrdf_sample->sampled_shader = (*(ctx->engine_ptr->shaders))[isects[idx].shader_name];
     return true;
 }
@@ -120,7 +118,7 @@ static RGBSpectrum eval_dipole(ShadingContext* ctx, const bssrdf_profile_eval_fu
 {
     auto dipole_params = reinterpret_cast<KpDipoleParams*>(ctx->data);
     auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
-    auto ret = profile_eval_func(ctx->data, Vec3f(0.f), ctx->isect_i->wi,
+    auto ret = profile_eval_func(ctx->data, ctx->isect_i->P, ctx->isect_i->wi,
         bssrdf_sample->po, bssrdf_sample->wo);
 
     // We have a problem here, since bssrdf involes "two shading point", we'll have
@@ -151,7 +149,25 @@ static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sampl
     if (!found_po)
         return 0;
 
+    // We must sample out going point's brdf to get wi before we evaluate the
+    // bssrdf, which means we have to do the OSL execution here.
+    // What have to be done here is to sample the direction of out going direction
+    // Can we seperate the direction sampling and evaluation methods to have
+    // some convenience here?
+    // And we need extra random numbers here, perhaps time to pass the sampler
+    // directly?
+    
+    /*
     auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
+    OSL::ShaderGlobals sg;
+    ctx->engine_ptr->execute(bssrdf_sample->sampled_shader, sg);
+    // Shading result should have longer lifetime..
+    ShadingResult ret;
+    process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
+    bssrdf_sample->sampled_closure = &ret.surface;
+    auto brdf_f = bssrdf_sample->sampled_closure->sample(ctx, sp);
+    */
+
     return eval_dipole(ctx, profile_eval_func);
 }
 
