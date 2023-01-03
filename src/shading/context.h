@@ -42,6 +42,7 @@ struct ShadingContext {
     OSL::ShaderGlobals* sg;
     void*               closure_sample;
     Accelerator*        accel;
+    Ray*                ray;
     Intersection*       isect_i;
     Intersection        isect_o;
     //std::unordered_map<std::string, OSL::ShaderGroupRef>* shaders;

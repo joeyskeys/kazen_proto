@@ -164,15 +164,23 @@ static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sampl
     process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
     // Sampled closure is a composite closure object now
     bssrdf_sample->sampled_closure = ret.surface;
+
     BSDFSample bsdf_sample;
     auto bssrdf_sample = ctx->closure_sample;
-    // Closure data not properly setup yet..
+
     ctx->closure_sample = &bsdf_sample;
+    OSL::ShaderGlobals sg;
+    KazenRenderServices::globals_from_hit(sg, ctx->ray, ctx->isect_o);
+    auto original_sg = ctx->sg;
+    ctx->sg = &sg;
+
     bssrdf_sample->brdf_f = bssrdf_sample->sampled_closure.sample(ctx, rng);
     bssrdf_sample->brdf_pdf = bsdf_sample.pdf;
     bssrdf_sample->wo = bsdf_sample.wo;
     bssrdf_sample->frame = ctx->isect_o.frame;
+
     ctx->closure_sample = bssrdf_sample;
+    ctx->sg = original_sg;
 
     return eval_dipole(ctx, profile_eval_func);
 }

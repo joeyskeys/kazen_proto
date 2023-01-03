@@ -399,6 +399,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
     bool last_bounce_specular = true;
 
     Ray ray(r);
+    shading_ctx.ray = &ray;
 
     constexpr int max_depth = 8;
     constexpr int min_depth = 3;
