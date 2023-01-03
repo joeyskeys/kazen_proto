@@ -523,9 +523,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
             throughput *= bssrdf_sample.brdf_f / bssrdf_sample.brdf_pdf;
             // Probably have handle specular bounce here?
 
-
             // how to convert this to world space
-            //ray = Ray(bssrdf_sample.po, bssrdf_sample.wo);
             ray = Ray(bssrdf_sample.po,
                 bssrdf_sample.frame.to_world(bssrdf_sample.wo));
         }
