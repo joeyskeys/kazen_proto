@@ -14,7 +14,7 @@
 using OSL::TypeDesc;
 
 //RGBSpectrum CompositeClosure::sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& sp) const {
-RGBSpectrum CompositeClosure::sample(ShadingContext* ctx, const Vec4f& sp) const {
+RGBSpectrum CompositeClosure::sample(ShadingContext* ctx, Sampler* rng) const {
     float acc = 0;
     RGBSpectrum ret{0};
     auto bsdf_sample = reinterpret_cast<BSDFSample*>(ctx->closure_sample);
@@ -29,13 +29,13 @@ RGBSpectrum CompositeClosure::sample(ShadingContext* ctx, const Vec4f& sp) const
 
     // An extra 0.9999999 to ensure sampled index don't overflow
     //auto sp = random3f();
-    uint idx = sp[3] * 0.9999999f * closure_count;
+    uint idx = rng->randomf() * 0.9999999f * closure_count;
     auto id = closure_ids[idx];
     if (get_bsdf_sample_func(id) == nullptr)
         return ret;
 
     ctx->data = closure_params[idx];
-    ret = weights[idx] * get_bsdf_sample_func(id)(ctx, base::head<3>(sp)) / pdfs[idx];
+    ret = weights[idx] * get_bsdf_sample_func(id)(ctx, rng) / pdfs[idx];
     bsdf_sample->pdf *= pdfs[idx];
 
     // Add up contributions from other bsdfs
@@ -74,18 +74,18 @@ RGBSpectrum CompositeClosure::eval(ShadingContext* ctx) const {
 }
 
 //RGBSpectrum SubsurfaceCompositeClosure::sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const {
-RGBSpectrum SubsurfaceCompositeClosure::sample(ShadingContext* ctx, const Vec4f& rand) const {
+RGBSpectrum SubsurfaceCompositeClosure::sample(ShadingContext* ctx, Sampler* rng) const {
     float acc = 0;
     RGBSpectrum ret{0};
     auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
 
-    uint idx = rand[3] * 0.9999999f * closure_count;
+    uint idx = rng->randomf() * 0.9999999f * closure_count;
     auto id = closure_ids[idx];
     if (get_bssrdf_sample_func(id) == nullptr)
         return ret;
 
     ctx->data = closure_params[idx];
-    ret = weights[idx] * get_bssrdf_sample_func(id)(ctx, rand) / pdfs[idx];
+    ret = weights[idx] * get_bssrdf_sample_func(id)(ctx, rng) / pdfs[idx];
     bssrdf_sample->pdf *= pdfs[idx];
 
     // Add up contributions from other bsdfs

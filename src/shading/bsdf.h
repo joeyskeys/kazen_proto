@@ -9,6 +9,7 @@
 #include "base/vec.h"
 #include "core/hitable.h"
 #include "core/intersection.h"
+#include "core/sampler.h"
 #include "core/spectrum.h"
 #include "shading/context.h"
 
@@ -93,8 +94,6 @@ public:
     }
 };
 
-class SurfaceCompositeClosure;
-
 struct BSDFSample {
     // A BSDF sampling parameter pack
     Vec3f wo;
@@ -102,15 +101,6 @@ struct BSDFSample {
     float bssrdf_r;
     float bssrdf_idx;
     ScatteringMode::Mode mode;
-};
-
-struct BSSRDFSample {
-    Vec3f po;
-    Vec3f wo;
-    Frame frame;
-    float pdf;
-    SurfaceCompositeClosure* sampled_closure;
-    OSL::ShaderGroupRef sampled_shader;
 };
 
 static inline void power_heuristic(RGBSpectrum* w, float* pdf, RGBSpectrum ow, float opdf, float b) {
@@ -187,7 +177,7 @@ public:
     // Sample type may differ, make these function pure virtual ones
     //virtual RGBSpectrum sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const;
     //virtual RGBSpectrum eval(const OSL::ShaderGlobals& sg, void* sample) const;
-    virtual RGBSpectrum sample(ShadingContext*, const Vec4f&) const;
+    virtual RGBSpectrum sample(ShadingContext*, Sampler*) const;
     virtual RGBSpectrum eval(ShadingContext*) const;
 
     operator bool() const {
@@ -212,7 +202,7 @@ class SubsurfaceCompositeClosure : public CompositeClosure {
 public:
     //RGBSpectrum sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const override;
     //RGBSpectrum eval(const OSL::ShaderGlobals& sg, void* sample) const override;
-    RGBSpectrum sample(ShadingContext*, const Vec4f&) const override;
+    RGBSpectrum sample(ShadingContext*, Sampler*) const override;
     RGBSpectrum eval(ShadingContext*) const override;
 };
 
@@ -236,6 +226,17 @@ struct ShadingResult {
     // BSSRDF composite closure is a seperate part, filtered
     // out during process_closure procudure
     SubsurfaceCompositeClosure  bssrdf;
+};
+
+struct BSSRDFSample {
+    Vec3f po;
+    Vec3f wo;
+    Frame frame;
+    float pdf;
+    SurfaceCompositeClosure sampled_closure;
+    OSL::ShaderGroupRef sampled_shader;
+    Vec3f brdf_f;
+    float brdf_pdf;
 };
 
 void register_closures(OSL::ShadingSystem *shadingsys);

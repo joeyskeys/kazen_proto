@@ -151,7 +151,7 @@ RGBSpectrum WhittedIntegrator::Li(const Ray& r, const RecordContext* rctx) const
 
         BSDFSample sample;
         shading_ctx.closure_sample = &sample;
-        auto sampled_f = ret.surface.sample(&shading_ctx, sampler_ptr->random4f());
+        auto sampled_f = ret.surface.sample(&shading_ctx, sampler_ptr);
         if (sample.mode != ScatteringMode::Specular) {
             auto light_cnt = lights->size();
             if (light_cnt == 0)
@@ -245,7 +245,7 @@ RGBSpectrum PathMatsIntegrator::Li(const Ray& r, const RecordContext* rctx) cons
             return Li;
         throughput /= prob;
 
-        auto f = ret.surface.sample(&shading_ctx, sampler_ptr->random4f());
+        auto f = ret.surface.sample(&shading_ctx, sampler_ptr);
         throughput *= f;
         ray = Ray(its.P, its.to_world(sample.wo));
         if (!accel_ptr->intersect(ray, its))
@@ -295,7 +295,7 @@ RGBSpectrum PathEmsIntegrator::Li(const Ray& r, const RecordContext* rctx) const
             p.record(EEmission, its, throughput, Li);
         }
 
-        auto sampled_f = ret.surface.sample(&shading_ctx, sampler_ptr->random4f());
+        auto sampled_f = ret.surface.sample(&shading_ctx, sampler_ptr);
         if (sample.mode != ScatteringMode::Specular) {
             is_specular = false;
             auto light_cnt = lights->size();
@@ -488,8 +488,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         /* *********************************************
         * 3. Sampling material to get next direction
         * *********************************************/
-        auto sp = sampler_ptr->random4f();
-        auto f = ret.surface.sample(&shading_ctx, sp);
+        auto f = ret.surface.sample(&shading_ctx, sampler_ptr);
         last_bounce_specular = bsdf_sample.mode == ScatteringMode::Specular;
         throughput *= f;
         mpdf = bsdf_sample.pdf;
@@ -500,7 +499,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         ray.origin_dy = ray.origin + its.dpdy;
         ray.direction_dx = ray.direction_dy = ray.direction;
         
-        p.record(EReflection, its, throughput, Li, sp, ray.direction);
+        //p.record(EReflection, its, throughput, Li, sp, ray.direction);
         if (base::is_zero(throughput))
             break;
 
@@ -512,28 +511,23 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         // Update: will take the path of appleseed, do osl execution in the
         // bssrdf and update related fields, code now is kinda messy..
         if (ret.bssrdf) {
-            auto sp = sampler_ptr->random4f();
-            // Question : put bssrdf closure into shading result or create
-            // aother shading result?
             shading_ctx.closure_sample = &bssrdf_sample;
-            auto f = ret.bssrdf.sample(&shading_ctx, sp);
+            auto f = ret.bssrdf.sample(&shading_ctx, sampler_ptr);
             if (f.is_zero() || bssrdf_sample.pdf == 0) break;
 
-            throughput *= f;
-            // throughput /= bssrdf_sample.pdf;
-            // Li += throughput * uniform_sample_light();
+            throughput *= f / bssrdf_sample.pdf;
+            Li += throughput * uniform_sample_light();
 
-            sp = sampler_ptr->random4f();
-            KazenRenderServices::globals_from_hit(sg, ray, shading_ctx.isect_o);
-            shading_engine.execute(bssrdf_sample.sampled_shader, sg);
-            process_closure(bssrdf_ret, sg.Ci, RGBSpectrum{1}, false);
-            bssrdf_sample.sampled_closure = &bssrdf_ret.surface;
+            if (base::is_zero(bssrdf_sample.brdf_f) || bssrdf_sample.brdf_pdf == 0.)
+                break;
+            throughput *= bssrdf_sample.brdf_f / bssrdf_sample.brdf_pdf;
+            // Probably have handle specular bounce here?
 
-            shading_ctx.closure_sample = &bsdf_sample;
-            auto brdf_f = bssrdf_sample.sampled_closure->sample(&shading_ctx, sp);
-            throughput *= brdf_f;
+
             // how to convert this to world space
             //ray = Ray(bssrdf_sample.po, bssrdf_sample.wo);
+            ray = Ray(bssrdf_sample.po,
+                bssrdf_sample.frame.to_world(bssrdf_sample.wo));
         }
 
         if (!accel_ptr->intersect(ray, its)) {

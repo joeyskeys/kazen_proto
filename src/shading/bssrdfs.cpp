@@ -143,9 +143,9 @@ static inline float sample_standard_dipole_func(void* data, uint32_t ch, const f
 }
 
 static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sample_func& profile_sample_func,
-    const bssrdf_profile_eval_func& profile_eval_func, const Vec4f& rand)
+    const bssrdf_profile_eval_func& profile_eval_func, Sampler* rng)
 {
-    auto found_po = find_po(ctx, profile_sample_func, rand);
+    auto found_po = find_po(ctx, profile_sample_func, rng->random4f());
     if (!found_po)
         return 0;
 
@@ -157,16 +157,22 @@ static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sampl
     // And we need extra random numbers here, perhaps time to pass the sampler
     // directly?
     
-    /*
     auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
     OSL::ShaderGlobals sg;
     ctx->engine_ptr->execute(bssrdf_sample->sampled_shader, sg);
-    // Shading result should have longer lifetime..
     ShadingResult ret;
     process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
-    bssrdf_sample->sampled_closure = &ret.surface;
-    auto brdf_f = bssrdf_sample->sampled_closure->sample(ctx, sp);
-    */
+    // Sampled closure is a composite closure object now
+    bssrdf_sample->sampled_closure = ret.surface;
+    BSDFSample bsdf_sample;
+    auto bssrdf_sample = ctx->closure_sample;
+    // Closure data not properly setup yet..
+    ctx->closure_sample = &bsdf_sample;
+    bssrdf_sample->brdf_f = bssrdf_sample->sampled_closure.sample(ctx, rng);
+    bssrdf_sample->brdf_pdf = bsdf_sample.pdf;
+    bssrdf_sample->wo = bsdf_sample.wo;
+    bssrdf_sample->frame = ctx->isect_o.frame;
+    ctx->closure_sample = bssrdf_sample;
 
     return eval_dipole(ctx, profile_eval_func);
 }
@@ -175,7 +181,7 @@ RGBSpectrum KpDipole::eval(ShadingContext* ctx) {
     return eval_dipole(ctx, eval_standard_dipole_func);
 }
 
-RGBSpectrum KpDipole::sample(ShadingContext* ctx, const Vec4f& rand) {
+RGBSpectrum KpDipole::sample(ShadingContext* ctx, Sampler* rng) {
     return sample_dipole(ctx, sample_standard_dipole_func,
-        eval_standard_dipole_func, rand);
+        eval_standard_dipole_func, rng);
 }

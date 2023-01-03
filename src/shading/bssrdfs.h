@@ -49,8 +49,8 @@ static RGBSpectrum Sd(const Vec3f& pi, const Vec3f& wi, const Vec3f& po,
 }
 
 struct KpDipole {
-    static RGBSpectrum eval(ShadingContext* ctx);
-    static RGBSpectrum sample(ShadingContext* ctx, const Vec4f&);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, Sampler*);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(KpDipoleParams, N),
@@ -74,7 +74,7 @@ using bssrdf_profile_eval_func = std::function<RGBSpectrum(void*, const Vec3f&,
 using bssrdf_profile_sample_func = std::function<float(void*, uint32_t, const float)>;
 
 using bssrdf_eval_func = std::function<RGBSpectrum(ShadingContext*)>;
-using bssrdf_sample_func = std::function<RGBSpectrum(ShadingContext*, const Vec4f&)>;
+using bssrdf_sample_func = std::function<RGBSpectrum(ShadingContext*, Sampler*)>;
 
 inline bssrdf_eval_func get_bssrdf_eval_func(ClosureID id) {
     static std::array<bssrdf_eval_func, 1> eval_functions {
