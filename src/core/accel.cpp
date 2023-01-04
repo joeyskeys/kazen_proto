@@ -336,6 +336,7 @@ bool EmbreeAccel::intersect(const Ray& r, Intersection& isect) const {
     if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
         isect.ray = const_cast<Ray*>(&r);
         isect.ray_t = rayhit.ray.tfar;
+        isect.wi = -r.direction;
         isect.P = r.at(isect.ray_t);
         isect.N = normalize(Vec3f(rayhit.hit.Ng_x, rayhit.hit.Ng_y, rayhit.hit.Ng_z));
         isect.uv = Vec2f(rayhit.hit.u, rayhit.hit.v);

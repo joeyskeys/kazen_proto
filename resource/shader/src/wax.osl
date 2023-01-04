@@ -13,7 +13,7 @@ surface rough
     float max_radius = 1.5
         [[  string description = "Max diffusion radius",
             float UImin = 0, float UImax = 10 ]],
-    float eta = 1.5
+    float eta = 0.8
         [[  string description = "Index of refraction",
             float UImin = 0, float UImax = 2 ]],
     float g = 0.5
