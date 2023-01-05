@@ -232,3 +232,8 @@ inline float sample_exponential_distribution(const float t, const float u) {
     assert(u < 1);
     return -std::log(1.f - u) / t;
 }
+
+inline float exponential_distribution_pdf(const float t, const float s) {
+    assert(t >= 0.f);
+    return s * std::exp(-s * t);
+}

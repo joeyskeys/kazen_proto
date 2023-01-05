@@ -12,20 +12,22 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
 
     // Choose a projection axis
-    Frame frame;
     auto isect_frame = ctx->isect_i->frame;
     float u = rand[0];
     if (u < 0.5f) {
-        frame = Frame(isect_frame.s, isect_frame.t, isect_frame.n);
+        bssrdf_sample->frame = Frame(isect_frame.s, isect_frame.t, isect_frame.n);
         u = u * 2;
+        bssrdf_sample->pdf = 0.5f;
     }
     else if (u < 0.75f) {
-        frame = Frame(isect_frame.t, isect_frame.n, isect_frame.s);
+        bssrdf_sample->frame = Frame(isect_frame.t, isect_frame.n, isect_frame.s);
         u = (u - 0.5f) * 4;
+        bssrdf_sample->pdf = 0.25f;
     }
     else {
-        frame = Frame(isect_frame.n, isect_frame.s, isect_frame.t);
+        bssrdf_sample->frame = Frame(isect_frame.n, isect_frame.s, isect_frame.t);
         u = (u - 0.75f) * 4;
+        bssrdf_sample->pdf = 0.25f;
     }
 
     // A simple strategy to sample a channel
@@ -73,6 +75,19 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     ctx->isect_o = isects[idx];
     bssrdf_sample->sampled_shader = (*(ctx->engine_ptr->shaders))[isects[idx].shader_name];
     return true;
+}
+
+static float dipole_pdf(void* data, const float r) const {
+    auto params = reinterpret_cast<KpDipoleParams*>(data);
+    float pdf = 0.f;
+    std::array<float, 3> channel_pdfs{0.5f, 0.25f, 0.25f};
+
+    for (int i = 0; i < RGBSpectrum::Size; i++) {
+        auto sigma_tr = params->sigma_tr[i];
+        pdf += channel_pdfs[i] * sigma_tr *
+            exponential_distribution_pdf(r, sigma_tr);
+    }
+    return pdf / (constants::two_pi<float>() * r);
 }
 
 static RGBSpectrum eval_standard_dipole_func(void* data, const Vec3f& pi,
@@ -136,7 +151,9 @@ static RGBSpectrum eval_dipole(ShadingContext* ctx, const bssrdf_profile_eval_fu
     auto c = 1.f - fresnel_first_moment_x2(dipole_params->eta);
 
     // Not correct but use it for now
-    bssrdf_sample->pdf = 0.05f;
+    bssrdf_sample->pdf *= dipole_pdf(ctx->data,
+        base::length(ctx->isect_i->P - bssrdf_sample->po)) *
+        std::abs(base::dot(ctx->isect_i->wi, bssrdf_sample->frame.n));
 
     return ret * fo * fi / c;
 }
@@ -182,7 +199,7 @@ static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sampl
     bssrdf_sample->brdf_f = bssrdf_sample->sampled_closure.sample(ctx, rng);
     bssrdf_sample->brdf_pdf = bsdf_sample.pdf;
     bssrdf_sample->wo = bsdf_sample.wo;
-    bssrdf_sample->frame = ctx->isect_o.frame;
+    //bssrdf_sample->frame = ctx->isect_o.frame;
 
     ctx->data = original_data;
     ctx->closure_sample = original_sample;
