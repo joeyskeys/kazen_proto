@@ -76,10 +76,11 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
 }
 
 static RGBSpectrum eval_standard_dipole_func(void* data, const Vec3f& pi,
-    const Vec3f& wi, const Vec3f& po, const Vec3f& wo)
+    const Vec3f& wi, const Vec3f& po, const Vec3f& wo, float& pdf)
 {
     auto params = reinterpret_cast<KpDipoleParams*>(data);
     const float sqr_radius = base::length_squared(pi - po);
+    pdf = 0.f;
     if (sqr_radius > square(params->max_radius))
         return 0;
 
@@ -135,7 +136,7 @@ static RGBSpectrum eval_dipole(ShadingContext* ctx, const bssrdf_profile_eval_fu
     auto c = 1.f - fresnel_first_moment_x2(dipole_params->eta);
 
     // Not correct but use it for now
-    bssrdf_sample->pdf = 0.5f;
+    bssrdf_sample->pdf = 0.05f;
 
     return ret * fo * fi / c;
 }
