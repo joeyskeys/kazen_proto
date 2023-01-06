@@ -47,7 +47,7 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
 
 
     auto h = std::sqrt(square(dipole_params->max_radius) - square(disk_radius));
-    auto hn = h * frame.n;
+    auto hn = h * bssrdf_sample->frame.n;
     auto entry_pt = ctx->isect_i->P + disk_point + hn;
     auto ray_dir = base::normalize(-hn);
 
@@ -77,7 +77,7 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     return true;
 }
 
-static float dipole_pdf(void* data, const float r) const {
+static float dipole_pdf(void* data, const float r) {
     auto params = reinterpret_cast<KpDipoleParams*>(data);
     float pdf = 0.f;
     std::array<float, 3> channel_pdfs{0.5f, 0.25f, 0.25f};
@@ -91,11 +91,10 @@ static float dipole_pdf(void* data, const float r) const {
 }
 
 static RGBSpectrum eval_standard_dipole_func(void* data, const Vec3f& pi,
-    const Vec3f& wi, const Vec3f& po, const Vec3f& wo, float& pdf)
+    const Vec3f& wi, const Vec3f& po, const Vec3f& wo)
 {
     auto params = reinterpret_cast<KpDipoleParams*>(data);
     const float sqr_radius = base::length_squared(pi - po);
-    pdf = 0.f;
     if (sqr_radius > square(params->max_radius))
         return 0;
 

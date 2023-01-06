@@ -529,7 +529,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
 
             // how to convert this to world space
             ray = Ray(bssrdf_sample.po,
-                shading_ctx->isect_o.frame.to_world(bssrdf_sample.wo));
+                shading_ctx.isect_o.frame.to_world(bssrdf_sample.wo));
         }
 
         if (!accel_ptr->intersect(ray, its)) {
