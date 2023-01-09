@@ -152,7 +152,7 @@ static RGBSpectrum eval_dipole(ShadingContext* ctx, const bssrdf_profile_eval_fu
     // Not correct but use it for now
     bssrdf_sample->pdf *= dipole_pdf(ctx->data,
         base::length(ctx->isect_i->P - bssrdf_sample->po)) *
-        std::abs(base::dot(ctx->isect_i->wi, bssrdf_sample->frame.n));
+        std::abs(base::dot(ctx->isect_i->wi, bssrdf_sample->frame.n)) * 10;
 
     return ret * fo * fi / c;
 }

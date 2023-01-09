@@ -7,7 +7,7 @@
     <Materials>
         <ShaderGroupBegin name="wax_mat"/>
             <Shader name="wax" layer="layer1">
-                <Parameter Cs="float3 0.6 0.6 0.4"/>
+                <Parameter Cs="float3 0.6 0.6 0.6"/>
             </Shader>
         <ShaderGroupEnd/>
 

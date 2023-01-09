@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<Scene>
+    <EnvironmentBegin/>
+        <Shader name="env" layer="layer0"/>
+    <EnvironmentEnd/>
+
+    <Materials>
+        <ShaderGroupBegin name="wax1"/>
+            <Shader name="wax" layer="layer1">
+                <Parameter Cs="float3 0.7 0.5 0.5"/>
+            </Shader>
+        <ShaderGroupEnd/>
+    </Materials>
+
+	<Film width="int 1920" height="int 1080"/>
+	<Camera position="float3 12.430753707885742 9.918824195861816 -14.542228698730469" lookat="float3 11.874360084533691 9.454898834228516 -13.85288143157959" up="float3 -0.2913782596588135 0.8858742117881775 0.36100640892982483" fov="float 39.597755335771296"/>
+	<PathIntegrator/>
+	<EmbreeAccelerator/>
+	<Objects>
+		<Mesh filename="string meshes/xyzrgb_dragon.obj" shader_name="wax1" rotate="float4 1.0 0.0 -0.0 1.5707963705062866" scale="float3 0.05000000074505806 0.05000000074505806 -0.05000000074505806"/>
+	</Objects>
+</Scene>
