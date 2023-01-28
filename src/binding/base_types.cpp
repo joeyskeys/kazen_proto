@@ -1,7 +1,9 @@
 #include "binding/utils.h"
 #include "base/vec.h"
 #include "base/mat.h"
+#include "core/film.h"
 
+// Math types
 template <typename V>
 py::class_<V> bind_vec(py::module& m, const char* name) {
     // Cannot use aliasing in a template function ???
@@ -170,7 +172,7 @@ py::class_<M> bind_mat(py::module& m, const char* name) {
 }
 
 void bind_basetypes(py::module_& m) {
-    //py::module sub = create_submodule(m, "math");
+    // Math types
     py::module vec = m.def_submodule("vec",
         "Vector related classes and methods");
 
@@ -204,4 +206,24 @@ void bind_basetypes(py::module_& m) {
         "return the rotation matrix for 3D space")
        .def("scale3f", base::scale3f,
         "return the scale matrix for 3D space");
+
+    // Concept types
+    py::module concepts = m.def_submodule("concepts",
+        "Concept types");
+    
+    py::class_<Tile> pytl(concepts, "Tile");
+    pytl.def(py::init<uint, uint, uint, uint>())
+        .def("set_pixel_color", &Tile::set_pixel_color)
+        .def("set_tile_color", &Tile::set_tile_color)
+        .def("get_data", &Tile::get_data_ptr<float>);
+
+    py::class_<Film> pyfl(concepts, "Film");
+    pyfl.def(py::init<>())
+        .def(py::init<uint, uint, const std::string&>())
+        .def("generate_tiles", &Film::generate_tiles)
+        .def("write_tiles", &Film::write_tiles)
+        .def("set_film_color", &Film::set_film_color)
+        .def("set_tile_color", &Film::set_tile_color)
+        .def("get_tile_count", &Film::get_tile_count)
+        .def_readonly("tiles", &Film::tiles);
 }

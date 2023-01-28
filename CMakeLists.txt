@@ -4,6 +4,7 @@ project(kazen-prototype LANGUAGES CXX C)
 
 cmake_policy(SET CMP0074 NEW)
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "set build type")
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
@@ -140,7 +141,7 @@ set(CORE_SOURCES
     src/shading/white_furnace.cpp
     src/shading/microfacet.cpp)
 
-add_library(kazen_proto_lib
+add_library(kazen_proto_lib STATIC
     ${CORE_SOURCES})
 target_link_libraries(kazen_proto_lib
     ${ASSIMP_LIBRARIES}

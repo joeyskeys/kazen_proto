@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -17,9 +18,12 @@ public:
     void set_pixel_color(uint x, uint y, const RGBSpectrum& s);
     void set_tile_color(const RGBSpectrum& s);
 
-    inline float* const get_data_ptr() {
-        return reinterpret_cast<float*>(buf.get());
+    template <typename PtrType>
+    inline PtrType* const get_data_ptr() {
+        return reinterpret_cast<PtrType*>(buf.get());
     }
+
+    //using get_data_ptr_raw = get_data_ptr<uint8_t>;
 
 public:
     const uint origin_x;
@@ -51,15 +55,13 @@ public:
         tiles[tile_res_x * yidx + xidx].set_tile_color(s);
     }
 
-    inline auto get_tile_count() {
+    inline auto get_tile_count() const {
         return tiles.size();
     }
 
     void* address_of(const std::string& name) override;
 
 public:
-    //const uint width;
-    //const uint height;
     uint width;
     uint height;
     std::string  filename;

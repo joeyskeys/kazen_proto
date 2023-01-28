@@ -87,7 +87,7 @@ bool Film::write_tiles()
     for (auto& tile : tiles) {
         auto ystride = xstride * std::min(width - tile.origin_x, tile_width);
         output->write_tile(tile.origin_x, tile.origin_y, 0,
-            OIIO::TypeDesc::FLOAT, tile.get_data_ptr(),
+            OIIO::TypeDesc::FLOAT, tile.get_data_ptr<float>(),
             xstride, ystride);
     }
     output->close();

@@ -7,25 +7,7 @@ set(SRC_FILES
     microfacet.cpp
     osltools.cpp
     sampler.cpp
-    api.cpp
-    ../core/accel.cpp
-    ../core/camera.cpp
-    ../core/film.cpp
-    ../core/integrator.cpp
-    ../core/light.cpp
-    ../core/light_path.cpp
-    ../core/ray.cpp
-    ../core/renderer.cpp
-    ../core/sampler.cpp
-    ../core/scene.cpp
-    ../core/shape.cpp
-    ../shading/bsdf.cpp
-    ../shading/bsdfs.cpp
-    ../shading/compiler.cpp
-    ../shading/microfacet.cpp
-    ../shading/querier.cpp
-    ../shading/renderservices.cpp
-    ../shading/shader.cpp)
+    api.cpp)
 
 pybind11_add_module(pyzen ${SRC_FILES})
 
@@ -37,6 +19,7 @@ target_link_libraries(pyzen PRIVATE
     ${OCIO_LIBRARIES}
     ${OSL_LIBRARIES}
     ${Pugixml_LIBRARIES}
-    ${EMBREE_LIBRARIES})
+    ${EMBREE_LIBRARIES}
+    kazen_proto_lib)
 
 install(TARGETS pyzen DESTINATION ${CMAKE_INSTALL_PREFIX}/python)

@@ -50,6 +50,18 @@ public:
     }
 };
 
+template <typename CBK>
+class PyRenderCallback : public CBK {
+public:
+    void on_tile_end() override {
+        PYBIND11_OVERRIDE(
+            void,
+            CBK,
+            on_tile_end,
+        );
+    }
+};
+
 void bind_api(py::module_& m) {
     py::module api = m.def_submodule("api",
         "Classes and functions exposed as APIs");
@@ -96,6 +108,11 @@ void bind_api(py::module_& m) {
             "create integrator");
 
     // Renderer related
+    py::class_<RenderCallback> render_callback(api, "RenderCallback");
+    render_callback.def(py::init<>())
+                   .def("on_tile_end", &RenderCallback::on_tile_end,
+                        "callback function called when tile finished render");
+
     py::class_<Renderer> renderer(api, "Renderer");
     renderer.def(py::init<>())
             .def(py::init<const uint, const uint>())
