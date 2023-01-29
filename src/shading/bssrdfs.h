@@ -1,9 +1,14 @@
 #pragma once
 
+#include <functional>
+
 #include <boost/math/constants/constants.hpp>
 #include <OSL/genclosure.h>
 
+#include "core/sampler.h"
+#include "shading/bsdf.h"
 #include "shading/bssrdfs.h"
+#include "shading/context.h"
 #include "shading/fresnel.h"
 
 using OSL::TypeDesc;

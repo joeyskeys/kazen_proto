@@ -3,6 +3,8 @@
 #include <cmath>
 
 #include "base/vec.h"
+#include "base/utils.h"
+#include "core/spectrum.h"
 
 using base::Vec3f;
 

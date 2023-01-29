@@ -2,8 +2,10 @@ find_package(Python COMPONENTS Interpreter Development)
 find_package(pybind11 REQUIRED)
 
 set(SRC_FILES
-    binding.cpp
     base_types.cpp
+    binding.cpp
+    bsdfs.cpp
+    bssrdfs.cpp
     microfacet.cpp
     osltools.cpp
     sampler.cpp

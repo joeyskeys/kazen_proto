@@ -215,7 +215,11 @@ void bind_basetypes(py::module_& m) {
     pytl.def(py::init<uint, uint, uint, uint>())
         .def("set_pixel_color", &Tile::set_pixel_color)
         .def("set_tile_color", &Tile::set_tile_color)
-        .def("get_data", &Tile::get_data_ptr<float>);
+        .def("get_data", &Tile::get_data_ptr<float>)
+        .def_readonly("x", &Tile::origin_x)
+        .def_readonly("y", &Tile::origin_y)
+        .def_readonly("width", &Tile::width)
+        .def_readonly("height", &Tile::height);
 
     py::class_<Film> pyfl(concepts, "Film");
     pyfl.def(py::init<>())

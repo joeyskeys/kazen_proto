@@ -8,8 +8,8 @@
 
 class RenderCallback {
 public:
-    virtual void on_tile_end(Film* film) {
-        std::cout << "default tile end impl" << std::endl;
+    virtual void on_tile_end(Film& film, uint32_t tile_id) {
+        std::cout << "default tile end impl: " << tile_id << std::endl;
     }
 };
 

@@ -7,6 +7,8 @@ py::class_<BSDF> bind_bsdf(py::module& m, const char* name) {
 
     pycl.def_static("eval", &BSDF::eval, "evaluate the bsdf")
         .def_static("sample", &BSDF::sample, "sample the bsdf");
+
+    return pycl;
 }
 
 void bind_bsdfs(py::module_& m) {
