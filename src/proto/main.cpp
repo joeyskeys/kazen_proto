@@ -55,7 +55,6 @@ int main(int argc, const char **argv) {
     Scene scene;
     scene.parse_from_file(filename);
 
-
     auto render_start = get_time();
 
     if (debug) {

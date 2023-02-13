@@ -18,12 +18,85 @@
 
 namespace fs = std::filesystem;
 
+enum class AcceleratorType {
+    BVH,
+    Embree
+};
+
 class Scene {
 public:
     Scene();
     
     void parse_from_file(fs::path file_path);
     std::unique_ptr<Integrator> create_integrator(Sampler& sampler);
+
+    inline void set_film(uint w, uint h, const std::string& f) {
+        *film = Film(w, h, f);
+        return true;
+    }
+
+    inline void set_camera(const Vec3f& p, const Vec3f& l, const 3f& u,
+        const float near_plane=1, const float far_plane=1000,
+        const float fov=60, Film* const film=nullptr)
+    {
+        *camera = Camera(p, l, u, near_plane, far_plane, fov, film);
+        return true;
+    }
+
+    inline void set_accelerator(AcceleratorType type) {
+        switch (type) {
+            case AcceleratorType::BVH: {
+                accelerator.reset(new BVHAccel(&objects));
+                break;
+            }
+
+            case AcceleratorType::Embree: {
+                accelerator.reset(new EmbreeAccel(&objects));
+                break;
+            }
+
+            default: {
+                accelerator.reset(new EmbreeAccel(&objects));
+                break;
+            }
+        }
+    }
+
+    inline void add_sphere(const Mat4f& world, const Vec3f& p, const float r,
+        const std::string& shader_name)
+    {
+        Transform trans{world};
+        auto obj_ptr = std::make_shared<Sphere>(trans, objects.size(),
+            Vec4f{p, r}, shader_name);
+        accelerator->add_sphere(obj_ptr);
+    }
+
+    inline void add_triangle(const Mat4f& world, const Vec3f& a, const Vec3f& b,
+        const Vec3f& c, const std::string& shader_name)
+    {
+        Transform trans{world};
+        auto obj_ptr = std::make_shared<Triangle>(trans, a, b, c, shader_name);
+        accelerator->add_triangle(obj_ptr);
+    }
+
+    inline void add_quad(const Mat4f& world, const Vec3f& c, const Vec3f& d,
+        const Vec3f& u, const float w, const float h, const std::string& shader_name)
+    {
+        Transform trans{world};
+        auto obj_ptr = std::make_shared<Quad>(trans, c, d, u, w, h, shader_name);
+        accelerator->add_quad(obj_ptr);
+    }
+
+    inline void add_mesh(const Mat4f& world, const std::vector<Vec3f>& vs,
+        const std::vector<Vec3f>& ns, const std::vector<Vec3f>& ts,
+        const std::vector<Vec3f>& idx, const std::string& shader_name)
+    {
+        Transform trans{world};
+        auto obj_ptr = std::make_shared<TriangleMesh>(trans, vs, ns, ts, idx, shader_name);
+        accelerator->add_trianglemesh(obj_ptr);
+    }
+
+    bool add_light();
 
 private:
     bool process_shader_node(const pugi::xml_node& node, OSL::ShaderGroupRef shader_group);
