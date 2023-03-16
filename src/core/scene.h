@@ -63,7 +63,7 @@ public:
     }
 
     inline void add_sphere(const Mat4f& world, const Vec3f& p, const float r,
-        const std::string& shader_name)
+        const std::string& shader_name, bool is_light=false)
     {
         Transform trans{world};
         auto obj_ptr = std::make_shared<Sphere>(trans, objects.size(),
@@ -72,7 +72,7 @@ public:
     }
 
     inline void add_triangle(const Mat4f& world, const Vec3f& a, const Vec3f& b,
-        const Vec3f& c, const std::string& shader_name)
+        const Vec3f& c, const std::string& shader_name, bool is_light=false)
     {
         Transform trans{world};
         auto obj_ptr = std::make_shared<Triangle>(trans, a, b, c, shader_name);
@@ -80,7 +80,8 @@ public:
     }
 
     inline void add_quad(const Mat4f& world, const Vec3f& c, const Vec3f& d,
-        const Vec3f& u, const float w, const float h, const std::string& shader_name)
+        const Vec3f& u, const float w, const float h, const std::string& shader_name
+        bool is_light=false)
     {
         Transform trans{world};
         auto obj_ptr = std::make_shared<Quad>(trans, c, d, u, w, h, shader_name);
@@ -89,14 +90,26 @@ public:
 
     inline void add_mesh(const Mat4f& world, const std::vector<Vec3f>& vs,
         const std::vector<Vec3f>& ns, const std::vector<Vec3f>& ts,
-        const std::vector<Vec3f>& idx, const std::string& shader_name)
+        const std::vector<Vec3f>& idx, const std::string& shader_name,
+        bool is_light=false)
     {
         Transform trans{world};
         auto obj_ptr = std::make_shared<TriangleMesh>(trans, vs, ns, ts, idx, shader_name);
         accelerator->add_trianglemesh(obj_ptr);
+        if (is_light) {
+            auto light = std::make_unique<GeometryLight>(lights.size(),
+                obj_ptr->shader_name, obj_ptr);
+            obj_ptr->light = light.get();
+            lights.emplace_back(std::move(light));
+        }
     }
 
-    bool add_light();
+    inline void add_point_light(const RGBSpectrum& r, const Vec3f& p) {
+        auto lgt_ptr = std::make_unique<PointLight>(lights.size());
+        lgt_ptr->radiance = r;
+        lgt_ptr->position = p;
+        lights.emplace_back(std::move(lgt_ptr));
+    }
 
 private:
     bool process_shader_node(const pugi::xml_node& node, OSL::ShaderGroupRef shader_group);

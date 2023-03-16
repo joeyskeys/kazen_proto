@@ -105,7 +105,23 @@ void bind_api(py::module_& m) {
          .def("parse_from_file", &Scene::parse_from_file,
             "parse scene from a description file")
          .def("create_integrator", &Scene::create_integrator,
-            "create integrator");
+            "create integrator")
+         .def("set_film", &Scene::set_film,
+            "set film for the scene")
+         .def("set_camera", &Scene::set_camera,
+            "set camera for the scene")
+         .def("set_accelerator", &Scene::set_accelerator,
+            "set accelerator for the scene")
+         .def("add_sphere", &Scene::add_sphere,
+            "add a sphere into the scene")
+         .def("add_triangle", &Scene::add_triangle,
+            "add a triangle into the scene")
+         .def("add_quad", &Scene::add_quad,
+            "add a quad into the scene")
+         .def("add_mesh", &Scene::add_mesh,
+            "add a mesh into the scene")
+         .def("add_point_light", &Scene::add_point_light,
+            "add a point light into the scene");
 
     // Renderer related
     py::class_<RenderCallback> render_callback(api, "RenderCallback");
