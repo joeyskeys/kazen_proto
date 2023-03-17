@@ -23,6 +23,15 @@ enum class AcceleratorType {
     Embree
 };
 
+enum class IntegratorType {
+    NormalIntegrator,
+    AmbientOcclusionIntegrator,
+    WhittedIntegrator,
+    PathMatsIntegrator,
+    PathEmsIntegrator,
+    PathIntegrator
+};
+
 class Scene {
 public:
     Scene();
@@ -57,6 +66,45 @@ public:
 
             default: {
                 accelerator.reset(new EmbreeAccel(&objects));
+                break;
+            }
+        }
+    }
+
+    inline void set_integrator(IntegratorType type) {
+        switch (type) {
+            case IntegratorType::NormalIntegrator: {
+                integrator_fac.create_functor = &NormalIntegrator::create;
+                break;
+            }
+
+            case IntegratorType::AmbientOcclusionIntegrator: {
+                integrator_fac.create_functor = &AmbientOcclusionIntegrator::create;
+                break;
+            }
+
+            case IntegratorType::WhittedIntegrator: {
+                integrator_fac.create_functor = &WhittedIntegrator::create;
+                break;
+            }
+
+            case IntegratorType::PathMatsIntegrator: {
+                integrator_fac.create_functor = &PathMatsIntegrator::create;
+                break;
+            }
+
+            case IntegratorType::PathEmsIntegrator: {
+                integrator_fac.create_functor = &PathEmsIntegrator::create;
+                break;
+            }
+
+            case IntegratorType::PathIntegrator: {
+                integrator_fac.create_functor = &PathIntegrator::create;
+                break;
+            }
+
+            default: {
+                integrator_fac.create_functor = &PathIntegrator::create;
                 break;
             }
         }

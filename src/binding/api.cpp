@@ -112,6 +112,8 @@ void bind_api(py::module_& m) {
             "set camera for the scene")
          .def("set_accelerator", &Scene::set_accelerator,
             "set accelerator for the scene")
+         .def("set_integrator", &Scene::set_integrator,
+            "set integrator for the scene")
          .def("add_sphere", &Scene::add_sphere,
             "add a sphere into the scene")
          .def("add_triangle", &Scene::add_triangle,
