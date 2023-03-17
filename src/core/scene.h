@@ -41,15 +41,13 @@ public:
 
     inline void set_film(uint w, uint h, const std::string& f) {
         *film = Film(w, h, f);
-        return true;
     }
 
-    inline void set_camera(const Vec3f& p, const Vec3f& l, const 3f& u,
+    inline void set_camera(const Vec3f& p, const Vec3f& l, const Vec3f& u,
         const float near_plane=1, const float far_plane=1000,
         const float fov=60, Film* const film=nullptr)
     {
         *camera = Camera(p, l, u, near_plane, far_plane, fov, film);
-        return true;
     }
 
     inline void set_accelerator(AcceleratorType type) {
@@ -128,7 +126,7 @@ public:
     }
 
     inline void add_quad(const Mat4f& world, const Vec3f& c, const Vec3f& d,
-        const Vec3f& u, const float w, const float h, const std::string& shader_name
+        const Vec3f& u, const float w, const float h, const std::string& shader_name,
         bool is_light=false)
     {
         Transform trans{world};
@@ -137,12 +135,13 @@ public:
     }
 
     inline void add_mesh(const Mat4f& world, const std::vector<Vec3f>& vs,
-        const std::vector<Vec3f>& ns, const std::vector<Vec3f>& ts,
-        const std::vector<Vec3f>& idx, const std::string& shader_name,
+        const std::vector<Vec3f>& ns, const std::vector<Vec2f>& ts,
+        const std::vector<Vec3i>& idx, const std::string& shader_name,
         bool is_light=false)
     {
         Transform trans{world};
-        auto obj_ptr = std::make_shared<TriangleMesh>(trans, vs, ns, ts, idx, shader_name);
+        auto obj_ptr = std::make_shared<TriangleMesh>(trans, vs, ns, ts,
+            idx, shader_name);
         accelerator->add_trianglemesh(obj_ptr);
         if (is_light) {
             auto light = std::make_unique<GeometryLight>(lights.size(),

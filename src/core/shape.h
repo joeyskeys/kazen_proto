@@ -167,6 +167,17 @@ public:
         , indice(idx)
     {}
 
+    TriangleMesh(const Transform& l2w, const std::vector<Vec3f>& vs,
+        const std::vector<Vec3f>& ns, const std::vector<Vec2f>& ts,
+        const std::vector<Vec3i>& idx, const std::string& m="",
+        bool is_l=false)
+        : Shape(l2w, m, is_l, 0)
+        , verts(vs)
+        , norms(ns)
+        , uvs(ts)
+        , indice(idx)
+    {}
+
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
     AABBf bbox() const override;
