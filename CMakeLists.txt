@@ -53,6 +53,11 @@ include_directories(${OCIO_INCLUDE_DIRS})
 find_package(TBB REQUIRED)
 include_directories(${TBB_INCLUDE_DIRS})
 
+set(USE_ONEAPI OFF)
+if(ONEAPI)
+    set(USE_ONEAPI ON)
+endif()
+
 find_package(ASSIMP REQUIRED)
 include_directories(${ASSIMP_INCLUDE_DIRS})
 

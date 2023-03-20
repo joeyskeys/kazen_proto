@@ -5,6 +5,18 @@ find_path(TBB_INCLUDE_DIRS tbb/tbb.h
     PATH_SUFFIXES
         include)
 
+find_path(TBB_VERSION_PATH tbb/version.h
+    HINTS
+        /usr
+        /usr/local
+    PATH_SUFFIXES
+        include)
+
+set(ONEAPI OFF)
+if(TBB_VERSION_PATH)
+    set(ONEAPI ON)
+endif()
+
 find_library(TBB_PROXY_LIB tbbmalloc_proxy
     HINTS
         /usr

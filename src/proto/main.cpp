@@ -7,7 +7,13 @@
 #include "config.h"
 
 #ifdef USE_TBB
+#ifdef ONETBB
+#include <tbb/info.h>
+#include <tbb/parallel_for.h>
+#include <tbb/task_arena.h>
+#else
 #include <tbb/tbb.h>
+#endif
 #endif
 
 int main(int argc, const char **argv) {
@@ -95,10 +101,22 @@ int main(int argc, const char **argv) {
     }
 
 #ifdef USE_TBB
+
+#ifdef ONETBB
+    if (nthreads == 0)
+        nthreads = tbb::v1::info::default_concurrency();
+
+    assert(nthreads > 0);
+
+    tbb::task_arena arena(nthreads);
+    arena.execute([]{
+#else
     if (nthreads > 0)
         tbb::task_scheduler_init init(nthreads);
     tbb::parallel_for (tbb::blocked_range<size_t>(0, scene.film->tiles.size()),
         [&](const tbb::blocked_range<size_t>& r) {
+#endif
+
 #else
     {
 #endif
