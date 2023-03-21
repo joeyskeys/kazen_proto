@@ -12,7 +12,7 @@ find_path(TBB_VERSION_PATH tbb/version.h
     PATH_SUFFIXES
         include)
 
-set(ONEAPI OFF)
+set(ONEAPI ON)
 if(TBB_VERSION_PATH)
     set(ONEAPI ON)
 endif()

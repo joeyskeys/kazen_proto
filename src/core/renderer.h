@@ -23,14 +23,17 @@ public:
         ,render_cbk(cbk)
     {}
 
+    /*
     inline bool load_scene(const std::string& filepath) {
         scene.parse_from_file(filepath);
         return true;
     }
+    */
 
-    bool render(const std::string& output="./test.jpg");
+    bool render(const std::string& scene_file, const std::string& output="./test.jpg");
+    bool render(Scene& scene, const std::string& output="./test.jpg");
 
-    Scene scene;
+    //Scene scene;
     uint sample_count = 10;
     uint nthreads = 0;
     RenderCallback render_cbk;

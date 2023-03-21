@@ -1,5 +1,6 @@
 #include "core/renderer.h"
 #include "core/sampler.h"
+#include "core/scene.h"
 #include "core/state.h"
 #include "config.h"
 
@@ -7,7 +8,13 @@
 #include <tbb/tbb.h>
 #endif
 
-bool Renderer::render(const std::string& output) {
+bool Renderer::render(const std::string& scene_file, const std::string& output) {
+    Scene scene;
+    scene.parse_from_file(scene_file);
+    return render(scene, output);
+}
+
+bool Renderer::render(Scene& scene, const std::string& output) {
     auto render_start = get_time();
 
 #ifdef USE_TBB

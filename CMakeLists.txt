@@ -33,10 +33,6 @@ option(USE_PCG "Whether to use pcg random numbers" ON)
 option(BUILD_TESTS "Whether to build tests" ON)
 option(BUILD_PYTHON_BINDING "Whether to build python binding" ON)
 
-configure_file(resource/shader/include/kp_extension.h.in ${CMAKE_SOURCE_DIR}/resource/shader/include/kp_extension.h @ONLY)
-configure_file(src/base/config.h.in include/config.h @ONLY)
-include_directories(${CMAKE_BINARY_DIR}/include)
-
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
 if(WIN32)
@@ -53,6 +49,7 @@ include_directories(${OCIO_INCLUDE_DIRS})
 find_package(TBB REQUIRED)
 include_directories(${TBB_INCLUDE_DIRS})
 
+# TODO : Fix this when the vfxreferenceplatform has switched to oneapi
 set(USE_ONEAPI OFF)
 if(ONEAPI)
     set(USE_ONEAPI ON)
@@ -87,6 +84,10 @@ find_package(PCG32 REQUIRED)
 include_directories(${PCG32_INCLUDE_DIRS})
 
 include_directories("./src")
+
+configure_file(resource/shader/include/kp_extension.h.in ${CMAKE_SOURCE_DIR}/resource/shader/include/kp_extension.h @ONLY)
+configure_file(src/base/config.h.in include/config.h @ONLY)
+include_directories(${CMAKE_BINARY_DIR}/include)
 
 set(BASE_HEADERS
     src/base/basic_types.h

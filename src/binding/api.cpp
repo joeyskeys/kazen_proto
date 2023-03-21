@@ -125,6 +125,18 @@ void bind_api(py::module_& m) {
          .def("add_point_light", &Scene::add_point_light,
             "add a point light into the scene");
 
+    py::enum_<AcceleratorType>(api, "AcceleratorType", "Accelerator type enum")
+        .value("BVH", AcceleratorType::BVH)
+        .value("Embree", AcceleratorType::Embree);
+
+    py::enum_<IntegratorType>(api, "IntegratorType", "Integrator type enum")
+        .value("NormalIntegrator", IntegratorType::NormalIntegrator)
+        .value("AmbientOcclusionIntegrator", IntegratorType::AmbientOcclusionIntegrator)
+        .value("WhittedIntegrator", IntegratorType::WhittedIntegrator)
+        .value("PathMatIntegrator", IntegratorType::PathMatsIntegrator)
+        .value("PathEmsIntegrator", IntegratorType::PathEmsIntegrator)
+        .value("PathIntegrator", IntegratorType::PathIntegrator);
+
     // Renderer related
     py::class_<RenderCallback> render_callback(api, "RenderCallback");
     render_callback.def(py::init<>())
@@ -134,8 +146,10 @@ void bind_api(py::module_& m) {
     py::class_<Renderer> renderer(api, "Renderer");
     renderer.def(py::init<>())
             .def(py::init<const uint, const uint>())
-            .def("load_scene", &Renderer::load_scene,
-                "load scene file from given path")
-            .def("render", &Renderer::render,
+            .def("render",
+                py::overload_cast<const std::string&, const std::string&>(&Renderer::render),
+                "start render")
+            .def("render",
+                py::overload_cast<Scene&, const std::string&>(&Renderer::render),
                 "start render");
 }
