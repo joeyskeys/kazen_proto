@@ -45,9 +45,11 @@ public:
 
     inline void set_camera(const Vec3f& p, const Vec3f& l, const Vec3f& u,
         const float near_plane=1, const float far_plane=1000,
-        const float fov=60, Film* const film=nullptr)
+        const float fov=60)
     {
-        *camera = Camera(p, l, u, near_plane, far_plane, fov, film);
+        if (!film)
+            throw std::runtime_error("Film not set yet");
+        *camera = Camera(p, l, u, near_plane, far_plane, fov, film.get());
     }
 
     inline void set_accelerator(AcceleratorType type) {
