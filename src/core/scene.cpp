@@ -377,7 +377,7 @@ void Scene::parse_from_file(fs::path filepath) {
     // process nodes
     std::deque<pugi::xml_node> nodes_to_process;
     nodes_to_process.push_back(root_node);
-    OSL::ShaderGroupRef current_shader_group;
+    current_shader_group.reset();
     // 1K buffer for temporary osl parameter storage
     std::unique_ptr<char[]> osl_param_buf{new char[1024]};
 
@@ -701,4 +701,32 @@ std::unique_ptr<Integrator> Scene::create_integrator(Sampler& sampler) {
     auto integrator_ptr = integrator_fac.create(camera.get(), film.get(), &sampler, &recorder);
     integrator_ptr->setup(this);
     return integrator_ptr;
+}
+
+void Scene::begin_shader_group(const std::string& name) {
+    current_shader_group = shadingsys->ShaderGroupBegin(name.c_str());
+    shaders[name] = current_shader_group;
+}
+
+void Scene::end_shader_group() {
+    shadingsys->ShaderGroupEnd(*current_shader_group);
+}
+
+bool Scene::load_oso_shader(const std::string& shader_name,
+    const std::string& type, const std::string& name, const std::string& layer)
+{
+    auto builtin_path = (fs::canonical("./bazen/shader") / shader_name).concat(".oso");
+    if (fs::exists(builtin_path)) {
+        std::string oso_code = load_file(builtin_path);
+        shadingsys->LoadMemoryCompiledShader(shader_name, oso_code);
+    }
+    else {
+        throw std::runtime_error(fmt::format("Shader {} does not exists", shader_name);
+    }
+
+    return shadingsys->Shader(*current_shader_group, type, name, layer);
+}
+
+void Scene::set_shader_param(const std::string& attr_name, bool value) {
+
 }

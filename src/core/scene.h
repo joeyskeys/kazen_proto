@@ -7,6 +7,7 @@
 
 #include <pugixml.hpp>
 
+#include "base/traits.h"
 #include "core/accel.h"
 #include "core/camera.h"
 #include "core/film.h"
@@ -160,6 +161,18 @@ public:
         lights.emplace_back(std::move(lgt_ptr));
     }
 
+    void begin_shader_group(const std::string& name);
+    void end_shader_group();
+    bool load_oso_shader(const std::string& shader_name, const std::string& type,
+        const std::string& name, const std::string& layer);
+    void connect_shader();
+
+    template <typename T>
+    void set_shader_param(const std::string& name, const T& value) {
+        if constexpr (is_bool<T>)
+        shadingsys->Parameter(*current_shader_group, name, t, &value);
+    }
+
 private:
     bool process_shader_node(const pugi::xml_node& node, OSL::ShaderGroupRef shader_group);
 
@@ -182,4 +195,8 @@ public:
     std::unordered_map<std::string, OSL::ShaderGroupRef> shaders;
     OSL::ShaderGroupRef background_shader;
     OSL::ErrorHandler   errhandler;
+
+private:
+    // This is a temprory variable for use of shader group begin&end
+    OSL::ShaderGroupRef current_shader_group;
 };
