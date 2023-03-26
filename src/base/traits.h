@@ -32,72 +32,90 @@ struct TypeConv : public TypeConvImpl<sizeof(T)> {};
 template <typename T>
 struct is_bool {
     static constexpr bool value = false;
-}
+};
 
 template <>
 struct is_bool<bool> {
     static constexpr bool value = true;
-}
+};
 
 template <typename T>
-using is_bool_v<T> = is_bool<T>::value;
+inline constexpr bool is_bool_v = is_bool<T>::value;
 
 template <typename T>
 struct is_float {
     static constexpr bool value = false;
-}
+};
 
 template <>
 struct is_float<float> {
     static constexpr bool value = true;
-}
+};
+
+template <typename T>
+inline constexpr bool is_float_v = is_float<T>::value;
 
 template <typename T>
 struct is_int {
     static constexpr bool value = false;
-}
+};
 
 template <>
-struct is_int {
+struct is_int<int> {
     static constexpr bool value = true;
-}
+};
 
 template <typename T>
-struct is_vec3 {
+inline constexpr bool is_int_v = is_float<T>::value;
+
+template <typename T>
+struct is_vec3f {
     static constexpr bool value = false;
-}
+};
 
 template <>
 struct is_vec3f<base::Vec3f> {
-    staic constexpr bool value = true;
-}
+    static constexpr bool value = true;
+};
 
 template <typename T>
-struct is_vec4 {
+inline constexpr bool is_vec3f_v = is_vec3f<T>::value;
+
+template <typename T>
+struct is_vec4f {
     static constexpr bool value = false;
-}
+};
 
 template <>
 struct is_vec4f<base::Vec4f> {
     static constexpr bool value = true;
-}
+};
+
+template <typename T>
+inline constexpr bool is_vec4f_v = is_vec4f<T>::value;
 
 template <typename T>
 struct is_str {
     static constexpr bool value = false;
-}
+};
 
 template <>
 struct is_str<std::string> {
     static constexpr bool value = true;
-}
+};
+
+template <typename T>
+inline constexpr bool is_str_v = is_str<T>::value;
 
 template <typename T>
 struct is_ustr {
     static constexpr bool value = false;
-}
+};
 
 template <>
 struct is_ustr<OSL::ustring> {
     static constexpr bool value = true;
-}
+};
+
+template <typename T>
+inline constexpr bool is_ustr_v = is_ustr<T>::value;

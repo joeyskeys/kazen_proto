@@ -1,3 +1,6 @@
+#include <OSL/oslconfig.h>
+
+#include "base/vec.h"
 #include "binding/utils.h"
 #include "core/renderer.h"
 
@@ -123,7 +126,29 @@ void bind_api(py::module_& m) {
          .def("add_mesh", &Scene::add_mesh,
             "add a mesh into the scene")
          .def("add_point_light", &Scene::add_point_light,
-            "add a point light into the scene");
+            "add a point light into the scene")
+         .def("begin_shader_group", &Scene::begin_shader_group,
+            "BeginShaderGroup call to OSL")
+         .def("end_shader_group", &Scene::end_shader_group,
+            "EndShaderGroup call to OSL")
+         .def("load_oso_shader", &Scene::load_oso_shader,
+            "load the built-in oso shader")
+         .def("connect_shader", &Scene::connect_shader,
+            "connect shader's attributes")
+         .def("set_shader_param_bool", &Scene::set_shader_param<bool>,
+            "set bool shader parameter value")
+         .def("set_shader_param_float", &Scene::set_shader_param<float>,
+            "set float shader parameter value")
+         .def("set_shader_param_int", &Scene::set_shader_param<int>,
+            "set float shader parameter value")
+         .def("set_shader_param_vec3f", &Scene::set_shader_param<base::Vec3f>,
+            "set vec3f shader parameter value")
+         .def("set_shader_param_vec4f", &Scene::set_shader_param<base::Vec4f>,
+            "set vec4f shader parameter value")
+         .def("set_shader_param_str", &Scene::set_shader_param<std::string>,
+            "set string shader parameter value")
+         .def("set_shader_param_ustr", &Scene::set_shader_param<OSL::ustring>,
+            "set ustring shader parameter value");
 
     py::enum_<AcceleratorType>(api, "AcceleratorType", "Accelerator type enum")
         .value("BVH", AcceleratorType::BVH)

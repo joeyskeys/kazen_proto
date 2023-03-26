@@ -721,12 +721,14 @@ bool Scene::load_oso_shader(const std::string& shader_name,
         shadingsys->LoadMemoryCompiledShader(shader_name, oso_code);
     }
     else {
-        throw std::runtime_error(fmt::format("Shader {} does not exists", shader_name);
+        throw std::runtime_error(fmt::format("Shader {} does not exists", shader_name));
     }
 
     return shadingsys->Shader(*current_shader_group, type, name, layer);
 }
 
-void Scene::set_shader_param(const std::string& attr_name, bool value) {
-
+void Scene::connect_shader(const std::string& src_layer, const std::string& src_param,
+    const std::string& dst_layer, const std::string& dst_param)
+{
+    shadingsys->ConnectShaders(src_layer, src_param, dst_layer, dst_param);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -165,12 +166,29 @@ public:
     void end_shader_group();
     bool load_oso_shader(const std::string& shader_name, const std::string& type,
         const std::string& name, const std::string& layer);
-    void connect_shader();
+    void connect_shader(const std::string&, const std::string&, const std::string&,
+        const std::string&);
 
     template <typename T>
     void set_shader_param(const std::string& name, const T& value) {
-        if constexpr (is_bool<T>)
-        shadingsys->Parameter(*current_shader_group, name, t, &value);
+        if constexpr (is_bool_v<T> || is_int_v<T>)
+            shadingsys->Parameter(*current_shader_group, name,
+                OSL::TypeDesc::TypeInt, &value);
+        else if constexpr (is_float_v<T>)
+            shadingsys->Parameter(*current_shader_group, name,
+                OSL::TypeDesc::TypeFloat, &value);
+        else if constexpr (is_vec3f_v<T>)
+            shadingsys->Parameter(*current_shader_group, name,
+                OSL::TypeDesc::TypeVector, &value);
+        else if constexpr (is_vec4f_v<T>)
+            shadingsys->Parameter(*current_shader_group, name,
+                OSL::TypeDesc::TypeString, &value);
+        else if constexpr (is_str_v<T> || is_ustr_v<T>)
+            shadingsys->Parameter(*current_shader_group, name,
+                OSL::TypeDesc::TypeString, &value);
+        else
+            throw std::runtime_error(fmt::format(
+                "Type {} is not supported for OSL parameter", typeid(T).name()));
     }
 
 private:
