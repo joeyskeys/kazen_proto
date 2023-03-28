@@ -164,8 +164,8 @@ public:
 
     void begin_shader_group(const std::string& name);
     void end_shader_group();
-    bool load_oso_shader(const std::string& shader_name, const std::string& type,
-        const std::string& name, const std::string& layer);
+    bool load_oso_shader(const std::string& type, const std::string& name,
+        const std::string& layer);
     void connect_shader(const std::string&, const std::string&, const std::string&,
         const std::string&);
 

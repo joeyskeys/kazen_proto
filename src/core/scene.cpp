@@ -712,16 +712,16 @@ void Scene::end_shader_group() {
     shadingsys->ShaderGroupEnd(*current_shader_group);
 }
 
-bool Scene::load_oso_shader(const std::string& shader_name,
-    const std::string& type, const std::string& name, const std::string& layer)
+bool Scene::load_oso_shader(const std::string& type, const std::string& name,
+    const std::string& layer)
 {
-    auto builtin_path = (fs::canonical("./bazen/shader") / shader_name).concat(".oso");
+    auto builtin_path = (fs::canonical("./bazen/shader") / name).concat(".oso");
     if (fs::exists(builtin_path)) {
         std::string oso_code = load_file(builtin_path);
-        shadingsys->LoadMemoryCompiledShader(shader_name, oso_code);
+        shadingsys->LoadMemoryCompiledShader(layer, oso_code);
     }
     else {
-        throw std::runtime_error(fmt::format("Shader {} does not exists", shader_name));
+        throw std::runtime_error(fmt::format("Shader {} does not exists", layer));
     }
 
     return shadingsys->Shader(*current_shader_group, type, name, layer);
