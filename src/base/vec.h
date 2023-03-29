@@ -23,6 +23,10 @@ namespace base
 // because if you don't reimplement all the operator, the return enoki::Array
 // object cannot be converted to the inherited class object.
 
+struct vec_n_type {
+    using type = size_t;
+};
+
 template <typename T, size_t N>
 using Vec = enoki::Array<T, N>;
 
@@ -179,6 +183,10 @@ std::string to_string(const Vec<T, N>& v) {
 // well...
 // I choose to overload all possible operators to do type conversion when using my
 // own class object which is a lot of work, hope it will worth it..
+
+struct vec_n_type {
+    using type = int;
+};
 
 template <typename T, int N>
 class Vec : public Eigen::Matrix<T, N, 1> {
@@ -410,6 +418,10 @@ std::string to_string(const Vec<T, N>& v) {
 }
 
 #else
+
+struct vec_n_type {
+    using type = uint;
+};
 
 template <typename T, uint N>
 class Vec {
@@ -1025,5 +1037,7 @@ inline Vec2f to_vec2(const OSL::Vec2& v) {
 inline Vec3f to_vec3(const OSL::Vec3& v) {
     return Vec3f{v.x, v.y, v.z};
 }
+
+using vec_n_type_t = vec_n_type::type;
 
 } // namspace base

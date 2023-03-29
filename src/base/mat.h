@@ -12,6 +12,10 @@ namespace base
 
 #ifdef USE_ENOKI
 
+struct mat_n_type {
+    using type = size_t;
+};
+
 template <typename T, size_t N>
 using Mat = enoki::Matrix<T, N>;
 
@@ -70,6 +74,10 @@ OSL::Matrix44 to_osl_mat4(const Mat<T, 4>& m) {
 }
 
 #elif defined USE_EIGEN
+
+struct mat_n_type {
+    using type = int;
+};
 
 template <typename T, int N>
 class Mat : public Eigen::Matrix<T, N, N> {
@@ -245,11 +253,16 @@ private:
     T* data;
 };
 
+struct mat_n_type {
+    using type = unsigned int;
+};
+
 template <typename T, unsigned int N>
 class Mat {
 public:
 
     using ValueType = T;
+    using VecType = Vec<T, N>;
 
     static constexpr uint dimension = N;
     
@@ -573,5 +586,7 @@ using Mat3f = Mat3<float>;
 using Mat3d = Mat3<double>;
 using Mat4f = Mat4<float>;
 using Mat4d = Mat4<double>;
+
+using mat_n_type_t = mat_n_type::type;
 
 }

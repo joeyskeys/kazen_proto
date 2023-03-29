@@ -3,7 +3,54 @@
 #include "base/mat.h"
 #include "core/film.h"
 
-using base::Vec;
+
+template <typename T, base::vec_n_type_t N>
+class PyVec : public base::Vec<T, N> {
+public:
+    using Base = base::Vec<T, N>;
+
+    // These ctors are ugly...
+    // Is there a good way to forward ctors of base class directly to
+    // here?
+    PyVec() : Base() {}
+
+    template <typename M, typename = std::enable_if_t<std::is_arithmetic_v<M>>>
+    PyVec(const M& s) : Base(s) {}
+
+    template <typename ...Ts, typename = std::enable_if_t<(... && std::is_arithmetic_v<Ts>)>>
+    PyVec(Ts... args) : Base(args...) {}
+
+    PyVec(py::tuple& tup) {
+        assert(tup.size() == N);
+        for (int i = 0; i < N; i++)
+            this->operator[](i) = tup[i].cast<T>();
+    }
+
+    PyVec(py::list& lst) {
+        assert(lst.size() == N);
+        for (int i = 0; i < N; i++)
+            this->operator[](i) = lst[i].cast<T>();
+    }
+};
+
+template <typename T>
+using PyVec2 = PyVec<T, 2>;
+
+template <typename T>
+using PyVec3 = PyVec<T, 3>;
+
+template <typename T>
+using PyVec4 = PyVec<T, 4>;
+
+using PyVec2f = PyVec2<float>;
+using PyVec2d = PyVec2<double>;
+using PyVec2i = PyVec2<int>;
+using PyVec3f = PyVec3<float>;
+using PyVec3d = PyVec3<double>;
+using PyVec3i = PyVec3<int>;
+using PyVec4f = PyVec4<float>;
+using PyVec4d = PyVec4<double>;
+using PyVec4i = PyVec4<int>;
 
 // Math types
 template <typename V>
@@ -19,6 +66,8 @@ py::class_<V> bind_vec(py::module& m, const char* name) {
 
     pycl.def(py::init<>())
         .def(py::init<const T&>())
+        .def(py::init<py::tuple&>())
+        .def(py::init<py::list&>())
         .def(py::self + py::self)
         .def(py::self += py::self)
         .def(py::self - py::self)
@@ -113,15 +162,21 @@ py::class_<V> bind_vec(py::module& m, const char* name) {
     if constexpr (N >= 2 && N < 4)
         m.def("cross", &base::cross<T, N>, "calculate the cross product of two vectors");
     */
-    if constexpr (N == 2)
-        m.def("cross", static_cast<T(*)(const V&, const V&)>(base::cross));
-    else if constexpr (N == 3)
-        m.def("cross", static_cast<V(*)(const V&, const V&)>(base::cross));
+    if constexpr (N == 2) {
+        m.def("cross", static_cast<T(*)(const typename V::Base&,
+            const typename V::Base&)>(base::cross));
+    }
+    else if constexpr (N == 3) {
+        m.def("cross", static_cast<typename V::Base(*)(const typename V::Base&,
+            const typename V::Base&)>(base::cross));
+    }
 
     if constexpr (std::is_floating_point_v<T>) {
-        m.def("lerp", py::overload_cast<const V&, const V&, const T>(&base::lerp<T, N>),
+        m.def("lerp", py::overload_cast<const typename V::Base&,
+            const typename V::Base&, const T>(&base::lerp<T, N>),
             "lerp between two vectors by a scalar")
-        .def("lerp", py::overload_cast<const V&, const V&, const V&>(&base::lerp<T, N>),
+        .def("lerp", py::overload_cast<const typename V::Base&,
+            const typename V::Base&, const typename V::Base&>(&base::lerp<T, N>),
             "lerp between two vectors component wise by a vector");
     }
 
@@ -131,20 +186,63 @@ py::class_<V> bind_vec(py::module& m, const char* name) {
     return pycl;
 }
 
+template <typename T, base::mat_n_type_t N>
+class PyMat : public base::Mat<T, N> {
+public:
+    using Base = base::Mat<T, N>;
+
+    // Same problem here
+    PyMat() : Base() {}
+
+    template <typename ...Ts>
+    PyMat(Ts... args) : Base(args...) {}
+
+    PyMat(py::tuple& tup) {
+        assert(tup.size() == N || tup.size() == N * N);
+        if (tup.size() == N) {
+
+        }
+    }
+
+    PyMat(py::list& lst) {
+        assert(lst.size() == N || lst.size() == N * N);
+        if (lst.size() == N) {
+
+        }
+    }
+};
+
+template <typename T>
+using PyMat2 = PyMat<T, 2>;
+
+template <typename T>
+using PyMat3 = PyMat<T, 3>;
+
+template <typename T>
+using PyMat4 = PyMat<T, 4>;
+
+using PyMat2f = PyMat2<float>;
+using PyMat2d = PyMat2<double>;
+using PyMat3f = PyMat3<float>;
+using PyMat3d = PyMat3<double>;
+using PyMat4f = PyMat4<float>;
+using PyMat4d = PyMat4<double>;
+
 #define T typename M::ValueType
+#define V typename M::VecType
 #define N M::dimension
 
 // This piece of code is ugly... But currently seems no better way to do it.
 // The core problems is I don't know any way to make template argument variadic
 template <typename M>
 inline void add_init_to_mat2(py::class_<M>& pycl) {
-    pycl.def(py::init<const Vec<T, N>&, const Vec<T, N>&>())
+    pycl.def(py::init<const V&, const V&>())
         .def(py::init<const T, const T, const T, const T>());
 }
 
 template <typename M>
 inline void add_init_to_mat3(py::class_<M>& pycl) {
-    pycl.def(py::init<const Vec<T, N>&, const Vec<T, N>&, const Vec<T, N>&>())
+    pycl.def(py::init<const V&, const V&, const V&>())
         .def(py::init<const T, const T, const T,
             const T, const T, const T,
             const T, const T, const T>());
@@ -152,8 +250,7 @@ inline void add_init_to_mat3(py::class_<M>& pycl) {
 
 template <typename M>
 inline void add_init_to_mat4(py::class_<M>& pycl) {
-    pycl.def(py::init<const Vec<T, N>&, const Vec<T, N>&, const Vec<T, N>&,
-        const Vec<T, N>&>())
+    pycl.def(py::init<const V&, const V&, const V&, const V&>())
         .def(py::init<const T, const T, const T, const T,
             const T, const T, const T, const T,
             const T, const T, const T, const T,
@@ -165,6 +262,8 @@ py::class_<M> bind_mat(py::module& m, const char* name) {
     py::class_<M> pycl(m, name);
 
     pycl.def(py::init<>())
+        .def(py::init<py::tuple&>())
+        .def(py::init<py::list&>())
         .def(py::self * T())
         .def(py::self *= T())
         .def(py::self * base::Vec<T, N>())
@@ -210,25 +309,25 @@ void bind_basetypes(py::module_& m) {
     py::module vec = m.def_submodule("vec",
         "Vector related classes and methods");
 
-    bind_vec<base::Vec2f>(vec, "Vec2f");
-    bind_vec<base::Vec2d>(vec, "Vec2d");
-    bind_vec<base::Vec2i>(vec, "Vec2i");
-    bind_vec<base::Vec3f>(vec, "Vec3f");
-    bind_vec<base::Vec3d>(vec, "Vec3d");
-    bind_vec<base::Vec3i>(vec, "Vec3i");
-    bind_vec<base::Vec4f>(vec, "Vec4f");
-    bind_vec<base::Vec4d>(vec, "Vec4d");
-    bind_vec<base::Vec4i>(vec, "Vec4i");
+    bind_vec<PyVec2f>(vec, "Vec2f");
+    bind_vec<PyVec2d>(vec, "Vec2d");
+    bind_vec<PyVec2i>(vec, "Vec2i");
+    bind_vec<PyVec3f>(vec, "Vec3f");
+    bind_vec<PyVec3d>(vec, "Vec3d");
+    bind_vec<PyVec3i>(vec, "Vec3i");
+    bind_vec<PyVec4f>(vec, "Vec4f");
+    bind_vec<PyVec4d>(vec, "Vec4d");
+    bind_vec<PyVec4i>(vec, "Vec4i");
 
     py::module mat = m.def_submodule("mat",
         "Matrix related classes and methods");
 
-    bind_mat<base::Mat2f>(mat, "Mat2f");
-    bind_mat<base::Mat2d>(mat, "Mat2d");
-    bind_mat<base::Mat3f>(mat, "Mat3f");
-    bind_mat<base::Mat3d>(mat, "Mat3d");
-    bind_mat<base::Mat4f>(mat, "Mat4f");
-    bind_mat<base::Mat4d>(mat, "Mat4d");
+    bind_mat<PyMat2f>(mat, "Mat2f");
+    bind_mat<PyMat2d>(mat, "Mat2d");
+    bind_mat<PyMat3f>(mat, "Mat3f");
+    bind_mat<PyMat3d>(mat, "Mat3d");
+    bind_mat<PyMat4f>(mat, "Mat4f");
+    bind_mat<PyMat4d>(mat, "Mat4d");
 
     // Interesting and worth noting:
     // Explicitly instantiated function assigned to a variable is deduced as a
