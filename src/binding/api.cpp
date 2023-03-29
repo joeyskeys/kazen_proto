@@ -170,7 +170,7 @@ void bind_api(py::module_& m) {
 
     py::class_<Renderer> renderer(api, "Renderer");
     renderer.def(py::init<>())
-            .def(py::init<const uint, const uint>())
+            .def(py::init<const uint, const uint, const RenderCallback>())
             .def("render",
                 py::overload_cast<const std::string&, const std::string&>(&Renderer::render),
                 "start render")

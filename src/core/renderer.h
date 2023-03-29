@@ -20,7 +20,7 @@ public:
         const RenderCallback cbk=RenderCallback())
         : sample_count(spl_cnt)
         , nthreads(nth)
-        ,render_cbk(cbk)
+        , render_cbk(cbk)
     {}
 
     /*

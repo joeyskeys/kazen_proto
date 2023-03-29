@@ -3,6 +3,8 @@
 #include "base/mat.h"
 #include "core/film.h"
 
+using base::Vec;
+
 // Math types
 template <typename V>
 py::class_<V> bind_vec(py::module& m, const char* name) {
@@ -129,12 +131,37 @@ py::class_<V> bind_vec(py::module& m, const char* name) {
     return pycl;
 }
 
-template <typename M>
-py::class_<M> bind_mat(py::module& m, const char* name) {
-
 #define T typename M::ValueType
 #define N M::dimension
 
+// This piece of code is ugly... But currently seems no better way to do it.
+// The core problems is I don't know any way to make template argument variadic
+template <typename M>
+inline void add_init_to_mat2(py::class_<M>& pycl) {
+    pycl.def(py::init<const Vec<T, N>&, const Vec<T, N>&>())
+        .def(py::init<const T, const T, const T, const T>());
+}
+
+template <typename M>
+inline void add_init_to_mat3(py::class_<M>& pycl) {
+    pycl.def(py::init<const Vec<T, N>&, const Vec<T, N>&, const Vec<T, N>&>())
+        .def(py::init<const T, const T, const T,
+            const T, const T, const T,
+            const T, const T, const T>());
+}
+
+template <typename M>
+inline void add_init_to_mat4(py::class_<M>& pycl) {
+    pycl.def(py::init<const Vec<T, N>&, const Vec<T, N>&, const Vec<T, N>&,
+        const Vec<T, N>&>())
+        .def(py::init<const T, const T, const T, const T,
+            const T, const T, const T, const T,
+            const T, const T, const T, const T,
+            const T, const T, const T, const T>());
+}
+
+template <typename M>
+py::class_<M> bind_mat(py::module& m, const char* name) {
     py::class_<M> pycl(m, name);
 
     pycl.def(py::init<>())
@@ -147,6 +174,13 @@ py::class_<M> bind_mat(py::module& m, const char* name) {
         .def("transpose", &M::transpose)
         .def_static("identity", &M::identity)
         .def_static("scale", &M::scale);
+
+    if constexpr (N == 2)
+        add_init_to_mat2<M>(pycl);
+    else if constexpr (N == 3)
+        add_init_to_mat3<M>(pycl);
+    else if constexpr (N == 4)
+        add_init_to_mat4<M>(pycl);
 
     if constexpr (N > 2) {
         pycl.def(py::self * base::Vec<T, N - 1>())
@@ -165,11 +199,11 @@ py::class_<M> bind_mat(py::module& m, const char* name) {
         m.def("rotate", &base::rotate<T, N>, "return the rotation matrix");
     }
     
-#undef T
-#undef N
-
     return pycl;
 }
+
+#undef T
+#undef N
 
 void bind_basetypes(py::module_& m) {
     // Math types
