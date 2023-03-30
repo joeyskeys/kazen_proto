@@ -20,16 +20,11 @@ public:
     template <typename ...Ts, typename = std::enable_if_t<(... && std::is_arithmetic_v<Ts>)>>
     PyVec(Ts... args) : Base(args...) {}
 
-    PyVec(py::tuple& tup) {
-        assert(tup.size() == N);
+    template <typename P, typename = std::enable_if_t<std::is_same_v<P, py::tuple> || std::is_same_v<P, py::list>>>
+    PyVec(P& arr) {
+        assert(arr.size() == N);
         for (int i = 0; i < N; i++)
-            this->operator[](i) = tup[i].cast<T>();
-    }
-
-    PyVec(py::list& lst) {
-        assert(lst.size() == N);
-        for (int i = 0; i < N; i++)
-            this->operator[](i) = lst[i].cast<T>();
+            this->operator[](i) = arr[i].template cast<T>();
     }
 };
 
@@ -197,17 +192,40 @@ public:
     template <typename ...Ts>
     PyMat(Ts... args) : Base(args...) {}
 
-    PyMat(py::tuple& tup) {
-        assert(tup.size() == N || tup.size() == N * N);
-        if (tup.size() == N) {
+    template <typename P, typename = std::enable_if_t<std::is_same_v<P, py::tuple> || std::is_same_v<P, py::list>>>
+    PyMat(P& arr) {
+        assert(arr.size() == N || arr.size() == N * N);
+        if (arr.size() == N) {
+            // First loop to validate
+            for (int i = 0; auto& e : arr) {
+                if (!py::isinstance<py::tuple>(e) && !py::isinstance<py::list>(e)) {
+                    throw std::runtime_error(
+                        fmt::format("The {} element of the tuple/list is not tuple/list", i)
+                    );
+                }
+                ++i;
+            }
 
+            // Second loop to assign elements
+            for (int i = 0; i < N; i++) {
+                auto e = py::cast<py::tuple>(arr[i]);
+                this->operator[](i) = typename PyVec<T, N>::PyVec(e);
+            }
         }
-    }
+        else if (arr.size() == N * N) {
+            // Again, validate first
+            for (int i = 0; auto& e : arr) {
+                if (!py::isinstance<py::float_>(e)) {
+                    throw std::runtime_error(
+                        fmt::format("The {} element of the tuple/list is not float", i)
+                    );
+                }
+                ++i;
+            }
 
-    PyMat(py::list& lst) {
-        assert(lst.size() == N || lst.size() == N * N);
-        if (lst.size() == N) {
-
+            // Assign
+            for (int i = 0; i < N * N; i++)
+                this->data()[i] = arr[i].template cast<T>();
         }
     }
 };

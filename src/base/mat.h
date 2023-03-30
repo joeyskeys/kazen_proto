@@ -232,6 +232,18 @@ public:
         return data[idx];
     }
 
+    Column& operator =(const Vec<T, N>& v) {
+        for (int i = 0; i < N; i++)
+            data[i] = v[i];
+
+        return *this;
+    }
+
+    Column& operator =(const Column& c) {
+        for (int i = 0; i < N; i++)
+            data[i] = c[i];
+    }
+
     void operator +=(const Vec<T, N>& v) {
         for (int i = 0; i < N; i++)
             data[i] += v[i];
