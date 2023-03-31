@@ -3,7 +3,10 @@
 #include "base/mat.h"
 #include "core/film.h"
 
-
+/*
+// Create a tampoline class like this will cause problem when pass arguments
+// to APIs that takes the raw Vec object
+// Leave this code here as a mark
 template <typename T, base::vec_n_type_t N>
 class PyVec : public base::Vec<T, N> {
 public:
@@ -27,25 +30,31 @@ public:
             this->operator[](i) = arr[i].template cast<T>();
     }
 };
+*/
 
-template <typename T>
-using PyVec2 = PyVec<T, 2>;
+// The easiest way to create Vec from python types
+template <typename T, base::vec_n_type_t N, typename P, typename =
+    std::enable_if_t<std::is_same_v<P, py::tuple> || std::is_same_v<P, py::list>>>
+base::Vec<T, N> create_vec(P& arr) {
+    assert(arr.size() == N);
+    base::Vec<T, N> ret;
 
-template <typename T>
-using PyVec3 = PyVec<T, 3>;
+    for (int i = 0; i < N; i++)
+        ret[i] = arr[i].template cast<T>();
 
-template <typename T>
-using PyVec4 = PyVec<T, 4>;
+    return ret;
+}
 
-using PyVec2f = PyVec2<float>;
-using PyVec2d = PyVec2<double>;
-using PyVec2i = PyVec2<int>;
-using PyVec3f = PyVec3<float>;
-using PyVec3d = PyVec3<double>;
-using PyVec3i = PyVec3<int>;
-using PyVec4f = PyVec4<float>;
-using PyVec4d = PyVec4<double>;
-using PyVec4i = PyVec4<int>;
+#define T typename V::Scalar
+#define N V::Size
+
+template <typename V>
+void bind_create_vec_func(py::module& m, const char* name) {
+    m.def(name, py::overload_cast<py::tuple&>(&create_vec<T, N, py::tuple>),
+        "create a Vec from python tuple")
+     .def(name, py::overload_cast<py::list&>(&create_vec<T, N, py::list>),
+        "create a vec from python list");
+}
 
 // Math types
 template <typename V>
@@ -54,15 +63,10 @@ py::class_<V> bind_vec(py::module& m, const char* name) {
     //using T = V::Scalar;
     //using N = V::Size;
 
-#define T typename V::Scalar
-#define N V::Size
-
     py::class_<V> pycl(m, name);
 
     pycl.def(py::init<>())
         .def(py::init<const T&>())
-        .def(py::init<py::tuple&>())
-        .def(py::init<py::list&>())
         .def(py::self + py::self)
         .def(py::self += py::self)
         .def(py::self - py::self)
@@ -158,97 +162,77 @@ py::class_<V> bind_vec(py::module& m, const char* name) {
         m.def("cross", &base::cross<T, N>, "calculate the cross product of two vectors");
     */
     if constexpr (N == 2) {
-        m.def("cross", static_cast<T(*)(const typename V::Base&,
-            const typename V::Base&)>(base::cross));
+        m.def("cross", static_cast<T(*)(const V&, const V&)>(base::cross));
     }
     else if constexpr (N == 3) {
-        m.def("cross", static_cast<typename V::Base(*)(const typename V::Base&,
-            const typename V::Base&)>(base::cross));
+        m.def("cross", static_cast<V(*)(const V&, const V&)>(base::cross));
     }
 
     if constexpr (std::is_floating_point_v<T>) {
-        m.def("lerp", py::overload_cast<const typename V::Base&,
-            const typename V::Base&, const T>(&base::lerp<T, N>),
+        m.def("lerp", py::overload_cast<const V&, const V&, const T>(&base::lerp<T, N>),
             "lerp between two vectors by a scalar")
-        .def("lerp", py::overload_cast<const typename V::Base&,
-            const typename V::Base&, const typename V::Base&>(&base::lerp<T, N>),
+        .def("lerp", py::overload_cast<const V&, const V&, const V&>(&base::lerp<T, N>),
             "lerp between two vectors component wise by a vector");
     }
-
-#undef T
-#undef N
 
     return pycl;
 }
 
-template <typename T, base::mat_n_type_t N>
-class PyMat : public base::Mat<T, N> {
-public:
-    using Base = base::Mat<T, N>;
+#undef T
+#undef N
 
-    // Same problem here
-    PyMat() : Base() {}
+template <typename T, base::mat_n_type_t N, typename P>
+base::Mat<T, N> create_mat(P& arr) {
+    assert(arr.size() == N || arr.size() == N * N);
+    base::Mat<T, N> ret;
 
-    template <typename ...Ts>
-    PyMat(Ts... args) : Base(args...) {}
-
-    template <typename P, typename = std::enable_if_t<std::is_same_v<P, py::tuple> || std::is_same_v<P, py::list>>>
-    PyMat(P& arr) {
-        assert(arr.size() == N || arr.size() == N * N);
-        if (arr.size() == N) {
-            // First loop to validate
-            for (int i = 0; auto& e : arr) {
-                if (!py::isinstance<py::tuple>(e) && !py::isinstance<py::list>(e)) {
-                    throw std::runtime_error(
-                        fmt::format("The {} element of the tuple/list is not tuple/list", i)
-                    );
-                }
-                ++i;
+    if (arr.size() == N) {
+        // First loop to validate
+        for (int i = 0; auto& e : arr) {
+            if (!py::isinstance<py::tuple>(e) && !py::isinstance<py::list>(e)) {
+                throw std::runtime_error(
+                    fmt::format("The {} element of the tuple/list is not tuple/list", i)
+                );
             }
-
-            // Second loop to assign elements
-            for (int i = 0; i < N; i++) {
-                auto e = py::cast<py::tuple>(arr[i]);
-                this->operator[](i) = typename PyVec<T, N>::PyVec(e);
-            }
+            ++i;
         }
-        else if (arr.size() == N * N) {
-            // Again, validate first
-            for (int i = 0; auto& e : arr) {
-                if (!py::isinstance<py::float_>(e)) {
-                    throw std::runtime_error(
-                        fmt::format("The {} element of the tuple/list is not float", i)
-                    );
-                }
-                ++i;
-            }
 
-            // Assign
-            for (int i = 0; i < N * N; i++)
-                this->data()[i] = arr[i].template cast<T>();
+        // Second loop to assign elements
+        for (int i = 0; i < N; i++) {
+            auto e = py::cast<P>(arr[i]);
+            ret[i] = create_vec<T, N, P>(e);
         }
     }
-};
+    else if (arr.size() == N * N) {
+        // Again, validate first
+        for (int i = 0; auto& e : arr) {
+            if (!py::isinstance<py::float_>(e)) {
+                throw std::runtime_error(
+                    fmt::format("The {} element of the tuple/list is not float", i)
+                );
+            }
+            ++i;
+        }
 
-template <typename T>
-using PyMat2 = PyMat<T, 2>;
+        // Assign
+        for (int i = 0; i < N * N; i++)
+            ret.data()[i] = arr[i].template cast<T>();
+    }
 
-template <typename T>
-using PyMat3 = PyMat<T, 3>;
-
-template <typename T>
-using PyMat4 = PyMat<T, 4>;
-
-using PyMat2f = PyMat2<float>;
-using PyMat2d = PyMat2<double>;
-using PyMat3f = PyMat3<float>;
-using PyMat3d = PyMat3<double>;
-using PyMat4f = PyMat4<float>;
-using PyMat4d = PyMat4<double>;
+    return ret;
+}
 
 #define T typename M::ValueType
 #define V typename M::VecType
 #define N M::dimension
+
+template <typename M>
+void bind_create_mat_func(py::module& m, const char* name) {
+    m.def(name, py::overload_cast<py::tuple&>(&create_mat<T, N, py::tuple>),
+        "create a Mat from python tuple")
+     .def(name, py::overload_cast<py::list&>(&create_mat<T, N, py::list>),
+        "create a Mat from python list");
+}
 
 // This piece of code is ugly... But currently seems no better way to do it.
 // The core problems is I don't know any way to make template argument variadic
@@ -280,8 +264,6 @@ py::class_<M> bind_mat(py::module& m, const char* name) {
     py::class_<M> pycl(m, name);
 
     pycl.def(py::init<>())
-        .def(py::init<py::tuple&>())
-        .def(py::init<py::list&>())
         .def(py::self * T())
         .def(py::self *= T())
         .def(py::self * base::Vec<T, N>())
@@ -327,25 +309,44 @@ void bind_basetypes(py::module_& m) {
     py::module vec = m.def_submodule("vec",
         "Vector related classes and methods");
 
-    bind_vec<PyVec2f>(vec, "Vec2f");
-    bind_vec<PyVec2d>(vec, "Vec2d");
-    bind_vec<PyVec2i>(vec, "Vec2i");
-    bind_vec<PyVec3f>(vec, "Vec3f");
-    bind_vec<PyVec3d>(vec, "Vec3d");
-    bind_vec<PyVec3i>(vec, "Vec3i");
-    bind_vec<PyVec4f>(vec, "Vec4f");
-    bind_vec<PyVec4d>(vec, "Vec4d");
-    bind_vec<PyVec4i>(vec, "Vec4i");
+    bind_vec<base::Vec2f>(vec, "Vec2f");
+    bind_vec<base::Vec2d>(vec, "Vec2d");
+    bind_vec<base::Vec2i>(vec, "Vec2i");
+    bind_vec<base::Vec3f>(vec, "Vec3f");
+    bind_vec<base::Vec3d>(vec, "Vec3d");
+    bind_vec<base::Vec3i>(vec, "Vec3i");
+    bind_vec<base::Vec4f>(vec, "Vec4f");
+    bind_vec<base::Vec4d>(vec, "Vec4d");
+    bind_vec<base::Vec4i>(vec, "Vec4i");
+
+    // Since we cannot have element number of python list/tuple at compile
+    // time, we have to create explicit create function...
+    bind_create_vec_func<base::Vec2f>(vec, "create_vec2f");
+    bind_create_vec_func<base::Vec2d>(vec, "create_vec2d");
+    bind_create_vec_func<base::Vec2i>(vec, "create_vec2i");
+    bind_create_vec_func<base::Vec3f>(vec, "create_vec3f");
+    bind_create_vec_func<base::Vec3d>(vec, "create_vec3d");
+    bind_create_vec_func<base::Vec3i>(vec, "create_vec3i");
+    bind_create_vec_func<base::Vec4f>(vec, "create_vec4f");
+    bind_create_vec_func<base::Vec4d>(vec, "create_vec4d");
+    bind_create_vec_func<base::Vec4i>(vec, "create_vec4i");
 
     py::module mat = m.def_submodule("mat",
         "Matrix related classes and methods");
 
-    bind_mat<PyMat2f>(mat, "Mat2f");
-    bind_mat<PyMat2d>(mat, "Mat2d");
-    bind_mat<PyMat3f>(mat, "Mat3f");
-    bind_mat<PyMat3d>(mat, "Mat3d");
-    bind_mat<PyMat4f>(mat, "Mat4f");
-    bind_mat<PyMat4d>(mat, "Mat4d");
+    bind_mat<base::Mat2f>(mat, "Mat2f");
+    bind_mat<base::Mat2d>(mat, "Mat2d");
+    bind_mat<base::Mat3f>(mat, "Mat3f");
+    bind_mat<base::Mat3d>(mat, "Mat3d");
+    bind_mat<base::Mat4f>(mat, "Mat4f");
+    bind_mat<base::Mat4d>(mat, "Mat4d");
+
+    bind_create_mat_func<base::Mat2f>(mat, "create_mat2f");
+    bind_create_mat_func<base::Mat2d>(mat, "create_mat2d");
+    bind_create_mat_func<base::Mat3f>(mat, "create_mat3f");
+    bind_create_mat_func<base::Mat3d>(mat, "create_mat3d");
+    bind_create_mat_func<base::Mat4f>(mat, "create_mat4f");
+    bind_create_mat_func<base::Mat4d>(mat, "create_mat4d");
 
     // Interesting and worth noting:
     // Explicitly instantiated function assigned to a variable is deduced as a
