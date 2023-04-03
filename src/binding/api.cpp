@@ -123,7 +123,7 @@ void bind_api(py::module_& m) {
             "add a triangle into the scene")
          .def("add_quad", &Scene::add_quad,
             "add a quad into the scene")
-         .def("add_mesh", &Scene::add_mesh,
+         .def("add_mesh", &Scene::add_mesh, "is_light"_a=False,
             "add a mesh into the scene")
          .def("add_point_light", &Scene::add_point_light,
             "add a point light into the scene")
