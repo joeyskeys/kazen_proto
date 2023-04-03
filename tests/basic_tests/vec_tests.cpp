@@ -1,8 +1,9 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include "base/vec.h"
 
 using namespace base;
+using Catch::Approx;
 
 TEST_CASE("Vector construction", "construction") {
     Vec3f v1{1, 2, 3};

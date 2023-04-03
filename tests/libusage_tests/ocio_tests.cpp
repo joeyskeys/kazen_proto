@@ -1,8 +1,9 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <OpenColorIO/OpenColorIO.h>
 
 namespace OCIO = OCIO_NAMESPACE;
+using Catch::Approx;
 
 TEST_CASE("Color space transform", "transform") {
     auto config = OCIO::GetCurrentConfig();

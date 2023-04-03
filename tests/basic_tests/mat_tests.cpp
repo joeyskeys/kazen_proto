@@ -1,8 +1,9 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include "base/mat.h"
 
 using namespace base;
+using Catch::Approx;
 
 TEST_CASE("Matrix construction", "construction") {
     Mat3f m1 = identity<float, 3>();

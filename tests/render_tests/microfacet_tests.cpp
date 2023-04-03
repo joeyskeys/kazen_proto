@@ -1,7 +1,9 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include "shading/microfacet.h"
 #include "shading/white_furnace.h"
+
+using Catch::Approx;
 
 TEST_CASE("White furnace test", "[single-file]") {
     auto ret = fixed_beckmann_white_furnace_test(0.9f, constants::half_pi<float>() * 0.5f);

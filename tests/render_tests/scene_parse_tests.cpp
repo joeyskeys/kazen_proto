@@ -1,6 +1,8 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include "core/scene.h"
+
+using Catch::Approx;
 
 TEST_CASE("Parse test", "[single-file]") {
     Scene scene;

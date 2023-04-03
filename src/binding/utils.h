@@ -1,8 +1,10 @@
 #include <pybind11/pybind11.h>
+#include <pybind11/functional.h>
 #include <pybind11/operators.h>
 #include <pybind11/stl.h>
 
 namespace py = pybind11;
+using namespace pybind11::literals;
 
 inline py::module create_submodule(py::module& m, const char *name) {
     std::string full_name = std::string(PyModule_GetName(m.ptr())) + "." + name;

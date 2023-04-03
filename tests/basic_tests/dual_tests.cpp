@@ -1,6 +1,8 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <OSL/dual.h>
+
+using Catch::Approx;
 
 TEST_CASE("Dual arithmetic", "basic") {
     OSL::Dual<float> x(1, 1);

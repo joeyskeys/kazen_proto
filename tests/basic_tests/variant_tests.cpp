@@ -1,7 +1,7 @@
 #include <variant>
 #include <string>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include "base/vec.h"
 
