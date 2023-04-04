@@ -276,6 +276,7 @@ Scene::Scene()
     shadingsys = std::make_unique<OSL::ShadingSystem>(&rend, nullptr, nullptr);
     register_closures(shadingsys.get());
     integrator_fac.create_functor = &PathIntegrator::create;
+    accelerator.reset(new EmbreeAccel(&objects));
 }
 
 bool Scene::process_shader_node(const pugi::xml_node& node, OSL::ShaderGroupRef shader_group) {

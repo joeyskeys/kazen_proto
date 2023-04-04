@@ -14,5 +14,6 @@ target_link_libraries(shape_test
     kazen_proto_lib)
 
 add_subdirectory(basic_tests)
+add_subdirectory(binding_tests)
 add_subdirectory(render_tests)
 add_subdirectory(libusage_tests)
