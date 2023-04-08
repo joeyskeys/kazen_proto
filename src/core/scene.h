@@ -162,10 +162,14 @@ public:
         lights.emplace_back(std::move(lgt_ptr));
     }
 
+    inline void set_shader_search_path(const std::string& path) {
+        shadingsys->attribute("searchpath:shader", path.c_str());
+    }
+
     void begin_shader_group(const std::string& name);
     void end_shader_group();
     bool load_oso_shader(const std::string& type, const std::string& name,
-        const std::string& layer);
+        const std::string& layer, const std::string& lib_path);
     void connect_shader(const std::string&, const std::string&, const std::string&,
         const std::string&);
 

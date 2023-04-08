@@ -127,6 +127,8 @@ void bind_api(py::module_& m) {
             "add a mesh into the scene")
          .def("add_point_light", &Scene::add_point_light,
             "add a point light into the scene")
+         .def("set_shader_search_path", &Scene::set_shader_search_path,
+            "set shader search path for OSL shading system")
          .def("begin_shader_group", &Scene::begin_shader_group,
             "BeginShaderGroup call to OSL")
          .def("end_shader_group", &Scene::end_shader_group,
