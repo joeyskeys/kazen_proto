@@ -43,6 +43,7 @@ public:
 
     inline void set_film(uint w, uint h, const std::string& f) {
         *film = Film(w, h, f);
+        film->generate_tiles();
     }
 
     inline void set_camera(const Vec3f& p, const Vec3f& l, const Vec3f& u,

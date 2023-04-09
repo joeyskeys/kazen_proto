@@ -22,5 +22,12 @@ target_link_libraries(microfacet_tests
         kazen_proto_lib
         ${OIIO_LIBRARIES})
 
-install(TARGETS scene_parse_tests integrator_tests
+add_executable(renderer_tests renderer_tests.cpp)
+target_link_libraries(renderer_tests
+    PRIVATE
+        Catch2::Catch2WithMain
+        kazen_proto_lib
+        ${OIIO_LIBRARIES})
+
+install(TARGETS scene_parse_tests integrator_tests microfacet_tests renderer_tests
     DESTINATION ${CMAKE_INSTALL_PREFIX}/tests)

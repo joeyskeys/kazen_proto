@@ -717,7 +717,6 @@ bool Scene::load_oso_shader(const std::string& type, const std::string& name,
     const std::string& layer, const std::string& lib_path)
 {
     auto builtin_path = (fs::path(lib_path) / name).concat(".oso");
-    std::cout << "builtin path " << builtin_path << std::endl;
     if (fs::exists(builtin_path)) {
         std::string oso_code = load_file(builtin_path);
         shadingsys->LoadMemoryCompiledShader(layer, oso_code);
@@ -726,7 +725,6 @@ bool Scene::load_oso_shader(const std::string& type, const std::string& name,
         throw std::runtime_error(fmt::format("Shader {} does not exists", layer));
     }
 
-    std::cout << "successfully loaded" << std::endl;
     return shadingsys->Shader(*current_shader_group, type, name, layer);
 }
 

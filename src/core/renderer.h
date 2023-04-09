@@ -17,7 +17,7 @@ class Renderer {
 public:
     Renderer() {}
     Renderer(const uint spl_cnt, const uint nth,
-        const RenderCallback cbk=RenderCallback())
+        RenderCallback* const cbk=nullptr)
         : sample_count(spl_cnt)
         , nthreads(nth)
         , render_cbk(cbk)
@@ -36,5 +36,5 @@ public:
     //Scene scene;
     uint sample_count = 10;
     uint nthreads = 0;
-    RenderCallback render_cbk;
+    RenderCallback* render_cbk;
 };

@@ -53,14 +53,15 @@ public:
     }
 };
 
-template <typename CBK>
-class PyRenderCallback : public CBK {
+class PyRenderCallback : public RenderCallback {
 public:
-    void on_tile_end() override {
+    void on_tile_end(Film& film, uint32_t tile_id) override {
         PYBIND11_OVERRIDE(
             void,
-            CBK,
+            RenderCallback,
             on_tile_end,
+            film,
+            tile_id
         );
     }
 };
@@ -165,14 +166,14 @@ void bind_api(py::module_& m) {
         .value("PathIntegrator", IntegratorType::PathIntegrator);
 
     // Renderer related
-    py::class_<RenderCallback> render_callback(api, "RenderCallback");
+    py::class_<RenderCallback, PyRenderCallback> render_callback(api, "RenderCallback");
     render_callback.def(py::init<>())
                    .def("on_tile_end", &RenderCallback::on_tile_end,
                         "callback function called when tile finished render");
 
     py::class_<Renderer> renderer(api, "Renderer");
     renderer.def(py::init<>())
-            .def(py::init<const uint, const uint, const RenderCallback>())
+            .def(py::init<const uint, const uint, RenderCallback* const>())
             .def("render",
                 py::overload_cast<const std::string&, const std::string&>(&Renderer::render),
                 "start render")

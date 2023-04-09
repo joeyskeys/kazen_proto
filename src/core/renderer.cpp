@@ -65,7 +65,8 @@ bool Renderer::render(Scene& scene, const std::string& output) {
             auto tile_end = get_time();
             auto tile_duration = std::chrono::duration_cast<std::chrono::milliseconds>(tile_end - tile_start);
             std::cout << "tile duration : " << tile_duration.count() << " ms\n";
-            render_cbk.on_tile_end(*(scene.film.get()), t);
+            if (render_cbk)
+                render_cbk->on_tile_end(*(scene.film.get()), t);
         }
 
 #ifdef USE_TBB
