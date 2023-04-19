@@ -55,7 +55,7 @@ public:
 
 class PyRenderCallback : public RenderCallback {
 public:
-    void on_tile_end(Film& film, uint32_t tile_id) override {
+    void on_tile_end(std::shared_ptr<Film>& film, uint32_t tile_id) override {
         PYBIND11_OVERRIDE(
             void,
             RenderCallback,
@@ -64,6 +64,20 @@ public:
             tile_id
         );
     }
+    /*
+    // This implementation is an example of customed impl, but this will cause
+    // an weird crash...
+    // Leave it as a comment here for now
+    void on_tile_end(std::shared_ptr<Film>& film, uint32_t tile_id) override {
+        pybind11::gil_scoped_acquire gil;
+        pybind11::function py_func = pybind11::get_override(this, "on_tile_end");
+        if (py_func) {
+            std::cout << "found overrided python function" << std::endl;
+            py_func(film, tile_id);
+            std::cout << "finished running python function" << std::endl;
+        }
+    }
+    */
 };
 
 void bind_api(py::module_& m) {
@@ -175,9 +189,15 @@ void bind_api(py::module_& m) {
     renderer.def(py::init<>())
             .def(py::init<const uint, const uint, RenderCallback* const>())
             .def("render",
-                py::overload_cast<const std::string&, const std::string&>(&Renderer::render),
-                "start render")
+                //py::overload_cast<const std::string&, const std::string&>(&Renderer::render),
+                [](Renderer& renderer, const std::string& scene_file, const std::string& output) {
+                    py::gil_scoped_release gil;
+                    renderer.render(scene_file, output);
+                }, "start render")
             .def("render",
-                py::overload_cast<Scene&, const std::string&>(&Renderer::render),
-                "start render");
+                //py::overload_cast<Scene&, const std::string&>(&Renderer::render),
+                [](Renderer& renderer, Scene& scene, const std::string& output) {
+                    py::gil_scoped_release gil;
+                    renderer.render(scene, output);
+                }, "start render");
 }

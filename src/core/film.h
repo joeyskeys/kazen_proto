@@ -23,6 +23,10 @@ public:
         return reinterpret_cast<PtrType*>(buf.get());
     }
 
+    inline uint32_t get_pixel_count() const {
+        return width * height;
+    }
+
     //using get_data_ptr_raw = get_data_ptr<uint8_t>;
 
 public:

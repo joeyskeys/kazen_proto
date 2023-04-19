@@ -42,7 +42,7 @@ public:
     std::unique_ptr<Integrator> create_integrator(Sampler& sampler);
 
     inline void set_film(uint w, uint h, const std::string& f) {
-        *film = Film(w, h, f);
+        film.reset(new Film{w, h, f});
         film->generate_tiles();
     }
 
@@ -201,7 +201,7 @@ private:
 
 public:
     // Make these fields public for now..
-    std::unique_ptr<Film> film;
+    std::shared_ptr<Film> film;
     std::unique_ptr<Camera> camera;
     std::unique_ptr<Accelerator> accelerator;
     std::vector<std::shared_ptr<Hitable>> objects;
