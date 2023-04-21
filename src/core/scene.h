@@ -201,7 +201,7 @@ private:
 
 public:
     // Make these fields public for now..
-    std::shared_ptr<Film> film;
+    std::unique_ptr<Film> film;
     std::unique_ptr<Camera> camera;
     std::unique_ptr<Accelerator> accelerator;
     std::vector<std::shared_ptr<Hitable>> objects;

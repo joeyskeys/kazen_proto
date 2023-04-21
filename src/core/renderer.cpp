@@ -66,7 +66,9 @@ bool Renderer::render(Scene& scene, const std::string& output) {
             auto tile_duration = std::chrono::duration_cast<std::chrono::milliseconds>(tile_end - tile_start);
             std::cout << "tile duration : " << tile_duration.count() << " ms\n";
             if (render_cbk) {
-                render_cbk->on_tile_end(scene.film, t);
+                std::cout << "before python call in thread " << t << std::endl;
+                render_cbk->on_tile_end(scene.film.get(), t);
+                std::cout << "after python call in thread " << t << std::endl;
             }
         }
 

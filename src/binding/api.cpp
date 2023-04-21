@@ -55,7 +55,7 @@ public:
 
 class PyRenderCallback : public RenderCallback {
 public:
-    void on_tile_end(std::shared_ptr<Film>& film, uint32_t tile_id) override {
+    void on_tile_end(Film* film, uint32_t tile_id) override {
         PYBIND11_OVERRIDE(
             void,
             RenderCallback,
@@ -182,8 +182,12 @@ void bind_api(py::module_& m) {
     // Renderer related
     py::class_<RenderCallback, PyRenderCallback> render_callback(api, "RenderCallback");
     render_callback.def(py::init<>())
-                   .def("on_tile_end", &RenderCallback::on_tile_end,
-                        "callback function called when tile finished render");
+                   .def("on_tile_end",
+                        //&RenderCallback::on_tile_end,
+                        [](RenderCallback& cbk, Film* film, uint32_t tid) {
+                            py::gil_scoped_acquire acquire_gil;
+                            cbk.on_tile_end(film, tid);
+                        }, "callback function called when tile finished render");
 
     py::class_<Renderer> renderer(api, "Renderer");
     renderer.def(py::init<>())
@@ -191,13 +195,13 @@ void bind_api(py::module_& m) {
             .def("render",
                 //py::overload_cast<const std::string&, const std::string&>(&Renderer::render),
                 [](Renderer& renderer, const std::string& scene_file, const std::string& output) {
-                    py::gil_scoped_release gil;
+                    py::gil_scoped_release release_gil;
                     renderer.render(scene_file, output);
                 }, "start render")
             .def("render",
                 //py::overload_cast<Scene&, const std::string&>(&Renderer::render),
                 [](Renderer& renderer, Scene& scene, const std::string& output) {
-                    py::gil_scoped_release gil;
+                    py::gil_scoped_release release_gil;
                     renderer.render(scene, output);
                 }, "start render");
 }
