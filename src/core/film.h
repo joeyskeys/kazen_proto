@@ -27,6 +27,10 @@ public:
         return width * height;
     }
 
+    inline uint32_t get_data_size() const {
+        return width * height * sizeof(Pixel);
+    }
+
     //using get_data_ptr_raw = get_data_ptr<uint8_t>;
 
 public:

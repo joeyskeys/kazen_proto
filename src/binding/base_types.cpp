@@ -368,8 +368,12 @@ void bind_basetypes(py::module_& m) {
         .def("set_pixel_color", &Tile::set_pixel_color)
         .def("set_tile_color", &Tile::set_tile_color)
         .def("get_data", [](Tile& t) {
-            //&Tile::get_data_ptr<float>)
-            return py::array_t<float>({t.get_pixel_count() * 3}, t.get_data_ptr<float>());
+            std::vector<float> data(t.get_pixel_count() * 3);
+            memcpy(data.data(), t.get_data_ptr<float>(), t.get_data_size());
+            // Seems it's the array_t thing causing the halt, the detailed reason
+            // is still not clear, keep the comments and code here just to remind.
+            //return py::array_t<float>({t.get_pixel_count() * 3}, reinterpret_cast<float*>(data.get()));
+            return data;
         })
         .def_readonly("x", &Tile::origin_x)
         .def_readonly("y", &Tile::origin_y)
