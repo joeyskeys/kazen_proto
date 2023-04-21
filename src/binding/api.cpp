@@ -183,7 +183,6 @@ void bind_api(py::module_& m) {
     py::class_<RenderCallback, PyRenderCallback> render_callback(api, "RenderCallback");
     render_callback.def(py::init<>())
                    .def("on_tile_end",
-                        //&RenderCallback::on_tile_end,
                         [](RenderCallback& cbk, Film* film, uint32_t tid) {
                             py::gil_scoped_acquire acquire_gil;
                             cbk.on_tile_end(film, tid);
@@ -193,13 +192,11 @@ void bind_api(py::module_& m) {
     renderer.def(py::init<>())
             .def(py::init<const uint, const uint, RenderCallback* const>())
             .def("render",
-                //py::overload_cast<const std::string&, const std::string&>(&Renderer::render),
                 [](Renderer& renderer, const std::string& scene_file, const std::string& output) {
                     py::gil_scoped_release release_gil;
                     renderer.render(scene_file, output);
                 }, "start render")
             .def("render",
-                //py::overload_cast<Scene&, const std::string&>(&Renderer::render),
                 [](Renderer& renderer, Scene& scene, const std::string& output) {
                     py::gil_scoped_release release_gil;
                     renderer.render(scene, output);
