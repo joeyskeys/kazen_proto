@@ -8,10 +8,10 @@ TEST_CASE("Renderer test", "[single-file]") {
     Renderer renderer{5, 16};
     Scene scene;
 
-    scene.set_film(800, 600, "./test.png");
-    scene.set_camera(Vec3f{7.3588915f, -6.92571f, 4.9583092f},
-        Vec3f{6.7073331f, -6.3116202f, 4.51303768f},
-        Vec3f{-0.324013472f, 0.30542084575f, 0.89539564f},
+    scene.set_film(1920, 1080, "./test.png");
+    scene.set_camera(Vec3f{0.f, 0.f, 5.f},
+        Vec3f{0.f, 4.371e-8f, 4.f},
+        Vec3f{0.f, 1.f, 0.f},
         1, 1000, 39.6f);
 
     std::string lib_path = "/home/joeys/Desktop/softs/kazen/shader";
@@ -22,59 +22,39 @@ TEST_CASE("Renderer test", "[single-file]") {
 
     auto mat = Mat4f::identity();
     auto verts = std::vector<Vec3f>{
-        Vec3f{-1, -1,  1},
         Vec3f{ 1, -1,  1},
         Vec3f{ 1,  1,  1},
-        Vec3f{-1,  1,  1},
-        Vec3f{-1, -1, -1},
-        Vec3f{ 1, -1, -1},
-        Vec3f{ 1,  1, -1},
-        Vec3f{-1,  1, -1}
+        Vec3f{-1, -1,  1},
+        Vec3f{-1, -1,  1},
+        Vec3f{ 1,  1,  1},
+        Vec3f{-1,  1,  1}
     };
     auto norms = std::vector<Vec3f>{
-        Vec3f{0, 1, 0},
-        Vec3f{0, 1, 0},
-        Vec3f{0, 1, 0},
-        Vec3f{0, 1, 0},
-        Vec3f{0, 1, 0},
-        Vec3f{0, 1, 0},
-        Vec3f{0, 1, 0},
-        Vec3f{0, 1, 0}
+        Vec3f{0, 0, 1},
+        Vec3f{0, 0, 1},
+        Vec3f{0, 0, 1},
+        Vec3f{0, 0, 1},
+        Vec3f{0, 0, 1},
+        Vec3f{0, 0, 1}
     };
     auto ts = std::vector<Vec2f>{
-        Vec2f{0, 1},
-        Vec2f{1, 0},
-        Vec2f{0, 1},
-        Vec2f{1, 0},
-        Vec2f{0, 1},
-        Vec2f{1, 0},
-        Vec2f{0, 1},
-        Vec2f{1, 0}
+        Vec2f{0.375f, 0.75f},
+        Vec2f{0.625f, 0.75f},
+        Vec2f{0.375f, 1.f},
+        Vec2f{0.375f, 1.f},
+        Vec2f{0.625f, 0.75f},
+        Vec2f{0.625f, 1.f}
     };
     auto idx = std::vector<Vec3i>{
         // front
         Vec3i{0, 1, 2},
-        Vec3i{0, 2, 3},
-        // back
-        Vec3i{4, 7, 6},
-        Vec3i{4, 6, 5},
-        // up
-        Vec3i{3, 2, 6},
-        Vec3i{3, 6, 7},
-        // down
-        Vec3i{0, 4, 1},
-        Vec3i{1, 4, 5},
-        // left
-        Vec3i{0, 3, 7},
-        Vec3i{0, 7, 4},
-        // right
-        Vec3i{1, 5, 6},
-        Vec3i{1, 6, 2}
+        Vec3i{3, 4, 5},
     };
     scene.add_mesh(mat, verts, norms, ts, idx, "test");
+    scene.build_bvh();
 
     scene.add_point_light(RGBSpectrum{1.f, 1.f, 1.f},
-        Vec3f{4.07624531f, 1.005453944f, 5.903862f});
+        Vec3f{0.f, 3.f, 3.f});
 
     renderer.render(scene, "./test.png");
 

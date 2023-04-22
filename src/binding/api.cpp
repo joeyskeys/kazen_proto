@@ -140,6 +140,8 @@ void bind_api(py::module_& m) {
             "add a quad into the scene")
          .def("add_mesh", &Scene::add_mesh,
             "add a mesh into the scene")
+         .def("build_bvh", &Scene::build_bvh,
+            "build acceleration structure")
          .def("add_point_light", &Scene::add_point_light,
             "add a point light into the scene")
          .def("set_shader_search_path", &Scene::set_shader_search_path,

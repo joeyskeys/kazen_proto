@@ -39,7 +39,7 @@ public:
         , lookat(l)
         , up(normalize(u))
         , near_plane(near_plane)
-        , far_plane(near_plane)
+        , far_plane(far_plane)
         , fov(fov)
         , film(film)
     {

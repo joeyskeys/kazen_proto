@@ -156,6 +156,10 @@ public:
         }
     }
 
+    inline void build_bvh() {
+        accelerator->build();
+    }
+
     inline void add_point_light(const RGBSpectrum& r, const Vec3f& p) {
         auto lgt_ptr = std::make_unique<PointLight>(lights.size());
         lgt_ptr->radiance = r;
