@@ -54,7 +54,7 @@ TEST_CASE("Renderer test", "[single-file]") {
     scene.build_bvh();
 
     scene.add_point_light(RGBSpectrum{1.f, 1.f, 1.f},
-        Vec3f{0.f, 3.f, 3.f});
+        Vec3f{0.f, 3.f, 3.f}, "light_shader");
 
     renderer.render(scene, "./test.png");
 
