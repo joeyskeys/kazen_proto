@@ -425,10 +425,10 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
 
         float pdf;
         auto light_ptr = get_random_light(sampler_ptr->randomf(), pdf);
-        //if (light_shader == nullptr)
-            //throw std::runtime_error(fmt::format("Light shader for name : {} does not existj..", light_ptr->shader_name));
-        if (light_ptr != nullptr) {
+        if (light_ptr) {
             // Now we don't explicitly need a light in scene
+            if (light_ptr->shader_name == "")
+                throw std::runtime_error("Sampled light doesn't have a shader");
             shading_engine.execute(light_ptr->shader_name, sg);
             process_closure(light_ret, sg.Ci, RGBSpectrum{1}, false);
             light_ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);

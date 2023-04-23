@@ -160,10 +160,13 @@ public:
         accelerator->build();
     }
 
-    inline void add_point_light(const RGBSpectrum& r, const Vec3f& p) {
+    inline void add_point_light(const RGBSpectrum& r, const Vec3f& p,
+        const std::string& sname)
+    {
         auto lgt_ptr = std::make_unique<PointLight>(lights.size());
         lgt_ptr->radiance = r;
         lgt_ptr->position = p;
+        lgt_ptr->shader_name = sname;
         lights.emplace_back(std::move(lgt_ptr));
     }
 

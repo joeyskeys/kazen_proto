@@ -20,10 +20,10 @@ struct ShadingEngine {
 
     inline void execute(const std::string& shader_name, OSL::ShaderGlobals& sg) const {
         auto shader_ptr = shaders->at(shader_name);
-        if (shader_ptr == nullptr)
+        if (!shader_ptr)
             throw std::runtime_error(fmt::format("Shader for name : {} does not exists",
                 shader_name));
-        osl_shading_sys->execute(*osl_shading_ctx, *(shaders->at(shader_name)), sg);
+        osl_shading_sys->execute(*osl_shading_ctx, *shader_ptr, sg);
     }
 
     inline void execute(OSL::ShaderGroupRef shader, OSL::ShaderGlobals& sg) const {
