@@ -4,7 +4,8 @@ surface emissive
     color base_color = color(1)
     [[
         string label = "Base Color",
-        int connectable = 1
+        int connectable = 1,
+        int is_emissive = 1
     ]]
 )
 {
