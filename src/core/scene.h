@@ -52,7 +52,7 @@ public:
     {
         if (!film)
             throw std::runtime_error("Film not set yet");
-        *camera = Camera(p, l, u, near_plane, far_plane, fov, film.get());
+        *camera = Camera(p, l, u, near_plane, far_plane, fov, film.get(), true);
     }
 
     inline void set_accelerator(AcceleratorType type) {
@@ -146,7 +146,8 @@ public:
     {
         Transform trans{world};
         auto obj_ptr = std::make_shared<TriangleMesh>(trans, vs, ns, ts,
-            idx, shader_name);
+            idx, shader_name, is_light);
+        obj_ptr->setup_dpdf();
         accelerator->add_trianglemesh(obj_ptr);
         if (is_light) {
             auto light = std::make_unique<GeometryLight>(lights.size(),

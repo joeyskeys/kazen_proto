@@ -34,7 +34,8 @@ public:
         const float near_plane,
         const float far_plane,
         const float fov,
-        Film* const film)
+        Film* const film,
+        bool        flip=false)
         : position(p)
         , lookat(l)
         , up(normalize(u))
@@ -43,10 +44,10 @@ public:
         , fov(fov)
         , film(film)
     {
-        init();
+        init(flip);
     }
 
-    inline void init() {
+    inline void init(bool flip=false) {
         /*
         ratio = static_cast<float>(film->width) / static_cast<float>(film->height);
 
@@ -85,8 +86,13 @@ public:
             Vec4f{0, 0, 1, 0}
         };
 
-        sample_to_camera = base::inverse(proj_matrix) * base::translate3f(Vec3f(-1.f, 1.f / aspect, 0.f)) *
-            base::scale3f(Vec3f(2.f, -2.f / aspect, 1.f));
+        float flip_fac = -1.f;
+        if (flip)
+            flip_fac = 1.f;
+
+        sample_to_camera = base::inverse(proj_matrix) *
+            base::translate3f(Vec3f(-1.f, -1.f * flip_fac / aspect, 0.f)) *
+            base::scale3f(Vec3f(2.f, 2.f * flip_fac / aspect, 1.f));
     }
 
     //Ray generate_ray(uint x, uint y);

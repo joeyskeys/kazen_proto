@@ -26,6 +26,7 @@ public:
     Light(uint id, const std::string& sname, bool d=true)
         : light_id(id)
         , shader_name(sname)
+        , radiance(1)
         , is_delta(d)
     {}
 
