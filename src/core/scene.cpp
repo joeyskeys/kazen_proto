@@ -598,6 +598,13 @@ void Scene::parse_from_file(fs::path filepath) {
 
             case EShader: {
                 // Kinda complicate here..
+                if (last_shader_node) {
+                    if (!process_shader_node(last_shader_node, current_shader_group))
+                        throw std::runtime_error(fmt::format("Name or layer attribute not specified at {}",
+                            offset(node.offset_debug())));
+                    last_shader_node = pugi::xml_node();
+                }
+
                 auto child = node.first_child();
                 if (!child) {
                     // No children, process imediately
