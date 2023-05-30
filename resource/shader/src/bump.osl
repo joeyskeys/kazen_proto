@@ -12,6 +12,10 @@ shader bump
         int connectable = 0
     ]],
     output normal out_normal = normal(0, 1, 0)
+    [[
+        string label = "Output",
+        int connectable = 1
+    ]]
 )
 {
     normal nml = (normal)texture(nmlpath, u, v) * 2 - 1;
