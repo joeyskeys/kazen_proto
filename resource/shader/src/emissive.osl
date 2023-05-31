@@ -6,8 +6,14 @@ surface emissive
         string label = "Base Color",
         int connectable = 1,
         int is_emissive = 1
+    ]],
+    float intensity = 1.0
+    [[
+        string label = "Intensity",
+        int connectable = 1,
+        int is_emissive = 1
     ]]
 )
 {
-    Ci = base_color * kp_emitter(0.5);
+    Ci = base_color * intensity * kp_emitter(0.5);
 }
