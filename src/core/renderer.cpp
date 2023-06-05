@@ -8,13 +8,13 @@
 #include <tbb/tbb.h>
 #endif
 
-bool Renderer::render(const std::string& scene_file, const std::string& output) {
+bool Renderer::render(const std::string& scene_file, const std::string& output) const {
     Scene scene;
     scene.parse_from_file(scene_file);
     return render(scene, output);
 }
 
-bool Renderer::render(Scene& scene, const std::string& output) {
+bool Renderer::render(Scene& scene, const std::string& output) const {
     auto render_start = get_time();
 
 #ifdef USE_TBB
@@ -84,6 +84,24 @@ bool Renderer::render(Scene& scene, const std::string& output) {
     scene.film->filename = output;
     scene.film->write_tiles();
     scene.recorder.output(std::cout);
+
+    return true;
+}
+
+bool Renderer::render_debug(Scene& scene, const uint32_t x, const uint32_t y) const {
+    Sampler sampler;
+    // Meaningless but fixed seed
+    sampler.seed(1, 2);
+
+    auto integrator_ptr = scene.integrator_fac.create(scene.camera.get(), scene.film.get(), &sampler, &scene.recorder);
+    integrator_ptr->setup(&scene);
+
+    RecordContext rctx;
+
+    auto ray = scene.camera->generate_ray(Vec2f(x + 0.5f, y + 0.5f));
+    auto radiance = integrator->Li(ray, &rctx);
+
+    std::cout << "radiance : " << radiance << std::endl;
 
     return true;
 }
