@@ -202,5 +202,10 @@ void bind_api(py::module_& m) {
                 [](Renderer& renderer, Scene& scene, const std::string& output) {
                     py::gil_scoped_release release_gil;
                     renderer.render(scene, output);
-                }, "start render");
+                }, "start render")
+            .def("render",
+                [](Renderer& renderer, Scene& scene, const uint32_t x, const uint32_t y) {
+                    py::gil_scoped_release release_gil;
+                    renderer.render(scene, x, y);
+                }, "start debug render");
 }

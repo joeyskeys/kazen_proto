@@ -88,7 +88,7 @@ bool Renderer::render(Scene& scene, const std::string& output) const {
     return true;
 }
 
-bool Renderer::render_debug(Scene& scene, const uint32_t x, const uint32_t y) const {
+bool Renderer::render(Scene& scene, const uint32_t x, const uint32_t y) const {
     Sampler sampler;
     // Meaningless but fixed seed
     sampler.seed(1, 2);
@@ -99,7 +99,7 @@ bool Renderer::render_debug(Scene& scene, const uint32_t x, const uint32_t y) co
     RecordContext rctx;
 
     auto ray = scene.camera->generate_ray(Vec2f(x + 0.5f, y + 0.5f));
-    auto radiance = integrator->Li(ray, &rctx);
+    auto radiance = integrator_ptr->Li(ray, &rctx);
 
     std::cout << "radiance : " << radiance << std::endl;
 

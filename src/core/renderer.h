@@ -33,7 +33,7 @@ public:
 
     bool render(const std::string& scene_file, const std::string& output="./test.jpg") const;
     bool render(Scene& scene, const std::string& output="./test.jpg") const;
-    bool render_debug(Scene& scene, const uint32_t x, const uint32_t y) const;
+    bool render(Scene& scene, const uint32_t x, const uint32_t y) const;
 
     //Scene scene;
     uint sample_count = 10;
