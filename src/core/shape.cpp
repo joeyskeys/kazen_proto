@@ -610,9 +610,13 @@ void TriangleMesh::post_hit(Intersection& isect) const {
     // We need P setup for differential calculation
     Shape::post_hit(isect);
 
+    isect.N = local_to_world.apply_normal(isect.N);
     if (norms.size() > 0) {
-        isect.shading_normal = base::normalize(bary_x * norms[idx[0]] + isect.uv[0] * norms[idx[1]]
-            + isect.uv[1] * norms[idx[2]]);
+        auto tnorm0 = local_to_world.apply_normal(norms[idx[0]]);
+        auto tnorm1 = local_to_world.apply_normal(norms[idx[1]]);
+        auto tnorm2 = local_to_world.apply_normal(norms[idx[2]]);
+        isect.shading_normal = base::normalize(bary_x * tnorm0 + isect.uv[0] * tnorm1
+            + isect.uv[1] * tnorm2);
     }
     else
         isect.shading_normal = isect.N;
