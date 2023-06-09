@@ -415,6 +415,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
     p.record(std::move(e_start));
     size_t last_geom_id = -1;
 
+    bool single_emissive_surface = true;
+
     for (int depth = 1; depth < max_depth; ++depth) {
         KazenRenderServices::globals_from_hit(sg, ray, its);
         shading_engine.execute(its.shader_name, sg);
@@ -441,16 +443,19 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
             * at only first hit and specular bounce coz further
             * emission is counted in the direction light sampling
             * part
+            * Update: not anymore, if we hit emissive surface we
+            * add its contribution directly
             * *********************************************/
         if (its.is_light) {
         //if (last_bounce_specular) {
-            auto Ls = light_ptr->eval(its, bsdf_sample.wo, its.P);
-            // We have a problem here with interface design...
-            //lpdf = light_ptr->pdf(its, );
-            mis_weight = last_bounce_specular ? 1.f : power_heuristic(1, mpdf, 1, lpdf);
-            Li += mis_weight * throughput * Ls;
-            //Li += throughput * ret.Le;
-            p.record(EEmission, its, throughput, Li);
+            if (!single_emissive_surface || base::dot(ray.direction, its.shading_normal) < 0) {
+                auto Ls = light_ptr->eval(its, bsdf_sample.wo, its.P);
+                // We have a problem here with interface design...
+                //lpdf = light_ptr->pdf(its, );
+                mis_weight = last_bounce_specular ? 1.f : power_heuristic(1, mpdf, 1, lpdf);
+                Li += mis_weight * throughput * Ls;
+                p.record(EEmission, its, throughput, Li);
+            }
         }
 
         //auto sampled_f = ret.surface.sample(sg, bsdf_sample);
@@ -460,6 +465,8 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         * *********************************************/
         Vec3f light_dir;
         if (light_ptr) {
+            // TODO: remove the contribution from itself it the sampled light
+            // is the hit object
             auto Ls = light_ptr->sample(its, light_dir, lpdf, accel_ptr);
             if (!base::is_zero(Ls)) {
                 float cos_theta_v = dot(light_dir, its.shading_normal);
