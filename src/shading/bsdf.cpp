@@ -263,7 +263,7 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                         break;
 
                     // Weight for emission is different
-                    case KpEmitterID:       status = ret.surface.add_closure<KpEmitterParams>(KpEmitterID, RGBSpectrum{1}, comp->as<KpEmitterParams>());
+                    case KpEmitterID:       status = ret.surface.add_closure<KpEmitterParams>(KpEmitterID, cw, comp->as<KpEmitterParams>());
                         break;
 
                     case KpPrincipleDiffuseID: {

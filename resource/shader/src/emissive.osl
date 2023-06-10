@@ -7,7 +7,7 @@ surface emissive
         int connectable = 1,
         int is_emissive = 1
     ]],
-    float intensity = 1.0
+    float intensity = 5.0
     [[
         string label = "Intensity",
         int connectable = 1,

@@ -82,7 +82,7 @@ bool Renderer::render(Scene& scene, const std::string& output) const {
 
     // TODO : do some validation first
     scene.film->filename = output;
-    scene.film->write_tiles();
+    //scene.film->write_tiles();
     scene.recorder.output(std::cout);
 
     return true;

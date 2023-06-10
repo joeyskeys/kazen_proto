@@ -66,7 +66,7 @@ struct is_int<int> {
 };
 
 template <typename T>
-inline constexpr bool is_int_v = is_float<T>::value;
+inline constexpr bool is_int_v = is_int<T>::value;
 
 template <typename T>
 struct is_vec3f {
