@@ -15,7 +15,7 @@ using OSL::TypeDesc;
 
 namespace constants = boost::math::constants;
 
-/* BSSRDF is new subject, starting with pbrt and appleseed references:
+/* BSSRDF is a new subject, starting with pbrt and appleseed references:
  * https://www.pbr-book.org/3ed-2018/Volume_Scattering/The_BSSRDF
  * http://library.imageworks.com/pdfs/imageworks-library-BSSRDF-sampling.pdf
  * https://www.solidangle.com/research/s2013_bssrdf_slides.pdf

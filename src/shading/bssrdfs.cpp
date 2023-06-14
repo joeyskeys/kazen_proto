@@ -207,6 +207,40 @@ static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sampl
     return eval_dipole(ctx, profile_eval_func);
 }
 
+/*********************************************
+ * According to [1], light could seperated into three components:
+ * reduced-intensity, single-scattering and multiple-scattering components:
+ * S = S^(0) + S^(1) + S_d
+ * As for bssrdf model, the first term is irrelevant, so we only consider
+ * the last two terms.
+ * "Single scattering occurs only when the refracted incoming and outgoing
+ * rays intersect", from [2], this condition
+ * is hard to meet and my understanding is that most renderers don't 
+ * compute this term. It leaves us only the third term.
+ * As for the third term, "A better dipole" giveed a normalized version
+ * (equation 1):
+ * S_d = 1 / pi *    F_t(wi)   *     R_d      * F_t(wo) / (1 - 2 * C1 / eta)
+ *                ------------   ------------   ----------------------------
+ *                fresnel term   spatial term          directional term
+ * Here three parts are multiplied directly coz we've made a assumption here
+ * that spatial term and directional term are independent thus the name
+ * "separable".
+ * 
+ * As in the dipole like models, R_d is approximated by diffusion term and 
+ * seems the most common BSSRDF models are based dipole methods, I saw quite
+ * a lot paper refer to it directly as diffusion term.
+ * 
+ * [1] A Better Dipole
+ *     http://www.eugenedeon.com/wp-content/uploads/2014/04/betterdipole.pdf
+ * 
+ * [2] A Practical Model for Subsurface Light Transport
+ *     https://graphics.stanford.edu/papers/bssrdf/bssrdf.pdf
+ * 
+ *********************************************/
+static RGBSpectrum separable_bssrdf_eval() {
+
+}
+
 RGBSpectrum KpDipole::eval(ShadingContext* ctx) {
     return eval_dipole(ctx, eval_standard_dipole_func);
 }
