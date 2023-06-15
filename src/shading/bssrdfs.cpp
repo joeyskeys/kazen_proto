@@ -1,4 +1,7 @@
+#include <functional>
+
 #include <OSL/oslexec.h>
+#include <boost/math/constants/constants.hpp>
 
 #include "base/utils.h"
 #include "base/vec.h"
@@ -6,6 +9,8 @@
 #include "shading/bssrdfs.h"
 #include "shading/context.h"
 #include "shading/renderservices.h"
+
+namespace constants = boost::math::constants;
 
 static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profile_func, const Vec4f& rand) {
     auto dipole_params = reinterpret_cast<KpDipoleParams*>(ctx->data);
@@ -237,8 +242,39 @@ static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sampl
  *     https://graphics.stanford.edu/papers/bssrdf/bssrdf.pdf
  * 
  *********************************************/
-static RGBSpectrum separable_bssrdf_eval() {
 
+using eval_profile_func = std::function<RGBSpectrum(const Vec3f&,
+    const Vec3f&, const Vec3f&, const Vec3f&, const float)>;
+
+static RGBSpectrum separable_bssrdf_eval(
+    void* data,
+    eval_profile_func eval_profile,
+    const Vec3f& pi,
+    const Vec3f& wi,
+    const Vec3f& po,
+    const Vec3f& wo)
+{
+    auto params = reinterpret_cast<const KpDipoleParams*>(ctx->data);
+    auto Rd = eval_profile(pi, wi, po, wo, params->eta);
+    const float cos_o = std::min(std::abs(cos_theta(wo)), 1.f);
+    auto Fo = fresnel_trans_dielectric(params->eta, cos_o);
+    const float cos_i = std::min(std::abs(cos_theta(wi)), 1.f);
+    auto Fi = fresnel_trans_dielectric(params->eta, cos_i);
+    const float C = 1.f - fresnel_first_moment_x2(params->eta);
+
+    constants::one_div_pi<float> * Rd * Fo * Fi / C;
+}
+
+static RGBSpectrum standard_dipole_eval(
+    const Vec3f& pi,
+    const Vec3f& wi,
+    const Vec3f& po,
+    const Vec3f& wo,
+    const float eta)
+{
+    const float radius_sqr = (pi - po).length_squared();
+    const float Fdr = fresnel_internel_diffuse_reflectance(eta);
+    
 }
 
 RGBSpectrum KpDipole::eval(ShadingContext* ctx) {
