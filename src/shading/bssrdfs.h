@@ -23,10 +23,15 @@ namespace constants = boost::math::constants;
 
 struct KpDipoleParams {
     OSL::Vec3 N;
-    OSL::Vec3 sigma_a;
-    OSL::Vec3 sigma_s;
-    OSL::Vec3 sigma_tr;
+    OSL::Vec3 Rd;
     float max_radius, eta, g;
+};
+
+struct PrecomputedParams {
+    RGBSpectrum sigma_tr;
+    RGBSpectrum sigma_t;
+    RGBSpectrum sigma_s;
+    RGBSpectrum sigma_a;
 };
 
 // Diffusion approximation of subsurface reflection

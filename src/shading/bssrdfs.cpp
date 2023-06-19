@@ -235,13 +235,57 @@ static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sampl
  * seems the most common BSSRDF models are based dipole methods, I saw quite
  * a lot paper refer to it directly as diffusion term.
  * 
+ * Since evaluation BSSRDF by parameters like sigma_t, sigma_a is quite not
+ * intuitive, [3] and [4] gives methods to evaluate Rd in a analytical way
+ * and allow us to compute alpha_prime first, and then use it to compute
+ * simga_t and sigma_a. But my question is that you need to compute Rd to
+ * get S, but now you evaluate Rd first and then use the result to compute
+ * Rd again. Appleseed applies this method. Methods told in [3] section 4
+ * uses the Rd approximation eqution in [2] section 2.4 to compute
+ * alpha_prime(even not analytically) and then use the main equation to
+ * calculate Rd again... not sure if this is reasonable.
+ * 
+ * As I dig deep enough, I saw all those equations in papers back in the 50s.
+ * Those equations were derived firstly in the physics community by studying
+ * the wave and particles, pure physics. Introduced into medical community
+ * when studying the light propagation in the skin, blood or similar tissues.
+ * Finally introduced into CG community(more or less like a summary and explaining). 
+ * I could not really understand all these equations before I acutally dive
+ * into the physics.
+ * 
  * [1] A Better Dipole
  *     http://www.eugenedeon.com/wp-content/uploads/2014/04/betterdipole.pdf
  * 
  * [2] A Practical Model for Subsurface Light Transport
  *     https://graphics.stanford.edu/papers/bssrdf/bssrdf.pdf
  * 
+ * [3] A Rapid Hierarchical Rendering Technique for Translucent Materials
+ *     http://graphics.ucsd.edu/~henrik/papers/fast_bssrdf/fast_bssrdf.pdf
+ * 
+ * [4] Texture mapping for the Better Dipole model
+ *     https://graphics.pixar.com/library/TexturingBetterDipole/paper.pdf
+ * 
  *********************************************/
+
+using rd_func = std::function<float(const float)>;
+
+RGBSpectrum compute_alpha_prime(rd_func rd_f, const float rd) {
+    // This function is basically copied from [4] section 3, appleseed uses
+    // it too.
+    // Basically a bisection to estimate the alpha_prime since the rd_func
+    // is monotonic.
+    int iter_cnt = 20;
+    float x0 = 0.f, x1 = 1.f;
+    float xmid, x;
+
+    for (int i = 0; i < iter_cnt; i++) {
+        float xmid = 0.5f * (x0 + x1);
+        x = rd_f(xmid);
+        x < rd ? x0 = xmid : x1 = xmid;
+    }
+
+    return 0.5f * (x0 + x1);
+}
 
 using eval_profile_func = std::function<RGBSpectrum(const Vec3f&,
     const Vec3f&, const Vec3f&, const Vec3f&, const float)>;
