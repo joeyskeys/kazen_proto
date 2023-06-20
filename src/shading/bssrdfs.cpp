@@ -287,6 +287,51 @@ RGBSpectrum compute_alpha_prime(rd_func rd_f, const float rd) {
     return 0.5f * (x0 + x1);
 }
 
+// The following two class are basically copied from appleseed.
+// The Rd compute func for better dipole model will need to store
+// C1 and C2, like a closure. Make them classes will help to unify
+// the interface.
+// Opaque to user, so put them here directly.
+class ComputeRdStandardDipole {
+    explicit ComputeRdStandardDipole(const float eta) {
+        // Using equations from [2] page 3
+        const float Fdr = fresnel_internel_diffuse_reflectance(eta);
+        m_a = (1.f + Fdr) / (1.f - Fdr);
+    }
+
+    float operator()(const float alpha_prime) const {
+        // [3] eq.15
+        const float sqrt_3ap = std::sqrt(3.f * (1.f - alpha_prime));
+        return (0.5f * alpha_prime) * (1.f + std::exp(-(4.f / 3.f) * m_a * sqrt_3ap))
+            * std::exp(-sqrt_3ap);
+    }
+
+private:
+    float m_a;
+};
+
+class ComputeRdBetterDipole {
+    explicit ComputeRdBetterDipole(const float eta)
+        : m_two_c1(fresnel_first_moment_x2(eta))
+        , m_three_c2(fresnel_second_moment_x3(eta))
+    {}
+
+    float operator()(const float alpha_prime) const {
+        float cphi = 0.25f * (1.f - m_two_c1);
+        float ce = 0.5f * (1.f - m_three_c2);
+        float four_a = (1.f + m_three_c2) / cphi;
+        float mu_tr_d = std::sqrt((1.f - alpha_prime) * (2.f - alpha_prime) / 3.f);
+        const float myexp = std::exp(-four_a * mu_tr_d);
+        return 0.5f * base::square(alpha_prime)
+                    * std::exp(-std::sqrt(3.f * (1.f - alpha_prime) / (2.f - alpha_prime)))
+                    * (ce * (1.f + myexp) + cphi / mu_tr_d * (1.f - myexp));
+    }
+
+private:
+    const float m_two_c1;
+    const float m_three_c2;
+};
+
 using eval_profile_func = std::function<RGBSpectrum(const Vec3f&,
     const Vec3f&, const Vec3f&, const Vec3f&, const float)>;
 

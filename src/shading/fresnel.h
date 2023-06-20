@@ -150,6 +150,15 @@ inline float fresnel_first_moment_x2(const float eta) {
             : -9.23372 + eta * (22.2272 + eta * (-20.9292 + eta * (10.2291 + eta * (-2.54396 + eta * 0.254913))));
 }
 
+inline float fresnel_second_moment_x3(const float eta) {
+    const T rcp_eta = 1.f / eta;
+    return
+        eta < 1.f
+            ? 0.828421 + eta * (-2.62051 + eta * (3.36231 + eta * (-1.95284 + eta * (0.236494 + eta * 0.145787))))
+            : -1641.1 + (((135.926 * rcp_eta) - 656.175) * rcp_eta + 1376.53) * rcp_eta
+              + eta * (1213.67 + eta * (-568.556 + eta * (164.798 + eta * (-27.0181 + eta * 1.91826)))); 
+}
+
 inline float fresnel_internel_diffuse_reflectance(const float eta) {
     const float rcp_eta = 1. / eta;
     const float rcp_eta2 = square(rcp_eta);
