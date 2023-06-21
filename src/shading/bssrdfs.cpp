@@ -317,6 +317,7 @@ class ComputeRdBetterDipole {
     {}
 
     float operator()(const float alpha_prime) const {
+        // [4] page 2.
         float cphi = 0.25f * (1.f - m_two_c1);
         float ce = 0.5f * (1.f - m_three_c2);
         float four_a = (1.f + m_three_c2) / cphi;
@@ -354,16 +355,40 @@ static RGBSpectrum separable_bssrdf_eval(
     constants::one_div_pi<float> * Rd * Fo * Fi / C;
 }
 
-static RGBSpectrum standard_dipole_eval(
+static RGBSpectrum standard_dipole_profile_eval(
+    const void* data,
     const Vec3f& pi,
     const Vec3f& wi,
     const Vec3f& po,
-    const Vec3f& wo,
-    const float eta)
+    const Vec3f& wo)
 {
+    auto params = reinterpret_cast<KpDipoleParams*>(data);
     const float radius_sqr = (pi - po).length_squared();
+    // Following two variable calculation is redundent..
     const float Fdr = fresnel_internel_diffuse_reflectance(eta);
-    
+    const float A = (1.f + Fdr) / (1.f - Fdr);
+
+    const RGBSpectrum sigma_a = base::to_vec3(params->sigma_a);
+    const RGBSpectrum sigma_s = base::to_vec3(params->sigma_s);
+    const RGBSpectrum sigma_s_prime = sigma_s * (1.f - params->g);
+    const RGBSpectrum sigma_t_prime = sigma_s_prime + sigma_a;
+    const RGBSpectrum alpha_prime = base::to_vec3(params->alpha_prime);
+    const RGBSpectrum sigma_tr = base::to_vec3(params->sigma_tr);
+
+    const auto zr = 1.f / sigma_t_prime;
+    const auto zv  = -zr * (1.f + (4.f / 3.f) * A);
+    const auto dr = base::sqrt(radius_sqr + zr * zr);
+    const auto dv = base::sqrt(radius_sqr + zv * zv);
+    const auto rcp_dr = 1.f / dr;
+    const auto rcp_dv = 1.f / dv;
+    const auto sigma_tr_dr = sigma_tr * dr;
+    const auto sigma_tr_dv = sigma_tr * dv;
+    const auto kr = zr * (sigma_tr_dr + 1.f) * base::square(rcp_dr);
+    const auto kv = zv * (sigma_tr_dv + 1.f) * base::square(rcP_dv);
+    const auto er = base::exp(-sigma_tr_dr) * rcp_dr;
+    const auto ev = base::exp(-sigma_tr_dv) * rcp_dv;
+    constexpr auto one_div_four_pi = constants::one_div_two_pi<float> / 2.f;
+    return alpha_prime * one_div_four_pi * (kr * er - kv * ev);
 }
 
 RGBSpectrum KpDipole::eval(ShadingContext* ctx) {

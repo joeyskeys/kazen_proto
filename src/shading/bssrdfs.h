@@ -24,14 +24,12 @@ namespace constants = boost::math::constants;
 struct KpDipoleParams {
     OSL::Vec3 N;
     OSL::Vec3 Rd;
+    OSL::Vec3 sigma_a;
+    OSL::Vec3 sigma_s;
+    OSL::Vec3 sigma_t;
+    OSL::Vec3 sigma_tr;
+    OSL::Vec3 alpha_prime;
     float max_radius, eta, g;
-};
-
-struct PrecomputedParams {
-    RGBSpectrum sigma_tr;
-    RGBSpectrum sigma_t;
-    RGBSpectrum sigma_s;
-    RGBSpectrum sigma_a;
 };
 
 // Diffusion approximation of subsurface reflection
@@ -64,9 +62,10 @@ struct KpDipole {
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(KpDipoleParams, N),
-            CLOSURE_VECTOR_PARAM(KpDipoleParams, sigma_a),
-            CLOSURE_VECTOR_PARAM(KpDipoleParams, sigma_s),
-            CLOSURE_VECTOR_PARAM(KpDipoleParams, sigma_tr),
+            CLOSURE_VECTOR_PARAM(KpDipoleParams, Rd),
+            //CLOSURE_VECTOR_PARAM(KpDipoleParams, sigma_a),
+            //CLOSURE_VECTOR_PARAM(KpDipoleParams, sigma_s),
+            //CLOSURE_VECTOR_PARAM(KpDipoleParams, sigma_tr),
             CLOSURE_FLOAT_PARAM(KpDipoleParams, max_radius),
             CLOSURE_FLOAT_PARAM(KpDipoleParams, eta),
             CLOSURE_FLOAT_PARAM(KpDipoleParams, g),
