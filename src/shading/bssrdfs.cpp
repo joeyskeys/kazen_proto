@@ -375,10 +375,28 @@ static RGBSpectrum standard_dipole_profile_eval(
     const RGBSpectrum alpha_prime = base::to_vec3(params->alpha_prime);
     const RGBSpectrum sigma_tr = base::to_vec3(params->sigma_tr);
 
+    // We have
+    //   zr = 1 / sigma_t_prime
+    //   zv = -zr - 2 * zb
+    //      = -zr - 4 * A * D
+    //
+    // where
+    //
+    //   D = 1 / (3 * sigma_t_prime)
+    // 
+    // So
+    //
+    //   zv = -zr - 4 * A / (3 * simga_t_prime)
+    //      = -zr - zr * 4/3 * A
+    //      = -zr * (1 + 4/3 * A)
     const auto zr = 1.f / sigma_t_prime;
     const auto zv  = -zr * (1.f + (4.f / 3.f) * A);
+
+    // c^2 = a^2 + b^2
+    // Calculate the third edge length of a triangle
     const auto dr = base::sqrt(radius_sqr + zr * zr);
     const auto dv = base::sqrt(radius_sqr + zv * zv);
+    
     const auto rcp_dr = 1.f / dr;
     const auto rcp_dv = 1.f / dv;
     const auto sigma_tr_dr = sigma_tr * dr;
