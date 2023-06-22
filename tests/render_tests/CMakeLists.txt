@@ -29,5 +29,12 @@ target_link_libraries(renderer_tests
         kazen_proto_lib
         ${OIIO_LIBRARIES})
 
+add_executable(bssrdf_tests bssrdf_tests.cpp)
+target_link_libraries(bssrdf_tests
+    PRIVATE
+        Catch2::Catch2WithMain
+        kazen_proto_lib
+        ${OIIO_LIBRARIES})
+
 install(TARGETS scene_parse_tests integrator_tests microfacet_tests renderer_tests
     DESTINATION ${CMAKE_INSTALL_PREFIX}/tests)

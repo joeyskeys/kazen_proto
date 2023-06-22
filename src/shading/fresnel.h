@@ -151,7 +151,7 @@ inline float fresnel_first_moment_x2(const float eta) {
 }
 
 inline float fresnel_second_moment_x3(const float eta) {
-    const T rcp_eta = 1.f / eta;
+    const float rcp_eta = 1.f / eta;
     return
         eta < 1.f
             ? 0.828421 + eta * (-2.62051 + eta * (3.36231 + eta * (-1.95284 + eta * (0.236494 + eta * 0.145787))))

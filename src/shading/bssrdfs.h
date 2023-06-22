@@ -24,9 +24,12 @@ namespace constants = boost::math::constants;
 struct KpDipoleParams {
     OSL::Vec3 N;
     OSL::Vec3 Rd;
+    OSL::Vec3 mfp;
     OSL::Vec3 sigma_a;
     OSL::Vec3 sigma_s;
+    OSL::Vec3 sigma_s_prime;
     OSL::Vec3 sigma_t;
+    OSL::Vec3 sigma_t_prime;
     OSL::Vec3 sigma_tr;
     OSL::Vec3 alpha_prime;
     float max_radius, eta, g;
@@ -57,12 +60,14 @@ static RGBSpectrum Sd(const Vec3f& pi, const Vec3f& wi, const Vec3f& po,
 }
 
 struct KpDipole {
+    static void precompute(void*);
     static RGBSpectrum eval(ShadingContext*);
     static RGBSpectrum sample(ShadingContext*, Sampler*);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
         const OSL::ClosureParam params[] = {
             CLOSURE_VECTOR_PARAM(KpDipoleParams, N),
             CLOSURE_VECTOR_PARAM(KpDipoleParams, Rd),
+            CLOSURE_VECTOR_PARAM(KpDipoleParams, mfp),
             //CLOSURE_VECTOR_PARAM(KpDipoleParams, sigma_a),
             //CLOSURE_VECTOR_PARAM(KpDipoleParams, sigma_s),
             //CLOSURE_VECTOR_PARAM(KpDipoleParams, sigma_tr),
