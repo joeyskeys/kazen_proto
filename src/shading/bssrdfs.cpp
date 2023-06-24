@@ -95,73 +95,6 @@ static float dipole_pdf(void* data, const float r) {
     return pdf / (constants::two_pi<float>() * r);
 }
 
-static RGBSpectrum eval_standard_dipole_func(void* data, const Vec3f& pi,
-    const Vec3f& wi, const Vec3f& po, const Vec3f& wo)
-{
-    auto params = reinterpret_cast<KpDipoleParams*>(data);
-    const float sqr_radius = base::length_squared(pi - po);
-    if (sqr_radius > square(params->max_radius))
-        return 0;
-
-    const float Fdr = fresnel_internel_diffuse_reflectance(params->eta);
-    const float A = (1. + Fdr) / (1. - Fdr);
-
-    // Here's a design decision to consider:
-    // Each vector arithmetic operation could be a small for loop (or not if
-    // vectorization library is used), write code in this way saves typing but
-    // could be a penalty to performance.
-    auto sigma_a = base::to_vec3(params->sigma_a);
-    auto sigma_s = base::to_vec3(params->sigma_s);
-    auto sigma_s_prime = sigma_s * (1. - params->g);
-    auto sigma_t_prime = sigma_s_prime + sigma_a;
-    auto sigma_tr = base::to_vec3(params->sigma_tr);
-
-    auto zr = 1. / sigma_t_prime;
-    auto zv = -zr * (1.f + (4.f / 3.f) * A);
-
-    auto dr = base::sqrt(sqr_radius + zr * zr);
-    auto dv = base::sqrt(sqr_radius + zv * zv);
-
-    auto rcp_dr = 1. / dr;
-    auto rcp_dv = 1. / dv;
-    auto sigma_tr_dr = sigma_tr * dr;
-    auto sigma_tr_dv = sigma_tr * dv;
-    auto kr = zr * (sigma_tr_dr + 1.f) * base::square(rcp_dr);
-    auto kv = zv * (sigma_tr_dv + 1.f) * base::square(rcp_dv);
-    auto er = base::exp(-sigma_tr_dr) * rcp_dr;
-    auto ev = base::exp(-sigma_tr_dv) * rcp_dv;
-    
-    return constants::one_div_pi<float>() * 0.25 * (kr * er - kv * ev);
-}
-
-static RGBSpectrum eval_dipole(ShadingContext* ctx, const bssrdf_profile_eval_func& profile_eval_func)
-{
-    auto dipole_params = reinterpret_cast<KpDipoleParams*>(ctx->data);
-    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
-    auto ret = profile_eval_func(ctx->data, ctx->isect_i->P, ctx->isect_i->wi,
-        bssrdf_sample->po, bssrdf_sample->wo);
-
-    // We have a problem here, since bssrdf involes "two shading point", we'll have
-    // two normals and two directions(for wi & wo). Should we still use the shading
-    // space representation of directions?
-    auto cos_on = std::min(std::abs(cos_theta(bssrdf_sample->wo)), 1.f);
-    auto fo = fresnel_trans_dielectric(dipole_params->eta, cos_on);
-    auto cos_in = std::min(std::abs(cos_theta(ctx->isect_i->wi)), 1.f);
-    auto fi = fresnel_trans_dielectric(dipole_params->eta, cos_on);
-
-    // Noramlization factor
-    // checkout "A Quantized-Diffusion Model for Rendering Translucent Materials" page 6
-    // equation 14
-    auto c = 1.f - fresnel_first_moment_x2(dipole_params->eta);
-
-    // Not correct but use it for now
-    bssrdf_sample->pdf *= dipole_pdf(ctx->data,
-        base::length(ctx->isect_i->P - bssrdf_sample->po)) *
-        std::abs(base::dot(ctx->isect_i->wi, bssrdf_sample->frame.n)) * 10;
-
-    return ret * fo * fi / c;
-}
-
 static inline float sample_standard_dipole_func(void* data, uint32_t ch, const float u) {
     auto dipole_params = reinterpret_cast<KpDipoleParams*>(data);
     return sample_exponential_distribution(dipole_params->sigma_tr[ch], u);
@@ -211,6 +144,21 @@ static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sampl
 
     return eval_dipole(ctx, profile_eval_func);
 }
+
+
+/*********************************************
+ * Importance sampling for BSSRDF is a big topic by itself. [1] gave a
+ * very intuitive summary for it and introduces their own method, which
+ * is adopted in appleseed.
+ * Here we use the method introduced in [2] as the default method first.
+ * Then we'll implement all the methods briefed in [1] and then do a
+ * comparison between them.
+ * 
+ * [1] BSSRDF Importance Sampling Slides
+ * https://pdfs.semanticscholar.org/90da/5211ce2a6f63d50b8616736c393aaf8bf4ca.pdf
+ * [2] BSSRDF Importance Sampling
+ * https://library.imageworks.com/pdfs/imageworks-library-BSSRDF-sampling.pdf
+ *********************************************/
 
 /*********************************************
  * According to [1], light could seperated into three components:
@@ -269,7 +217,7 @@ static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sampl
 
 using rd_func = std::function<float(const float)>;
 
-RGBSpectrum compute_alpha_prime(rd_func rd_f, const RGBSpectrum& rd) {
+RGBSpectrum compute_alpha_prime(const rd_func& rd_f, const RGBSpectrum& rd) {
     // This function is basically copied from [4] section 3, appleseed uses
     // it too.
     // Basically a bisection to estimate the alpha_prime since the rd_func
@@ -280,10 +228,10 @@ RGBSpectrum compute_alpha_prime(rd_func rd_f, const RGBSpectrum& rd) {
         float x0 = 0.f, x1 = 1.f;
         float xmid, x;
 
-        for (int i = 0; i < iter_cnt; i++) {
+        for (int j = 0; j < iter_cnt; j++) {
             float xmid = 0.5f * (x0 + x1);
             x = rd_f(xmid);
-            x < rd ? x0 = xmid : x1 = xmid;
+            x < rd[i] ? x0 = xmid : x1 = xmid;
         }
         ap[i] = 0.5f * (x0 + x1);
     }
@@ -297,13 +245,14 @@ RGBSpectrum compute_alpha_prime(rd_func rd_f, const RGBSpectrum& rd) {
 // the interface.
 // Opaque to user, so put them here directly.
 class ComputeRdStandardDipole {
+public:
     explicit ComputeRdStandardDipole(const float eta) {
         // Using equations from [2] page 3
         const float Fdr = fresnel_internel_diffuse_reflectance(eta);
         m_a = (1.f + Fdr) / (1.f - Fdr);
     }
 
-    float operator()(const float alpha_prime) const {
+    float compute_rd(const float alpha_prime) const {
         // [3] eq.15
         const float sqrt_3ap = std::sqrt(3.f * (1.f - alpha_prime));
         return (0.5f * alpha_prime) * (1.f + std::exp(-(4.f / 3.f) * m_a * sqrt_3ap))
@@ -314,15 +263,14 @@ private:
     float m_a;
 };
 
-using compute_alpha_prime_func = std::function<RGBSpectrum(const float)>;
-
 class ComputeRdBetterDipole {
+public:
     explicit ComputeRdBetterDipole(const float eta)
         : m_two_c1(fresnel_first_moment_x2(eta))
         , m_three_c2(fresnel_second_moment_x3(eta))
     {}
 
-    float operator()(const float alpha_prime) const {
+    float compute_rd(const float alpha_prime) const {
         // [4] page 2.
         float cphi = 0.25f * (1.f - m_two_c1);
         float ce = 0.5f * (1.f - m_three_c2);
@@ -339,13 +287,15 @@ private:
     const float m_three_c2;
 };
 
+using compute_alpha_prime_func = std::function<RGBSpectrum(const RGBSpectrum&)>;
+
 static void dipole_precompute(void* data, const compute_alpha_prime_func& f) {
     auto params = reinterpret_cast<KpDipoleParams*>(data);
     const auto tr = 1.f / base::to_vec3(params->mfp);
     params->sigma_tr = base::to_osl_vec3(tr);
     const auto ap = f(base::to_vec3(params->Rd));
     params->alpha_prime = base::to_osl_vec3(ap);
-    const auto t_prime = tr / base::sqrt(3.f * (1.f - ap))
+    const auto t_prime = tr / base::sqrt(3.f * (1.f - ap));
     params->sigma_t_prime = base::to_osl_vec3(t_prime);
     params->sigma_t = base::to_osl_vec3(t_prime / (1 - params->g));
     const auto s_prime = ap * t_prime;
@@ -475,17 +425,40 @@ static RGBSpectrum better_dipole_profile_eval(
     return base::square(alpha_prime) * one_div_four_pi * (kr * ev - kv * ev);
 }
 
-void KpDipole::precompute(void* data) {
-
+void KpStandardDipole::precompute(void* data) {
+    auto params = reinterpret_cast<KpDipoleParams*>(data);
+    ComputeRdStandardDipole compute_rd_standard_dipole(params->eta);
+    // This code is a mess
+    // TODO: Figure out how to remove one of the bind/lambda
+    //auto compute_rd_func = std::bind(&ComputeRdStandardDipole::compute_rd, &compute_rd_standard_dipole,
+        //std::placeholders::_1);
+    auto compute_rd_func = [&](const float a) {
+        return compute_rd_standard_dipole.compute_rd(a);
+    };
+    auto alpha_func = std::bind(compute_alpha_prime, compute_rd_func, std::placeholders::_1);
+    dipole_precompute(data, alpha_func);
 }
 
-RGBSpectrum KpDipole::eval(ShadingContext* ctx) {
+RGBSpectrum KpStandardDipole::eval(ShadingContext* ctx) {
     //return eval_dipole(ctx, eval_standard_dipole_func);
     return separable_bssrdf_eval(ctx->data, standard_dipole_profile_eval,
         ctx->isect_i->P, ctx->isect_i->wi, ctx->isect_o.P, ctx->isect_o.wo);
 }
 
-RGBSpectrum KpDipole::sample(ShadingContext* ctx, Sampler* rng) {
+RGBSpectrum KpStandardDipole::sample(ShadingContext* ctx, Sampler* rng) {
     return sample_dipole(ctx, sample_standard_dipole_func,
         eval_standard_dipole_func, rng);
+}
+
+void KpBetterDipole::precompute() {
+
+}
+
+RGBSpectrum KpBetterDipole::eval(ShadingContext* ctx) {
+    return separable_bssrdf_eval(ctx->data, better_dipole_profile_eval,
+        ctx->isect_i->P, ctx->isect_i->wi, ctx->isect_o.P, ctx->isect_o.wo);
+}
+
+RGBSpectrum KpBetterDipole::sample(ShadingContext* ctx, Sampler* rng) {
+
 }

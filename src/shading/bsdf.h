@@ -68,7 +68,8 @@ enum ClosureID {
     KpPrincipleBSSRDFID,
 
     // BSSRDFs
-    KpDipoleID,
+    KpStandardDipoleID,
+    KpBetterDipoleID,
 
     NumClosureIDs
 };

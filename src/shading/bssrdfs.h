@@ -59,7 +59,7 @@ static RGBSpectrum Sd(const Vec3f& pi, const Vec3f& wi, const Vec3f& po,
     return Rd * fi * fo / c;
 }
 
-struct KpDipole {
+struct KpStandardDipole {
     static void precompute(void*);
     static RGBSpectrum eval(ShadingContext*);
     static RGBSpectrum sample(ShadingContext*, Sampler*);
@@ -77,7 +77,26 @@ struct KpDipole {
             CLOSURE_FINISH_PARAM(KpDipoleParams)
         };
 
-        shadingsys.register_closure("kp_dipole", KpDipoleID, params, nullptr, nullptr);
+        shadingsys.register_closure("kp_standard_dipole", KpStandardDipoleID, params, nullptr, nullptr);
+    }
+};
+
+struct KpBetterDipole {
+    static void precompute(void*);
+    static RGBSpectrum eval(ShadingContext*);
+    static RGBSpectrum sample(ShadingContext*, Sampler*);
+    static void register_closure(OSL::ShadingSystem& shadingsys) {
+        const OSL::ClosureParam params[] = {
+            CLOSURE_VECTOR_PARAM(KpDipoleParams, N),
+            CLOSURE_VECTOR_PARAM(KpDipoleParams, Rd),
+            CLOSURE_VECTOR_PARAM(KpDipoleParams, mfp),
+            CLOSURE_FLOAT_PARAM(KpDipoleParams, max_radius),
+            CLOSURE_FLAOT_PARAM(KpDipoleParams, eta),
+            CLOSURE_FLOAT_PARAM(KpDipoleParams, g),
+            CLOSURE_FINISH_PARAM(KpDipoleParams)
+        };
+
+        shadingsys.register_closure("kp_better_dipole", KpBetterDipoleID, params, nullptr, nullptr);
     }
 };
 
@@ -92,14 +111,16 @@ using bssrdf_sample_func = std::function<RGBSpectrum(ShadingContext*, Sampler*)>
 
 inline bssrdf_eval_func get_bssrdf_eval_func(ClosureID id) {
     static std::array<bssrdf_eval_func, 1> eval_functions {
-        KpDipole::eval
+        KpStandardDipole::eval,
+        KpBetterDipole::eval
     };
     return eval_functions[id - KpDipoleID];
 }
 
 inline bssrdf_sample_func get_bssrdf_sample_func(ClosureID id) {
     static std::array<bssrdf_sample_func, 1> sample_functions {
-        KpDipole::sample
+        KpDipole::sample,
+        KpBetterDipole::sample
     };
     return sample_functions[id - KpDipoleID];
 }
