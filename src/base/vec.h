@@ -84,6 +84,11 @@ inline Vec<T, N> cross(const Vec<T, N>& v1, const Vec<T, N>& v2) {
     return enoki::cross(v1, v2);
 }
 
+template <typename T, size_t N>
+inline Vec<T, N> proejct(const Vec<T, N>& v, const Vec<T, N>& n) {
+    return v - enoki::dot(v, n) * n;
+}
+
 // Normalize
 template <typename T, size_t N>
 inline Vec<T, N> normalize(const Vec<T, N>& v) {
@@ -326,6 +331,11 @@ inline auto dot(const Eigen::MatrixBase<Derived1>& v1, const Eigen::MatrixBase<D
 template <typename Derived>
 inline auto cross(const Eigen::MatrixBase<Derived>& v1, const Eigen::MatrixBase<Derived>& v2) {
     return v1.cross(v2);
+}
+
+template <typename Derived>
+inline auto project(const Eigen::MatrixBase<Derived>& v, const Eigen::MatrixBase<Derived>& n) {
+    v - v.dot(n) * n;
 }
 
 // Normalize
@@ -914,6 +924,11 @@ template <typename T, uint N>
 inline auto cross(const Vec<T, N>& a, const Vec<T, N>& b) {
     static_assert(N >= 2 && N < 4);
     return a.cross(b);
+}
+
+template <typename T, uint N>
+inline auto project(const Vec<T, N>& v, const Vec<T, N>& n) {
+    return v - v.dot(n) * n;
 }
 
 // Normalize

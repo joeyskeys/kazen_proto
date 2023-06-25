@@ -233,7 +233,10 @@ struct BSSRDFSample {
     Vec3f po;
     Vec3f wo;
     Frame frame;
-    float pdf;
+    float axis_prob;
+    float pt_prob;
+    uint32_t sampled_axis;
+    uint32_t sample_cnt;
     SurfaceCompositeClosure sampled_closure;
     OSL::ShaderGroupRef sampled_shader;
     Vec3f brdf_f;

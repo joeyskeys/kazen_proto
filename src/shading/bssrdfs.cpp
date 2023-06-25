@@ -12,153 +12,6 @@
 
 namespace constants = boost::math::constants;
 
-static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profile_func, const Vec4f& rand) {
-    auto dipole_params = reinterpret_cast<KpDipoleParams*>(ctx->data);
-    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
-
-    // Choose a projection axis
-    auto isect_frame = ctx->isect_i->frame;
-    float u = rand[0];
-    if (u < 0.5f) {
-        bssrdf_sample->frame = Frame(isect_frame.s, isect_frame.t, isect_frame.n);
-        u = u * 2;
-        bssrdf_sample->pdf = 0.5f;
-    }
-    else if (u < 0.75f) {
-        bssrdf_sample->frame = Frame(isect_frame.t, isect_frame.n, isect_frame.s);
-        u = (u - 0.5f) * 4;
-        bssrdf_sample->pdf = 0.25f;
-    }
-    else {
-        bssrdf_sample->frame = Frame(isect_frame.n, isect_frame.s, isect_frame.t);
-        u = (u - 0.75f) * 4;
-        bssrdf_sample->pdf = 0.25f;
-    }
-
-    // A simple strategy to sample a channel
-    // Not enough random number here available, so reuse one from frame sampling
-    // But in the coming bsdf sampling, we still need another Vec3 random numbers
-    size_t ch = 3 * 0.99999f * u;
-    const float disk_radius = profile_func(ctx->data, ch, rand[1]);
-
-    if (disk_radius == 0.f)
-        return false;
-
-    if (disk_radius >= dipole_params->max_radius)
-        return false;
-
-    auto phi = constants::two_pi<float>() * rand[2];
-    auto disk_point = Vec3f{disk_radius * std::cos(phi), 0.f, disk_radius * std::sin(phi)};
-
-
-    auto h = std::sqrt(square(dipole_params->max_radius) - square(disk_radius));
-    auto hn = h * bssrdf_sample->frame.n;
-    auto entry_pt = ctx->isect_i->P + disk_point + hn;
-    auto ray_dir = base::normalize(-hn);
-
-    const static int max_intersection_cnt = 10;
-    int found_intersection = 0;
-    Intersection isects[max_intersection_cnt];
-    auto start_pt = entry_pt;
-    for (int i = 0; i < max_intersection_cnt; i++) {
-        Ray r(start_pt, ray_dir);
-        if (!ctx->accel->intersect(r, isects[i]))
-            break;
-        start_pt = isects[i].P;
-        ++found_intersection;
-    }
-
-    // Randomly chose one intersection
-    uint idx = 0;
-    if (found_intersection == 0)
-        return false;
-    else if (found_intersection > 1) {
-        idx = rand[3] * found_intersection * 0.999999f;
-    }
-
-    bssrdf_sample->po = isects[idx].P;
-    ctx->isect_o = isects[idx];
-    bssrdf_sample->sampled_shader = (*(ctx->engine_ptr->shaders))[isects[idx].shader_name];
-    return true;
-}
-
-static float dipole_pdf(void* data, const float r) {
-    auto params = reinterpret_cast<KpDipoleParams*>(data);
-    float pdf = 0.f;
-    std::array<float, 3> channel_pdfs{0.5f, 0.25f, 0.25f};
-
-    for (int i = 0; i < RGBSpectrum::Size; i++) {
-        auto sigma_tr = params->sigma_tr[i];
-        pdf += channel_pdfs[i] * sigma_tr *
-            exponential_distribution_pdf(r, sigma_tr);
-    }
-    return pdf / (constants::two_pi<float>() * r);
-}
-
-static inline float sample_standard_dipole_func(void* data, uint32_t ch, const float u) {
-    auto dipole_params = reinterpret_cast<KpDipoleParams*>(data);
-    return sample_exponential_distribution(dipole_params->sigma_tr[ch], u);
-}
-
-static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sample_func& profile_sample_func,
-    const bssrdf_profile_eval_func& profile_eval_func, Sampler* rng)
-{
-    auto found_po = find_po(ctx, profile_sample_func, rng->random4f());
-    if (!found_po)
-        return 0;
-
-    // We must sample out going point's brdf to get wi before we evaluate the
-    // bssrdf, which means we have to do the OSL execution here.
-    // What have to be done here is to sample the direction of out going direction
-    // Can we seperate the direction sampling and evaluation methods to have
-    // some convenience here?
-    // And we need extra random numbers here, perhaps time to pass the sampler
-    // directly?
-    
-    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
-    auto original_data = ctx->data;
-    OSL::ShaderGlobals sg;
-    KazenRenderServices::globals_from_hit(sg, *(ctx->ray), ctx->isect_o);
-    ctx->engine_ptr->execute(bssrdf_sample->sampled_shader, sg);
-    ShadingResult ret;
-    process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
-    ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
-    // Sampled closure is a composite closure object now
-    bssrdf_sample->sampled_closure = ret.surface;
-
-    BSDFSample bsdf_sample;
-    auto original_sample = ctx->closure_sample;
-
-    ctx->closure_sample = &bsdf_sample;
-    auto original_sg = ctx->sg;
-    ctx->sg = &sg;
-
-    bssrdf_sample->brdf_f = bssrdf_sample->sampled_closure.sample(ctx, rng);
-    bssrdf_sample->brdf_pdf = bsdf_sample.pdf;
-    bssrdf_sample->wo = bsdf_sample.wo;
-    //bssrdf_sample->frame = ctx->isect_o.frame;
-
-    ctx->data = original_data;
-    ctx->closure_sample = original_sample;
-    ctx->sg = original_sg;
-
-    return eval_dipole(ctx, profile_eval_func);
-}
-
-
-/*********************************************
- * Importance sampling for BSSRDF is a big topic by itself. [1] gave a
- * very intuitive summary for it and introduces their own method, which
- * is adopted in appleseed.
- * Here we use the method introduced in [2] as the default method first.
- * Then we'll implement all the methods briefed in [1] and then do a
- * comparison between them.
- * 
- * [1] BSSRDF Importance Sampling Slides
- * https://pdfs.semanticscholar.org/90da/5211ce2a6f63d50b8616736c393aaf8bf4ca.pdf
- * [2] BSSRDF Importance Sampling
- * https://library.imageworks.com/pdfs/imageworks-library-BSSRDF-sampling.pdf
- *********************************************/
 
 /*********************************************
  * According to [1], light could seperated into three components:
@@ -423,6 +276,170 @@ static RGBSpectrum better_dipole_profile_eval(
     const auto ev = base::exp(-sigma_tr_dv) * rcp_dv;
     constexpr auto one_div_four_pi = constants::one_div_two_pi<float>() / 2.f;
     return base::square(alpha_prime) * one_div_four_pi * (kr * ev - kv * ev);
+}
+
+/*********************************************
+ * Importance sampling for BSSRDF is a big topic by itself. [1] gave a
+ * very intuitive summary for it and introduces their own method, which
+ * is adopted in appleseed.
+ * Here we use the method introduced in [2] as the default method first.
+ * Then we'll implement all the methods briefed in [1] and then do a
+ * comparison between them.
+ * 
+ * [1] BSSRDF Importance Sampling Slides
+ * https://pdfs.semanticscholar.org/90da/5211ce2a6f63d50b8616736c393aaf8bf4ca.pdf
+ * [2] BSSRDF Importance Sampling
+ * https://library.imageworks.com/pdfs/imageworks-library-BSSRDF-sampling.pdf
+ *********************************************/
+
+static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profile_func, Sampler* sampler) {
+    auto dipole_params = reinterpret_cast<KpDipoleParams*>(ctx->data);
+    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
+    auto rand = sampler->random4f();
+
+    // Sample a channel and a disk radius
+    size_t ch = 3 * 0.99999f * rand[0];
+    const float disk_radius = profile_func(ctx->data, ch, rand[1]);
+
+    if (disk_radius == 0.f)
+        return false;
+
+    if (disk_radius >= dipole_params->max_radius)
+        return false;
+
+    // Choose a projection axis
+    auto isect_frame = ctx->isect_i->frame;
+    float u = rand[2];
+    if (u < 0.5f) {
+        bssrdf_sample->frame = Frame(isect_frame.s, isect_frame.t, isect_frame.n);
+        u = u * 2;
+        bssrdf_sample->axis_prob = 0.5f;
+        bssrdf_sample->sampled_axis = 0;
+    }
+    else if (u < 0.75f) {
+        bssrdf_sample->frame = Frame(isect_frame.t, isect_frame.n, isect_frame.s);
+        u = (u - 0.5f) * 4;
+        bssrdf_sample->axis_prob = 0.25f;
+        bssrdf_sample->sampled_axis = 1;
+    }
+    else {
+        bssrdf_sample->frame = Frame(isect_frame.n, isect_frame.s, isect_frame.t);
+        u = (u - 0.75f) * 4;
+        bssrdf_sample->axis_prob = 0.25f;
+        bssrdf_sample->sampled_axis = 2;
+    }
+
+    // Sample a phi angle to to get the disk point location on xz plane
+    auto phi = constants::two_pi<float>() * rand[3];
+    auto disk_point = Vec3f{disk_radius * std::cos(phi), 0.f, disk_radius * std::sin(phi)};
+
+    auto h = std::sqrt(square(dipole_params->max_radius) - square(disk_radius));
+    auto hn = h * bssrdf_sample->frame.n;
+    auto entry_pt = ctx->isect_i->P + disk_point + hn;
+    auto ray_dir = base::normalize(-hn);
+
+    const static int max_intersection_cnt = 10;
+    int found_intersection = 0;
+    Intersection isects[max_intersection_cnt];
+    auto start_pt = entry_pt;
+    for (int i = 0; i < max_intersection_cnt; i++) {
+        Ray r(start_pt, ray_dir);
+        if (!ctx->accel->intersect(r, isects[i]))
+            break;
+        start_pt = isects[i].P;
+        ++found_intersection;
+    }
+
+    // Randomly chose one intersection
+    uint idx = 0;
+    if (found_intersection == 0)
+        return false;
+    else if (found_intersection > 1) {
+        idx = sampler->randomf() * found_intersection * 0.999999f;
+    }
+
+    bssrdf_sample->po = isects[idx].P;
+    bssrdf_sample->sampled_shader = (*(ctx->engine_ptr->shaders))[isects[idx].shader_name];
+    bssrdf_sample->sample_cnt = found_intersection;
+    ctx->isect_o = isects[idx];
+
+    return true;
+}
+
+static float seperable_bssrdf_pdf(ShadingContext* ctx, const bssrdf_profile_pdf_func& pdf_func, const float r) {
+    auto params = reinterpret_cast<KpDipoleParams*>(ctx->data);
+    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
+    float pdf = 0.f;
+    
+    // Calculate the main pdf of sampled axis
+    const float dot_nn = std::abs(base::dot(bssrdf_sample->frame.n, ctx->isect_o.frame.n));
+    pdf = bssrdf_sample->axis_prob * bssrdf_sample->pt_prob * dot_nn;
+
+    // Mis with other axises
+    const auto d = ctx->isect_o.P - ctx->isect_i->P;
+    const auto& u = bssrdf_sample->frame.s;
+    const auto& v = bssrdf_sample->frame.t;
+    const float du = base::project(d, u).length();
+    const float dv = base::project(d, v).length();
+    const float dot_un = std::abs(base::dot(u, ctx->isect_o.wo));
+    const float dot_vn = std::abs(base::dot(v, ctx->isect_o.wo));
+    const float pdf_u = pdf_func(params, du) * dot_un;
+    const float pdf_v = pdf_func(params, dv) * dot_vn;
+
+    // do the actual mis with the other two axises
+    // TODO : make sure which spaces are the normals actually
+    // in.
+    return 0.f;
+}
+
+static inline float sample_standard_dipole_func(void* data, uint32_t ch, const float u) {
+    auto dipole_params = reinterpret_cast<KpDipoleParams*>(data);
+    return sample_exponential_distribution(dipole_params->sigma_tr[ch], u);
+}
+
+static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sample_func& profile_sample_func,
+    const bssrdf_profile_eval_func& profile_eval_func, Sampler* rng)
+{
+    auto found_po = find_po(ctx, profile_sample_func, rng->random4f());
+    if (!found_po)
+        return 0;
+
+    // We must sample out going point's brdf to get wi before we evaluate the
+    // bssrdf, which means we have to do the OSL execution here.
+    // What have to be done here is to sample the direction of out going direction
+    // Can we seperate the direction sampling and evaluation methods to have
+    // some convenience here?
+    // And we need extra random numbers here, perhaps time to pass the sampler
+    // directly?
+    
+    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
+    auto original_data = ctx->data;
+    OSL::ShaderGlobals sg;
+    KazenRenderServices::globals_from_hit(sg, *(ctx->ray), ctx->isect_o);
+    ctx->engine_ptr->execute(bssrdf_sample->sampled_shader, sg);
+    ShadingResult ret;
+    process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
+    ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
+    // Sampled closure is a composite closure object now
+    bssrdf_sample->sampled_closure = ret.surface;
+
+    BSDFSample bsdf_sample;
+    auto original_sample = ctx->closure_sample;
+
+    ctx->closure_sample = &bsdf_sample;
+    auto original_sg = ctx->sg;
+    ctx->sg = &sg;
+
+    bssrdf_sample->brdf_f = bssrdf_sample->sampled_closure.sample(ctx, rng);
+    bssrdf_sample->brdf_pdf = bsdf_sample.pdf;
+    bssrdf_sample->wo = bsdf_sample.wo;
+    //bssrdf_sample->frame = ctx->isect_o.frame;
+
+    ctx->data = original_data;
+    ctx->closure_sample = original_sample;
+    ctx->sg = original_sg;
+
+    return eval_dipole(ctx, profile_eval_func);
 }
 
 void KpStandardDipole::precompute(void* data) {
