@@ -117,6 +117,11 @@ inline Vec<T, N> exp(const Vec<T, N>& v) {
 }
 
 template <typename T, size_t N>
+inline Vec<T, N> pow(const Vec<T, N>& v, const T beta) {
+    return enoki::pow(v, beta);
+}
+
+template <typename T, size_t N>
 inline Vec<T, N> lerp(const Vec<T, N>& a, const Vec<T, N>& b, const T t) {
     return enoki::lerp(a, b, Vec<T, N>{t});
 }
@@ -363,6 +368,11 @@ inline Vec<T, N> sqrt(const Vec<T, N>& v) {
 template <typename T, int N>
 inline Vec<T, N> exp(const Vec<T, N>& v) {
     return v.exp();
+}
+
+template <typename T, int N>
+inline Vec<T, N> pow(const Vec<T, N>& v, const T beta) {
+    return v.pow(beta);
 }
 
 template <typename T, int N>
@@ -824,6 +834,13 @@ public:
         return tmp;
     }
 
+    inline auto pow(const T beta) const {
+        Vec tmp;
+        for (int i = 0; i < N; i++)
+            tmp.arr[i] = std::pow(arr[i]);
+        return tmp;
+    }
+
     inline auto max_component() const {
         return *std::max_element(arr.begin(), arr.end());
     }
@@ -956,6 +973,11 @@ inline Vec<T, N> sqrt(const Vec<T, N>& v) {
 template <typename T, uint N>
 inline Vec<T, N> exp(const Vec<T, N>& v) {
     return v.exp();
+}
+
+template <typename T, uint N>
+inline Vec<T, N> pow(const Vec<T, N>& v, const T beta) {
+    return v.pow(beta);
 }
 
 template <typename T, uint N>

@@ -3,6 +3,7 @@
 #include <OSL/oslexec.h>
 #include <boost/math/constants/constants.hpp>
 
+#include "base/mis.h"
 #include "base/utils.h"
 #include "base/vec.h"
 #include "shading/bsdf.h"
@@ -386,10 +387,29 @@ static float seperable_bssrdf_pdf(ShadingContext* ctx, const bssrdf_profile_pdf_
     const float pdf_u = pdf_func(params, du) * dot_un;
     const float pdf_v = pdf_func(params, dv) * dot_vn;
 
-    // do the actual mis with the other two axises
     // TODO : make sure which spaces are the normals actually
     // in.
-    return 0.f;
+    // TODO : make this piece of code more intuitive by using enums
+    float mis_weight = 1.f;
+    switch (bssrdf_sample->sampled_axis) {
+        case 0: {
+            // Sampled N, unchanged
+            mis_weight = mis_power2(pdf, 0.25f * pdf_u, 0.25f * pdf_v);
+            break;
+        }
+        case 1: {
+            // Sampled S, T as x axis, N as y axis
+            mis_weight = mis_power2(pdf, 0.25f * pdf_u, 0.5f * pdf_v);
+            break;
+        }
+        case 2: {
+            // Sampled T, N as x axis, S as y axis
+            mis_weight = mis_power2(pdf, 0.5f * pdf_u, 0.25f * pdf_v);
+            break;
+        }
+    }
+
+    return pdf / mis_weight / bssrdf_sample->sample_cnt;
 }
 
 static inline float sample_standard_dipole_func(void* data, uint32_t ch, const float u) {
