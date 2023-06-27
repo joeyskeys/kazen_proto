@@ -233,6 +233,7 @@ struct BSSRDFSample {
     Vec3f po;
     Vec3f wo;
     Frame frame;
+    float pdf;
     float axis_prob;
     float pt_prob;
     uint32_t sampled_axis;

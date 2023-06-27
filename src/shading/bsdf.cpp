@@ -169,7 +169,8 @@ void register_closures(OSL::ShadingSystem *shadingsys) {
     register_closure<KpPrincipleClearcoat>(*shadingsys);
 
     // BSSRDFs
-    register_closure<KpDipole>(*shadingsys);
+    register_closure<KpStandardDipole>(*shadingsys);
+    register_closure<KpBetterDipole>(*shadingsys);
 }
 
 void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const RGBSpectrum& w, bool light_only) {
@@ -296,8 +297,13 @@ void process_closure(ShadingResult& ret, const OSL::ClosureColor *closure, const
                         break;
                     }
 
-                    case KpDipoleID: {
-                        status = ret.bssrdf.add_closure<KpDipoleParams>(KpDipoleID, cw, comp->as<KpDipoleParams>());
+                    case KpStandardDipoleID: {
+                        status = ret.bssrdf.add_closure<KpDipoleParams>(KpStandardDipoleID, cw, comp->as<KpDipoleParams>());
+                        break;
+                    }
+
+                    case KpBetterDipoleID: {
+                        status = ret.bssrdf.add_closure<KpDipoleParams>(KpBetterDipoleID, cw, comp->as<KpDipoleParams>());
                         break;
                     }
                 }

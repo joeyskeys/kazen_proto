@@ -15,7 +15,7 @@ namespace constants = boost::math::constants;
 
 
 /*********************************************
- * According to [1], light could seperated into three components:
+ * According to [1], light could separated into three components:
  * reduced-intensity, single-scattering and multiple-scattering components:
  * S = S^(0) + S^(1) + S_d
  * As for bssrdf model, the first term is irrelevant, so we only consider
@@ -279,6 +279,68 @@ static RGBSpectrum better_dipole_profile_eval(
     return base::square(alpha_prime) * one_div_four_pi * (kr * ev - kv * ev);
 }
 
+static float separable_bssrdf_pdf(ShadingContext* ctx, const bssrdf_profile_pdf_func& pdf_func, const float r) {
+    auto params = reinterpret_cast<KpDipoleParams*>(ctx->data);
+    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
+    float pdf = 0.f;
+    
+    // Calculate the main pdf of sampled axis
+    const float dot_nn = std::abs(base::dot(bssrdf_sample->frame.n, ctx->isect_o.frame.n));
+    pdf = bssrdf_sample->axis_prob * bssrdf_sample->pt_prob * dot_nn;
+
+    // Mis with other axises
+    const auto d = ctx->isect_o.P - ctx->isect_i->P;
+    const auto& u = bssrdf_sample->frame.s;
+    const auto& v = bssrdf_sample->frame.t;
+    const float du = base::project(d, u).length();
+    const float dv = base::project(d, v).length();
+    const float dot_un = std::abs(base::dot(u, ctx->isect_o.wo));
+    const float dot_vn = std::abs(base::dot(v, ctx->isect_o.wo));
+    const float pdf_u = pdf_func(params, du) * dot_un;
+    const float pdf_v = pdf_func(params, dv) * dot_vn;
+
+    // TODO : make sure which spaces are the normals actually
+    // in.
+    // TODO : make this piece of code more intuitive by using enums
+    float mis_weight = 1.f;
+    switch (bssrdf_sample->sampled_axis) {
+        case 0: {
+            // Sampled N, unchanged
+            mis_weight = mis_power2(pdf, 0.25f * pdf_u, 0.25f * pdf_v);
+            break;
+        }
+        case 1: {
+            // Sampled S, T as x axis, N as y axis
+            mis_weight = mis_power2(pdf, 0.25f * pdf_u, 0.5f * pdf_v);
+            break;
+        }
+        case 2: {
+            // Sampled T, N as x axis, S as y axis
+            mis_weight = mis_power2(pdf, 0.5f * pdf_u, 0.25f * pdf_v);
+            break;
+        }
+    }
+
+    return pdf / mis_weight / bssrdf_sample->sample_cnt;
+}
+
+static float dipole_profile_pdf(void* data, const float r) {
+    auto params = reinterpret_cast<KpDipoleParams*>(data);
+    if (r > params->max_radius)
+        return 0.f;
+
+    float pdf = 0.f;
+    for (uint32_t i = 0; i < 3; i++) {
+        const float channel_pdf = ;
+        const float sigma_tr = params->sigma_tr[i];
+        pdf += channel_pdf * exponential_distribution_pdf(r, sigma_tr);
+    }
+
+    pdf /= constants::two_pi<float>() * r;
+
+    return pdf;
+}
+
 /*********************************************
  * Importance sampling for BSSRDF is a big topic by itself. [1] gave a
  * very intuitive summary for it and introduces their own method, which
@@ -363,53 +425,10 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     bssrdf_sample->sampled_shader = (*(ctx->engine_ptr->shaders))[isects[idx].shader_name];
     bssrdf_sample->sample_cnt = found_intersection;
     ctx->isect_o = isects[idx];
+    bssrdf_sample->pdf = separable_bssrdf_pdf(ctx, dipole_profile_pdf,
+        (ctx->isect_i->P - ctx->isect_o.P).length());
 
     return true;
-}
-
-static float seperable_bssrdf_pdf(ShadingContext* ctx, const bssrdf_profile_pdf_func& pdf_func, const float r) {
-    auto params = reinterpret_cast<KpDipoleParams*>(ctx->data);
-    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
-    float pdf = 0.f;
-    
-    // Calculate the main pdf of sampled axis
-    const float dot_nn = std::abs(base::dot(bssrdf_sample->frame.n, ctx->isect_o.frame.n));
-    pdf = bssrdf_sample->axis_prob * bssrdf_sample->pt_prob * dot_nn;
-
-    // Mis with other axises
-    const auto d = ctx->isect_o.P - ctx->isect_i->P;
-    const auto& u = bssrdf_sample->frame.s;
-    const auto& v = bssrdf_sample->frame.t;
-    const float du = base::project(d, u).length();
-    const float dv = base::project(d, v).length();
-    const float dot_un = std::abs(base::dot(u, ctx->isect_o.wo));
-    const float dot_vn = std::abs(base::dot(v, ctx->isect_o.wo));
-    const float pdf_u = pdf_func(params, du) * dot_un;
-    const float pdf_v = pdf_func(params, dv) * dot_vn;
-
-    // TODO : make sure which spaces are the normals actually
-    // in.
-    // TODO : make this piece of code more intuitive by using enums
-    float mis_weight = 1.f;
-    switch (bssrdf_sample->sampled_axis) {
-        case 0: {
-            // Sampled N, unchanged
-            mis_weight = mis_power2(pdf, 0.25f * pdf_u, 0.25f * pdf_v);
-            break;
-        }
-        case 1: {
-            // Sampled S, T as x axis, N as y axis
-            mis_weight = mis_power2(pdf, 0.25f * pdf_u, 0.5f * pdf_v);
-            break;
-        }
-        case 2: {
-            // Sampled T, N as x axis, S as y axis
-            mis_weight = mis_power2(pdf, 0.5f * pdf_u, 0.25f * pdf_v);
-            break;
-        }
-    }
-
-    return pdf / mis_weight / bssrdf_sample->sample_cnt;
 }
 
 static inline float sample_standard_dipole_func(void* data, uint32_t ch, const float u) {
@@ -417,6 +436,7 @@ static inline float sample_standard_dipole_func(void* data, uint32_t ch, const f
     return sample_exponential_distribution(dipole_params->sigma_tr[ch], u);
 }
 
+/*
 static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sample_func& profile_sample_func,
     const bssrdf_profile_eval_func& profile_eval_func, Sampler* rng)
 {
@@ -427,7 +447,7 @@ static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sampl
     // We must sample out going point's brdf to get wi before we evaluate the
     // bssrdf, which means we have to do the OSL execution here.
     // What have to be done here is to sample the direction of out going direction
-    // Can we seperate the direction sampling and evaluation methods to have
+    // Can we separate the direction sampling and evaluation methods to have
     // some convenience here?
     // And we need extra random numbers here, perhaps time to pass the sampler
     // directly?
@@ -461,6 +481,49 @@ static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sampl
 
     return eval_dipole(ctx, profile_eval_func);
 }
+*/
+
+static RGBSpectrum separable_bssrdf_sample(
+    ShadingContext* ctx,
+    const bssrdf_profile_sample_func& profile_sample_func,
+    const eval_profile_func& profile_eval_func,
+    Sampler* sampler)
+{
+    // TODO : look into the channel sampling code in as
+    // and find why it relates to the spectrum
+    auto found = find_po(ctx, profile_sample_func, sampler);
+    if (!found)
+        return 0;
+
+    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
+    auto original_data = ctx->data;
+
+    OSL::ShaderGlobals sg;
+    KazenRenderServices::globals_from_hit(sg, *(ctx->ray), ctx->isect_o);
+    ctx->engine_ptr->execute(bssrdf_sample->sampled_shader, sg);
+    ShadingResult ret;
+    process_closure(ret, sg.Ci, 1, false);
+    ret.surface.compute_pdfs(sg, 1, false);
+    bssrdf_sample->sampled_closure = ret.surface;
+
+    BSDFSample bsdf_sample;
+    auto original_sample = ctx->closure_sample;
+    ctx->closure_sample = &bsdf_sample;
+
+    auto original_sg = ctx->sg;
+    ctx->sg = &sg;
+
+    bssrdf_sample->brdf_f = bssrdf_sample->sampled_closure.sample(ctx, sampler);
+    bssrdf_sample->brdf_pdf = bsdf_sample.pdf;
+    bssrdf_sample->wo = bsdf_sample.wo;
+
+    ctx->data = original_data;
+    ctx->closure_sample = original_sample;
+    ctx->sg = original_sg;
+
+    return separable_bssrdf_eval(ctx->data, profile_eval_func, ctx->isect_i->P,
+        ctx->isect_i->wi, ctx->isect_o.P, ctx->isect_o.wo);
+}
 
 void KpStandardDipole::precompute(void* data) {
     auto params = reinterpret_cast<KpDipoleParams*>(data);
@@ -482,13 +545,21 @@ RGBSpectrum KpStandardDipole::eval(ShadingContext* ctx) {
         ctx->isect_i->P, ctx->isect_i->wi, ctx->isect_o.P, ctx->isect_o.wo);
 }
 
-RGBSpectrum KpStandardDipole::sample(ShadingContext* ctx, Sampler* rng) {
-    return sample_dipole(ctx, sample_standard_dipole_func,
-        eval_standard_dipole_func, rng);
+RGBSpectrum KpStandardDipole::sample(ShadingContext* ctx, Sampler* sampler) {
+    //return sample_dipole(ctx, sample_standard_dipole_func,
+        //eval_standard_dipole_func, rng);
+    return separable_bssrdf_sample(ctx, sample_standard_dipole_func,
+        standard_dipole_profile_eval, sampler);
 }
 
-void KpBetterDipole::precompute() {
-
+void KpBetterDipole::precompute(void* data) {
+    auto params = reinterpret_cast<KpDipoleParams*>(data);
+    ComputeRdBetterDipole compute_rd_better_dipole(params->eta);
+    auto compute_rd_func = [&](const float a) {
+        return compute_rd_better_dipole.compute_rd(a);
+    };
+    auto alpha_func = std::bind(compute_alpha_prime, compute_rd_func, std::placeholders::_1);
+    dipole_precompute(data, alpha_func);
 }
 
 RGBSpectrum KpBetterDipole::eval(ShadingContext* ctx) {
@@ -496,6 +567,7 @@ RGBSpectrum KpBetterDipole::eval(ShadingContext* ctx) {
         ctx->isect_i->P, ctx->isect_i->wi, ctx->isect_o.P, ctx->isect_o.wo);
 }
 
-RGBSpectrum KpBetterDipole::sample(ShadingContext* ctx, Sampler* rng) {
-
+RGBSpectrum KpBetterDipole::sample(ShadingContext* ctx, Sampler* sampler) {
+    return separable_bssrdf_sample(ctx, sample_standard_dipole_func,
+        better_dipole_profile_eval, sampler);
 }

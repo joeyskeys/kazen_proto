@@ -91,7 +91,7 @@ struct KpBetterDipole {
             CLOSURE_VECTOR_PARAM(KpDipoleParams, Rd),
             CLOSURE_VECTOR_PARAM(KpDipoleParams, mfp),
             CLOSURE_FLOAT_PARAM(KpDipoleParams, max_radius),
-            CLOSURE_FLAOT_PARAM(KpDipoleParams, eta),
+            CLOSURE_FLOAT_PARAM(KpDipoleParams, eta),
             CLOSURE_FLOAT_PARAM(KpDipoleParams, g),
             CLOSURE_FINISH_PARAM(KpDipoleParams)
         };
@@ -111,17 +111,17 @@ using bssrdf_eval_func = std::function<RGBSpectrum(ShadingContext*)>;
 using bssrdf_sample_func = std::function<RGBSpectrum(ShadingContext*, Sampler*)>;
 
 inline bssrdf_eval_func get_bssrdf_eval_func(ClosureID id) {
-    static std::array<bssrdf_eval_func, 1> eval_functions {
+    static std::array<bssrdf_eval_func, 2> eval_functions {
         KpStandardDipole::eval,
         KpBetterDipole::eval
     };
-    return eval_functions[id - KpDipoleID];
+    return eval_functions[id - KpStandardDipoleID];
 }
 
 inline bssrdf_sample_func get_bssrdf_sample_func(ClosureID id) {
-    static std::array<bssrdf_sample_func, 1> sample_functions {
-        KpDipole::sample,
+    static std::array<bssrdf_sample_func, 2> sample_functions {
+        KpStandardDipole::sample,
         KpBetterDipole::sample
     };
-    return sample_functions[id - KpDipoleID];
+    return sample_functions[id - KpStandardDipoleID];
 }

@@ -113,9 +113,9 @@ inline constexpr T mis_power2(const T q1, const T q2, const T q3) {
     */
 
     // 1 div, 3 mults, 2 plus
-    const r1 = q1 * q1;
-    const r2 = q2 * q2;
-    const r3 = q3 * q3;
+    const auto r1 = q1 * q1;
+    const auto r2 = q2 * q2;
+    const auto r3 = q3 * q3;
 
     return r1 / (r1 + r2 + r3);
 
