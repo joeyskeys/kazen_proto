@@ -331,7 +331,10 @@ static float dipole_profile_pdf(void* data, const float r) {
 
     float pdf = 0.f;
     for (uint32_t i = 0; i < 3; i++) {
-        const float channel_pdf = ;
+        // TODO : channel pdf is WRONG
+        // Now we are not sampling channel with the right
+        // weights
+        const float channel_pdf = 0.333334f;
         const float sigma_tr = params->sigma_tr[i];
         pdf += channel_pdf * exponential_distribution_pdf(r, sigma_tr);
     }
