@@ -424,6 +424,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
         ret.surface.compute_pdfs(sg, throughput, false);
         ret.bssrdf.compute_pdfs(sg, throughput, false);
+        ret.bssrdf.precompute(&shading_ctx);
 
         float pdf;
         auto light_ptr = get_random_light(sampler_ptr->randomf(), pdf);

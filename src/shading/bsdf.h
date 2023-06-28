@@ -201,8 +201,7 @@ class SurfaceCompositeClosure : public CompositeClosure {
 
 class SubsurfaceCompositeClosure : public CompositeClosure {
 public:
-    //RGBSpectrum sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const override;
-    //RGBSpectrum eval(const OSL::ShaderGlobals& sg, void* sample) const override;
+    void        precompute(ShadingContext*);
     RGBSpectrum sample(ShadingContext*, Sampler*) const override;
     RGBSpectrum eval(ShadingContext*) const override;
 };
@@ -238,6 +237,11 @@ struct BSSRDFSample {
     float pt_prob;
     uint32_t sampled_axis;
     uint32_t sample_cnt;
+    Vec3f sigma_a;
+    Vec3f sigma_s, sigma_s_prime;
+    Vec3f sigma_t, sigma_t_prime;
+    Vec3f sigma_tr;
+    Vec3f alpha_prime;
     SurfaceCompositeClosure sampled_closure;
     OSL::ShaderGroupRef sampled_shader;
     Vec3f brdf_f;

@@ -25,13 +25,6 @@ struct KpDipoleParams {
     OSL::Vec3 N;
     OSL::Vec3 Rd;
     OSL::Vec3 mfp;
-    OSL::Vec3 sigma_a;
-    OSL::Vec3 sigma_s;
-    OSL::Vec3 sigma_s_prime;
-    OSL::Vec3 sigma_t;
-    OSL::Vec3 sigma_t_prime;
-    OSL::Vec3 sigma_tr;
-    OSL::Vec3 alpha_prime;
     float max_radius, eta, g;
 };
 
@@ -60,7 +53,7 @@ static RGBSpectrum Sd(const Vec3f& pi, const Vec3f& wi, const Vec3f& po,
 }
 
 struct KpStandardDipole {
-    static void precompute(void*);
+    static void precompute(ShadingContext*);
     static RGBSpectrum eval(ShadingContext*);
     static RGBSpectrum sample(ShadingContext*, Sampler*);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
@@ -82,7 +75,7 @@ struct KpStandardDipole {
 };
 
 struct KpBetterDipole {
-    static void precompute(void*);
+    static void precompute(ShadingContext*);
     static RGBSpectrum eval(ShadingContext*);
     static RGBSpectrum sample(ShadingContext*, Sampler*);
     static void register_closure(OSL::ShadingSystem& shadingsys) {
@@ -105,10 +98,19 @@ struct KpBetterDipole {
 using bssrdf_profile_eval_func = std::function<RGBSpectrum(void*, const Vec3f&,
     const Vec3f&, const Vec3f&, const Vec3f&)>;
 using bssrdf_profile_sample_func = std::function<float(void*, uint32_t, const float)>;
-using bssrdf_profile_pdf_func = std::function<float(void*, const float)>;
+using bssrdf_profile_pdf_func = std::function<float(ShadingContext*, const float)>;
 
+using bssrdf_precompute_func = std::function<void(ShadingContext*)>;
 using bssrdf_eval_func = std::function<RGBSpectrum(ShadingContext*)>;
 using bssrdf_sample_func = std::function<RGBSpectrum(ShadingContext*, Sampler*)>;
+
+inline bssrdf_precompute_func get_bssrdf_precompute_func(ClosureID id) {
+    static std::array<bssrdf_precompute_func, 2> precompute_functions {
+        KpStandardDipole::precompute,
+        KpBetterDipole::precompute
+    };
+    return precompute_functions[id - KpStandardDipoleID];
+}
 
 inline bssrdf_eval_func get_bssrdf_eval_func(ClosureID id) {
     static std::array<bssrdf_eval_func, 2> eval_functions {

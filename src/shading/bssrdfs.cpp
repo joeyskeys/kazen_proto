@@ -143,34 +143,32 @@ private:
 
 using compute_alpha_prime_func = std::function<RGBSpectrum(const RGBSpectrum&)>;
 
-static void dipole_precompute(void* data, const compute_alpha_prime_func& f) {
-    auto params = reinterpret_cast<KpDipoleParams*>(data);
-    const auto tr = 1.f / base::to_vec3(params->mfp);
-    params->sigma_tr = base::to_osl_vec3(tr);
-    const auto ap = f(base::to_vec3(params->Rd));
-    params->alpha_prime = base::to_osl_vec3(ap);
-    const auto t_prime = tr / base::sqrt(3.f * (1.f - ap));
-    params->sigma_t_prime = base::to_osl_vec3(t_prime);
-    params->sigma_t = base::to_osl_vec3(t_prime / (1 - params->g));
-    const auto s_prime = ap * t_prime;
-    params->sigma_s_prime = base::to_osl_vec3(s_prime);
-    params->sigma_s = base::to_osl_vec3(s_prime / (1 - params->g));
-    params->sigma_a = base::to_osl_vec3(t_prime - s_prime);
+static void dipole_precompute(ShadingContext* ctx, const compute_alpha_prime_func& f) {
+    auto params = reinterpret_cast<KpDipoleParams*>(ctx->data);
+    auto sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
+    sample->sigma_tr = 1.f / base::to_vec3(params->mfp);
+    sample->alpha_prime = f(base::to_vec3(params->Rd));
+    sample->sigma_t_prime = sample->sigma_tr / base::sqrt(3.f * (1.f -
+        sample->alpha_prime));
+    sample->sigma_t = sample->sigma_t_prime / (1 - params->g);
+    sample->sigma_s_prime = sample->alpha_prime * sample->sigma_t_prime;
+    sample->sigma_s = sample->sigma_s_prime / (1 - params->g);
+    sample->sigma_a = sample->sigma_t_prime - sample->sigma_s_prime;
 }
 
-using eval_profile_func = std::function<RGBSpectrum(void*,
+using eval_profile_func = std::function<RGBSpectrum(ShadingContext*,
     const Vec3f&, const Vec3f&, const Vec3f&, const Vec3f&)>;
 
 static RGBSpectrum separable_bssrdf_eval(
-    void* data,
+    ShadingContext* ctx,
     const eval_profile_func& eval_profile,
     const Vec3f& pi,
     const Vec3f& wi,
     const Vec3f& po,
     const Vec3f& wo)
 {
-    auto params = reinterpret_cast<const KpDipoleParams*>(data);
-    auto Rd = eval_profile(data, pi, wi, po, wo);
+    auto params = reinterpret_cast<const KpDipoleParams*>(ctx->data);
+    auto Rd = eval_profile(ctx, pi, wi, po, wo);
     const float cos_o = std::min(std::abs(cos_theta(wo)), 1.f);
     auto Fo = fresnel_trans_dielectric(params->eta, cos_o);
     const float cos_i = std::min(std::abs(cos_theta(wi)), 1.f);
@@ -181,24 +179,25 @@ static RGBSpectrum separable_bssrdf_eval(
 }
 
 static RGBSpectrum standard_dipole_profile_eval(
-    void* data,
+    ShadingContext* ctx,
     const Vec3f& pi,
     const Vec3f& wi,
     const Vec3f& po,
     const Vec3f& wo)
 {
-    auto params = reinterpret_cast<KpDipoleParams*>(data);
+    auto params = reinterpret_cast<KpDipoleParams*>(ctx->data);
+    auto sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
     const float radius_sqr = (pi - po).length_squared();
     // Following two variable calculation is redundent..
     const float Fdr = fresnel_internel_diffuse_reflectance(params->eta);
     const float A = (1.f + Fdr) / (1.f - Fdr);
 
-    const RGBSpectrum sigma_a = base::to_vec3(params->sigma_a);
-    const RGBSpectrum sigma_s = base::to_vec3(params->sigma_s);
-    const RGBSpectrum sigma_s_prime = sigma_s * (1.f - params->g);
-    const RGBSpectrum sigma_t_prime = sigma_s_prime + sigma_a;
-    const RGBSpectrum alpha_prime = base::to_vec3(params->alpha_prime);
-    const RGBSpectrum sigma_tr = base::to_vec3(params->sigma_tr);
+    const auto sigma_a = sample->sigma_a;
+    const auto sigma_s = sample->sigma_s;
+    const auto sigma_s_prime = sigma_s * (1.f - params->g);
+    const auto sigma_t_prime = sigma_s_prime + sigma_a;
+    const auto alpha_prime = sample->alpha_prime;
+    const auto sigma_tr = sample->sigma_tr;
 
     // We have
     //   zr = 1 / sigma_t_prime
@@ -235,13 +234,14 @@ static RGBSpectrum standard_dipole_profile_eval(
 }
 
 static RGBSpectrum better_dipole_profile_eval(
-    void* data,
+    ShadingContext* ctx,
     const Vec3f& pi,
     const Vec3f& wi,
     const Vec3f& po,
     const Vec3f& wo)
 {
-    auto params = reinterpret_cast<KpDipoleParams*>(data);
+    auto params = reinterpret_cast<KpDipoleParams*>(ctx->data);
+    auto sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
     const float sqr_radius = base::length_squared(pi - po);
     if (sqr_radius > square(params->max_radius))
         return 0;
@@ -252,12 +252,12 @@ static RGBSpectrum better_dipole_profile_eval(
     const float cphi = 0.25f * (1.f - two_c1);
     const float ce = 0.5f * (1.f - three_c2);
 
-    const auto sigma_a = base::to_vec3(params->sigma_a);
-    const auto sigma_s = base::to_vec3(params->sigma_s);
+    const auto sigma_a = sample->sigma_a;
+    const auto sigma_s = sample->sigma_s;
     const auto sigma_s_prime = sigma_s * (1.f - params->g);
     const auto sigma_t_prime = sigma_s_prime + sigma_a;
-    const auto alpha_prime = base::to_vec3(params->alpha_prime);
-    const auto sigma_tr = base::to_vec3(params->sigma_tr);
+    const auto alpha_prime = sample->alpha_prime;
+    const auto sigma_tr = sample->sigma_tr;
 
     const auto D = (2.f * sigma_a + sigma_s_prime) / (3.f *
         base::square(sigma_t_prime));
@@ -296,8 +296,8 @@ static float separable_bssrdf_pdf(ShadingContext* ctx, const bssrdf_profile_pdf_
     const float dv = base::project(d, v).length();
     const float dot_un = std::abs(base::dot(u, ctx->isect_o.wo));
     const float dot_vn = std::abs(base::dot(v, ctx->isect_o.wo));
-    const float pdf_u = pdf_func(params, du) * dot_un;
-    const float pdf_v = pdf_func(params, dv) * dot_vn;
+    const float pdf_u = pdf_func(ctx, du) * dot_un;
+    const float pdf_v = pdf_func(ctx, dv) * dot_vn;
 
     // TODO : make sure which spaces are the normals actually
     // in.
@@ -324,8 +324,9 @@ static float separable_bssrdf_pdf(ShadingContext* ctx, const bssrdf_profile_pdf_
     return pdf / mis_weight / bssrdf_sample->sample_cnt;
 }
 
-static float dipole_profile_pdf(void* data, const float r) {
-    auto params = reinterpret_cast<KpDipoleParams*>(data);
+static float dipole_profile_pdf(ShadingContext* ctx, const float r) {
+    auto params = reinterpret_cast<KpDipoleParams*>(ctx->data);
+    auto sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
     if (r > params->max_radius)
         return 0.f;
 
@@ -335,7 +336,7 @@ static float dipole_profile_pdf(void* data, const float r) {
         // Now we are not sampling channel with the right
         // weights
         const float channel_pdf = 0.333334f;
-        const float sigma_tr = params->sigma_tr[i];
+        const float sigma_tr = sample->sigma_tr[i];
         pdf += channel_pdf * exponential_distribution_pdf(r, sigma_tr);
     }
 
@@ -398,6 +399,7 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     // Sample a phi angle to to get the disk point location on xz plane
     auto phi = constants::two_pi<float>() * rand[3];
     auto disk_point = Vec3f{disk_radius * std::cos(phi), 0.f, disk_radius * std::sin(phi)};
+    bssrdf_sample->pt_prob = dipole_profile_pdf(ctx, disk_radius);
 
     auto h = std::sqrt(square(dipole_params->max_radius) - square(disk_radius));
     auto hn = h * bssrdf_sample->frame.n;
@@ -434,9 +436,9 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     return true;
 }
 
-static inline float sample_standard_dipole_func(void* data, uint32_t ch, const float u) {
-    auto dipole_params = reinterpret_cast<KpDipoleParams*>(data);
-    return sample_exponential_distribution(dipole_params->sigma_tr[ch], u);
+static inline float sample_standard_dipole_func(void* sp, uint32_t ch, const float u) {
+    auto sample = reinterpret_cast<BSSRDFSample*>(sp);
+    return sample_exponential_distribution(sample->sigma_tr[ch], u);
 }
 
 /*
@@ -524,12 +526,12 @@ static RGBSpectrum separable_bssrdf_sample(
     ctx->closure_sample = original_sample;
     ctx->sg = original_sg;
 
-    return separable_bssrdf_eval(ctx->data, profile_eval_func, ctx->isect_i->P,
+    return separable_bssrdf_eval(ctx, profile_eval_func, ctx->isect_i->P,
         ctx->isect_i->wi, ctx->isect_o.P, ctx->isect_o.wo);
 }
 
-void KpStandardDipole::precompute(void* data) {
-    auto params = reinterpret_cast<KpDipoleParams*>(data);
+void KpStandardDipole::precompute(ShadingContext* ctx) {
+    auto params = reinterpret_cast<KpDipoleParams*>(ctx->data);
     ComputeRdStandardDipole compute_rd_standard_dipole(params->eta);
     // This code is a mess
     // TODO: Figure out how to remove one of the bind/lambda
@@ -539,12 +541,12 @@ void KpStandardDipole::precompute(void* data) {
         return compute_rd_standard_dipole.compute_rd(a);
     };
     auto alpha_func = std::bind(compute_alpha_prime, compute_rd_func, std::placeholders::_1);
-    dipole_precompute(data, alpha_func);
+    dipole_precompute(ctx, alpha_func);
 }
 
 RGBSpectrum KpStandardDipole::eval(ShadingContext* ctx) {
     //return eval_dipole(ctx, eval_standard_dipole_func);
-    return separable_bssrdf_eval(ctx->data, standard_dipole_profile_eval,
+    return separable_bssrdf_eval(ctx, standard_dipole_profile_eval,
         ctx->isect_i->P, ctx->isect_i->wi, ctx->isect_o.P, ctx->isect_o.wo);
 }
 
@@ -555,18 +557,18 @@ RGBSpectrum KpStandardDipole::sample(ShadingContext* ctx, Sampler* sampler) {
         standard_dipole_profile_eval, sampler);
 }
 
-void KpBetterDipole::precompute(void* data) {
-    auto params = reinterpret_cast<KpDipoleParams*>(data);
+void KpBetterDipole::precompute(ShadingContext* ctx) {
+    auto params = reinterpret_cast<KpDipoleParams*>(ctx->data);
     ComputeRdBetterDipole compute_rd_better_dipole(params->eta);
     auto compute_rd_func = [&](const float a) {
         return compute_rd_better_dipole.compute_rd(a);
     };
     auto alpha_func = std::bind(compute_alpha_prime, compute_rd_func, std::placeholders::_1);
-    dipole_precompute(data, alpha_func);
+    dipole_precompute(ctx, alpha_func);
 }
 
 RGBSpectrum KpBetterDipole::eval(ShadingContext* ctx) {
-    return separable_bssrdf_eval(ctx->data, better_dipole_profile_eval,
+    return separable_bssrdf_eval(ctx, better_dipole_profile_eval,
         ctx->isect_i->P, ctx->isect_i->wi, ctx->isect_o.P, ctx->isect_o.wo);
 }
 

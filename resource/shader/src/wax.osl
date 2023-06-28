@@ -11,7 +11,7 @@ surface rough
         string label = "Specular Color",
         float UImin = 0, float UImax = 1
     ]],
-    color tr = color(0.5, 0.6, 0.7)
+    color mfp = color(0.5, 0.6, 0.7)
     [[  
         string label = "Translucent Color",
         float UImin = 0, float UImax = 1
@@ -33,5 +33,5 @@ surface rough
     ]]
 )
 {
-    Ci = Cs * (diffuse(N) + kp_dipole(N, Cs, s, tr, max_radius, eta, g));
+    Ci = Cs * (diffuse(N) + kp_standard_dipole(N, Cs, mfp,  max_radius, eta, g));
 }

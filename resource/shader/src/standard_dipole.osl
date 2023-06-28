@@ -1,0 +1,33 @@
+surface standard_dipole
+    [[ string description = "Standard dipole bssrdf material" ]]
+(
+    color base_color = color(0.5)
+    [[
+        string label = "Base Color",
+        int connectable = 1
+    ]],
+    color mean_free_path = color(0.5)
+    [[
+        string label = "Mean free path",
+        int connectable = 1
+    ]],
+    float max_radius = 1
+    [[
+        string label = "Max radius",
+        int connectable = 1
+    ]],
+    float eta = 1.3
+    [[
+        string label = "Eta",
+        int connectable = 1
+    ]],
+    float g = 0
+    [[
+        string label = "Average mean cosine",
+        int connectable = 1
+    ]]
+)
+{
+    Ci = base_color * diffuse(N) +
+        kp_standard_dipole(N, base_color, mean_free_path, max_radius, eta, g);
+}

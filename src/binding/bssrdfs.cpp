@@ -15,5 +15,6 @@ void bind_bssrdfs(py::module_& m) {
     py::module bssrdfs = m.def_submodule("bssrdfs",
         "BSSRDF functions");
 
-    bind_bssrdf<KpDipole>(bssrdfs, "KpDipole");
+    bind_bssrdf<KpStandardDipole>(bssrdfs, "KpStandardDipole");
+    bind_bssrdf<KpBetterDipole>(bssrdfs, "KpBetterDipole");
 }

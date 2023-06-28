@@ -73,6 +73,13 @@ RGBSpectrum CompositeClosure::eval(ShadingContext* ctx) const {
     return ret;
 }
 
+void SubsurfaceCompositeClosure::precompute(ShadingContext* ctx) {
+    for (int i = 0; i < closure_count; i++) {
+        auto id = closure_ids[i];
+        get_bssrdf_precompute_func(id)(ctx);
+    }
+}
+
 //RGBSpectrum SubsurfaceCompositeClosure::sample(const OSL::ShaderGlobals& sg, void* sample, const Vec4f& rand) const {
 RGBSpectrum SubsurfaceCompositeClosure::sample(ShadingContext* ctx, Sampler* rng) const {
     float acc = 0;

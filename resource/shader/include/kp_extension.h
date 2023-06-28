@@ -25,5 +25,8 @@ closure color kp_principle_specular_reflection(color F0, normal N, float xalpha,
 
 closure color kp_principle_clearcoat(normal N, float roughness) BUILTIN;
 
-closure color kp_dipole(normal N, color sigma_a, color sigma_s, color sigma_tr,
+closure color kp_standard_dipole(normal N, color trans_color, color mfp,
+    float max_radius, float eta, float g) BUILTIN;
+
+closure color kp_better_dipole(normal N, color trans_color, color mfp,
     float max_radius, float eta, float g) BUILTIN;
