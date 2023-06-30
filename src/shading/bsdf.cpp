@@ -76,6 +76,7 @@ RGBSpectrum CompositeClosure::eval(ShadingContext* ctx) const {
 void SubsurfaceCompositeClosure::precompute(ShadingContext* ctx) {
     for (int i = 0; i < closure_count; i++) {
         auto id = closure_ids[i];
+        ctx->data = closure_params[i];
         get_bssrdf_precompute_func(id)(ctx);
     }
 }

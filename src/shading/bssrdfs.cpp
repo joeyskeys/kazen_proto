@@ -287,6 +287,8 @@ static float separable_bssrdf_pdf(ShadingContext* ctx, const bssrdf_profile_pdf_
     // Calculate the main pdf of sampled axis
     const float dot_nn = std::abs(base::dot(bssrdf_sample->frame.n, ctx->isect_o.frame.n));
     pdf = bssrdf_sample->axis_prob * bssrdf_sample->pt_prob * dot_nn;
+    if (pdf < 0.000001f)
+        return 0.f;
 
     // Mis with other axises
     const auto d = ctx->isect_o.P - ctx->isect_i->P;
@@ -366,7 +368,7 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
 
     // Sample a channel and a disk radius
     size_t ch = 3 * 0.99999f * rand[0];
-    const float disk_radius = profile_func(ctx->data, ch, rand[1]);
+    const float disk_radius = profile_func(ctx->closure_sample, ch, rand[1]);
 
     if (disk_radius == 0.f)
         return false;
@@ -412,7 +414,7 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     auto start_pt = entry_pt;
     for (int i = 0; i < max_intersection_cnt; i++) {
         Ray r(start_pt, ray_dir);
-        if (!ctx->accel->intersect(r, isects[i]))
+        if (!ctx->accel->intersect(r, isects[i]) || isects[i].shape != ctx->isect_i->shape)
             break;
         start_pt = isects[i].P;
         ++found_intersection;
@@ -520,7 +522,8 @@ static RGBSpectrum separable_bssrdf_sample(
 
     bssrdf_sample->brdf_f = bssrdf_sample->sampled_closure.sample(ctx, sampler);
     bssrdf_sample->brdf_pdf = bsdf_sample.pdf;
-    bssrdf_sample->wo = bsdf_sample.wo;
+    //bssrdf_sample->wo = bsdf_sample.wo;
+    ctx->isect_o.wo = bsdf_sample.wo;
 
     ctx->data = original_data;
     ctx->closure_sample = original_sample;
