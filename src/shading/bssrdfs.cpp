@@ -187,7 +187,7 @@ static RGBSpectrum standard_dipole_profile_eval(
 {
     auto params = reinterpret_cast<KpDipoleParams*>(ctx->data);
     auto sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
-    const float radius_sqr = (pi - po).length_squared();
+    const float radius_sqr = base::length_squared(pi - po);
     // Following two variable calculation is redundent..
     const float Fdr = fresnel_internel_diffuse_reflectance(params->eta);
     const float A = (1.f + Fdr) / (1.f - Fdr);
@@ -294,8 +294,8 @@ static float separable_bssrdf_pdf(ShadingContext* ctx, const bssrdf_profile_pdf_
     const auto d = ctx->isect_o.P - ctx->isect_i->P;
     const auto& u = bssrdf_sample->frame.s;
     const auto& v = bssrdf_sample->frame.t;
-    const float du = base::project(d, u).length();
-    const float dv = base::project(d, v).length();
+    const float du = base::length(base::project(d, u));
+    const float dv = base::length(base::project(d, v));
     const float dot_un = std::abs(base::dot(u, ctx->isect_o.wo));
     const float dot_vn = std::abs(base::dot(v, ctx->isect_o.wo));
     const float pdf_u = pdf_func(ctx, du) * dot_un;
@@ -432,8 +432,10 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     bssrdf_sample->sampled_shader = (*(ctx->engine_ptr->shaders))[isects[idx].shader_name];
     bssrdf_sample->sample_cnt = found_intersection;
     ctx->isect_o = isects[idx];
+    /* isect_o.wo not set here, causing pdf_u, pdf_v to be 0.
     bssrdf_sample->pdf = separable_bssrdf_pdf(ctx, dipole_profile_pdf,
         (ctx->isect_i->P - ctx->isect_o.P).length());
+    */
 
     return true;
 }
@@ -528,6 +530,9 @@ static RGBSpectrum separable_bssrdf_sample(
     ctx->data = original_data;
     ctx->closure_sample = original_sample;
     ctx->sg = original_sg;
+
+    bssrdf_sample->pdf = separable_bssrdf_pdf(ctx, dipole_profile_pdf,
+        base::length(ctx->isect_i->P - ctx->isect_o.P));
 
     return separable_bssrdf_eval(ctx, profile_eval_func, ctx->isect_i->P,
         ctx->isect_i->wi, ctx->isect_o.P, ctx->isect_o.wo);

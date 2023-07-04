@@ -525,7 +525,7 @@ RGBSpectrum PathIntegrator::Li(const Ray& r, const RecordContext* rctx) const {
         if (ret.bssrdf) {
             shading_ctx.closure_sample = &bssrdf_sample;
             auto f = ret.bssrdf.sample(&shading_ctx, sampler_ptr);
-            if (f.is_zero() || bssrdf_sample.pdf == 0) break;
+            if (base::is_zero(f) || bssrdf_sample.pdf == 0) break;
 
             throughput *= f / bssrdf_sample.pdf;
             light_ptr = get_random_light(sampler_ptr->randomf(), pdf);

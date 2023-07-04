@@ -633,7 +633,7 @@ void TriangleMesh::post_hit(Intersection& isect) const {
             isect.dpdu = base::normalize((duv23[1] * dp13 - duv13[1] * dp23) * inv);
             isect.dpdv = base::normalize((-duv23[0] * dp13 + duv13[0] * dp23) * inv);
         }
-        if (degenerate || base::cross(isect.dpdu, isect.dpdv).length_squared() == 0) {
+        if (degenerate || base::length_squared(base::cross(isect.dpdu, isect.dpdv)) == 0) {
             isect.dpdu = isect.tangent;
             isect.dpdv = isect.bitangent;
         }

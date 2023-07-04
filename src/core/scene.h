@@ -118,7 +118,7 @@ public:
     {
         Transform trans{world};
         auto obj_ptr = std::make_shared<Sphere>(trans, objects.size(),
-            Vec4f{p, r}, shader_name);
+            base::concat(p, r), shader_name);
         accelerator->add_sphere(obj_ptr);
     }
 

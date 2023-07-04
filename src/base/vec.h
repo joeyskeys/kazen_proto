@@ -85,7 +85,7 @@ inline Vec<T, N> cross(const Vec<T, N>& v1, const Vec<T, N>& v2) {
 }
 
 template <typename T, size_t N>
-inline Vec<T, N> proejct(const Vec<T, N>& v, const Vec<T, N>& n) {
+inline Vec<T, N> project(const Vec<T, N>& v, const Vec<T, N>& n) {
     return v - enoki::dot(v, n) * n;
 }
 
