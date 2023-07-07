@@ -296,8 +296,12 @@ static float separable_bssrdf_pdf(ShadingContext* ctx, const bssrdf_profile_pdf_
     const auto& v = bssrdf_sample->frame.t;
     const float du = base::length(base::project(d, u));
     const float dv = base::length(base::project(d, v));
-    const float dot_un = std::abs(base::dot(u, ctx->isect_o.wo));
-    const float dot_vn = std::abs(base::dot(v, ctx->isect_o.wo));
+
+    const float dot_un = std::abs(base::dot(u,
+        ctx->isect_o.frame.to_world(ctx->isect_o.wo)));
+    const float dot_vn = std::abs(base::dot(v,
+        ctx->isect_o.frame.to_world(ctx->isect_o.wo)));
+
     const float pdf_u = pdf_func(ctx, du) * dot_un;
     const float pdf_v = pdf_func(ctx, dv) * dot_vn;
 
@@ -412,12 +416,16 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     int found_intersection = 0;
     Intersection isects[max_intersection_cnt];
     auto start_pt = entry_pt;
+    float tmax = 2.f * h;
     for (int i = 0; i < max_intersection_cnt; i++) {
-        Ray r(start_pt, ray_dir);
+        Ray r(start_pt, ray_dir, epsilon<float>, tmax);
         if (!ctx->accel->intersect(r, isects[i]) || isects[i].shape != ctx->isect_i->shape)
             break;
         start_pt = isects[i].P;
+        tmax -= isects[i].ray_t;
         ++found_intersection;
+        if (tmax < epsilon<float>)
+            break;
     }
 
     // Randomly chose one intersection
@@ -432,10 +440,6 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     bssrdf_sample->sampled_shader = (*(ctx->engine_ptr->shaders))[isects[idx].shader_name];
     bssrdf_sample->sample_cnt = found_intersection;
     ctx->isect_o = isects[idx];
-    /* isect_o.wo not set here, causing pdf_u, pdf_v to be 0.
-    bssrdf_sample->pdf = separable_bssrdf_pdf(ctx, dipole_profile_pdf,
-        (ctx->isect_i->P - ctx->isect_o.P).length());
-    */
 
     return true;
 }
@@ -444,53 +448,6 @@ static inline float sample_standard_dipole_func(void* sp, uint32_t ch, const flo
     auto sample = reinterpret_cast<BSSRDFSample*>(sp);
     return sample_exponential_distribution(sample->sigma_tr[ch], u);
 }
-
-/*
-static RGBSpectrum sample_dipole(ShadingContext* ctx, const bssrdf_profile_sample_func& profile_sample_func,
-    const bssrdf_profile_eval_func& profile_eval_func, Sampler* rng)
-{
-    auto found_po = find_po(ctx, profile_sample_func, rng->random4f());
-    if (!found_po)
-        return 0;
-
-    // We must sample out going point's brdf to get wi before we evaluate the
-    // bssrdf, which means we have to do the OSL execution here.
-    // What have to be done here is to sample the direction of out going direction
-    // Can we separate the direction sampling and evaluation methods to have
-    // some convenience here?
-    // And we need extra random numbers here, perhaps time to pass the sampler
-    // directly?
-    
-    auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
-    auto original_data = ctx->data;
-    OSL::ShaderGlobals sg;
-    KazenRenderServices::globals_from_hit(sg, *(ctx->ray), ctx->isect_o);
-    ctx->engine_ptr->execute(bssrdf_sample->sampled_shader, sg);
-    ShadingResult ret;
-    process_closure(ret, sg.Ci, RGBSpectrum{1}, false);
-    ret.surface.compute_pdfs(sg, RGBSpectrum{1}, false);
-    // Sampled closure is a composite closure object now
-    bssrdf_sample->sampled_closure = ret.surface;
-
-    BSDFSample bsdf_sample;
-    auto original_sample = ctx->closure_sample;
-
-    ctx->closure_sample = &bsdf_sample;
-    auto original_sg = ctx->sg;
-    ctx->sg = &sg;
-
-    bssrdf_sample->brdf_f = bssrdf_sample->sampled_closure.sample(ctx, rng);
-    bssrdf_sample->brdf_pdf = bsdf_sample.pdf;
-    bssrdf_sample->wo = bsdf_sample.wo;
-    //bssrdf_sample->frame = ctx->isect_o.frame;
-
-    ctx->data = original_data;
-    ctx->closure_sample = original_sample;
-    ctx->sg = original_sg;
-
-    return eval_dipole(ctx, profile_eval_func);
-}
-*/
 
 static RGBSpectrum separable_bssrdf_sample(
     ShadingContext* ctx,
@@ -524,7 +481,6 @@ static RGBSpectrum separable_bssrdf_sample(
 
     bssrdf_sample->brdf_f = bssrdf_sample->sampled_closure.sample(ctx, sampler);
     bssrdf_sample->brdf_pdf = bsdf_sample.pdf;
-    //bssrdf_sample->wo = bsdf_sample.wo;
     ctx->isect_o.wo = bsdf_sample.wo;
 
     ctx->data = original_data;
