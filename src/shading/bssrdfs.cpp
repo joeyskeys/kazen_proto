@@ -409,21 +409,28 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
 
     auto h = std::sqrt(square(dipole_params->max_radius) - square(disk_radius));
     auto hn = h * bssrdf_sample->frame.n;
-    auto entry_pt = ctx->isect_i->P + disk_point + hn;
+    auto entry_pt = ctx->isect_i->P + ctx->isect_i->frame.to_world(disk_point) + hn;
     auto ray_dir = base::normalize(-hn);
 
     const static int max_intersection_cnt = 10;
     int found_intersection = 0;
     Intersection isects[max_intersection_cnt];
+
+    std::vector<uint32_t> isect_indice;
+    isect_indice.reserve(10);
+
     auto start_pt = entry_pt;
     float tmax = 2.f * h;
     for (int i = 0; i < max_intersection_cnt; i++) {
         Ray r(start_pt, ray_dir, epsilon<float>, tmax);
-        if (!ctx->accel->intersect(r, isects[i]) || isects[i].shape != ctx->isect_i->shape)
+        if (!ctx->accel->intersect(r, isects[i]) )
             break;
+        if (isects[i].shape == ctx->isect_i->shape) {
+            ++found_intersection;
+            isect_indice.push_back(i);
+        }
         start_pt = isects[i].P;
         tmax -= isects[i].ray_t;
-        ++found_intersection;
         if (tmax < epsilon<float>)
             break;
     }
@@ -436,6 +443,7 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
         idx = sampler->randomf() * found_intersection * 0.999999f;
     }
 
+    idx = isect_indice[idx];
     bssrdf_sample->po = isects[idx].P;
     bssrdf_sample->sampled_shader = (*(ctx->engine_ptr->shaders))[isects[idx].shader_name];
     bssrdf_sample->sample_cnt = found_intersection;
