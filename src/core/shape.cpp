@@ -606,7 +606,8 @@ void TriangleMesh::post_hit(Intersection& isect) const {
     isect.is_light = is_light;
     isect.shader_name = shader_name;
     auto bary_x = 1. - isect.uv[0] - isect.uv[1];
-    isect.P = local_to_world.apply(bary_x * v1 + isect.uv[0] * v2 + isect.uv[1] * v3);
+    //isect.P = local_to_world.apply(bary_x * v1 + isect.uv[0] * v2 + isect.uv[1] * v3);
+    auto orig_p = bary_x * v1 + isect.uv[0] * v2 + isect.uv[1] * v3;
     // We need P setup for differential calculation
     Shape::post_hit(isect);
 
@@ -617,6 +618,26 @@ void TriangleMesh::post_hit(Intersection& isect) const {
         auto tnorm2 = local_to_world.apply_normal(norms[idx[2]]);
         isect.shading_normal = base::normalize(bary_x * tnorm0 + isect.uv[0] * tnorm1
             + isect.uv[1] * tnorm2);
+
+        // Apply the method from [1] to solve the shadow terminator
+        // problem.
+        // [1] HACKING THE SHADOW TERMINATOR
+        // https://jo.dreggn.org/home/2021_terminator.pdf
+        
+        // get distance vectors from triangle vertices
+        auto tmpu = orig_p - v1;
+        auto tmpv = orig_p - v2;
+        auto tmpw = orig_p - v3;
+        // project these onto the tangent planes defined by the
+        // shading normals
+        float dotu = std::min(0.f, base::dot(tmpu, norms[idx[0]]));
+        float dotv = std::min(0.f, base::dot(tmpv, norms[idx[1]]));
+        float dotw = std::min(0.f, base::dot(tmpw, norms[idx[2]]));
+        tmpu -= dotu * tnorm0;
+        tmpv -= dotv * tnorm1;
+        tmpw -= dotw * tnorm2;
+        // Get the new P
+        isect.P = local_to_world.apply(orig_p + bary_x * tmpu + isect.uv[0] * tmpv + isect.uv[1] * tmpw);
     }
     else
         isect.shading_normal = isect.N;
