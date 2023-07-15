@@ -365,14 +365,13 @@ static float dipole_profile_pdf(ShadingContext* ctx, const float r) {
  * https://library.imageworks.com/pdfs/imageworks-library-BSSRDF-sampling.pdf
  *********************************************/
 
-static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profile_func, Sampler* sampler) {
+static bool find_po(ShadingContext* ctx, size_t ch, const bssrdf_profile_sample_func& profile_func, Sampler* sampler) {
     auto dipole_params = reinterpret_cast<KpDipoleParams*>(ctx->data);
     auto bssrdf_sample = reinterpret_cast<BSSRDFSample*>(ctx->closure_sample);
     auto rand = sampler->random4f();
 
-    // Sample a channel and a disk radius
-    size_t ch = 3 * 0.99999f * rand[0];
-    const float disk_radius = profile_func(ctx->closure_sample, ch, rand[1]);
+    // Sample a disk radius
+    const float disk_radius = profile_func(ctx->closure_sample, ch, rand[0]);
 
     if (disk_radius == 0.f)
         return false;
@@ -382,7 +381,7 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
 
     // Choose a projection axis
     auto isect_frame = ctx->isect_i->frame;
-    float u = rand[2];
+    float u = rand[1];
     if (u < 0.5f) {
         bssrdf_sample->frame = Frame(isect_frame.s, isect_frame.t, isect_frame.n);
         u = u * 2;
@@ -403,7 +402,7 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     }
 
     // Sample a phi angle to to get the disk point location on xz plane
-    auto phi = constants::two_pi<float>() * rand[3];
+    auto phi = constants::two_pi<float>() * rand[2];
     auto disk_point = Vec3f{disk_radius * std::cos(phi), 0.f, disk_radius * std::sin(phi)};
     bssrdf_sample->pt_prob = dipole_profile_pdf(ctx, disk_radius);
 
@@ -440,7 +439,7 @@ static bool find_po(ShadingContext* ctx, const bssrdf_profile_sample_func& profi
     if (found_intersection == 0)
         return false;
     else if (found_intersection > 1) {
-        idx = sampler->randomf() * found_intersection * 0.999999f;
+        idx = rand[3] * found_intersection * 0.999999f;
     }
 
     idx = isect_indice[idx];
@@ -465,7 +464,16 @@ static RGBSpectrum separable_bssrdf_sample(
 {
     // TODO : look into the channel sampling code in as
     // and find why it relates to the spectrum
-    auto found = find_po(ctx, profile_sample_func, sampler);
+    auto params = reinterpret_cast<KpDipoleParams*>(ctx->data);
+    DiscrectPDF channel_cdf;
+    channel_cdf.reserve(RGBSpectrum::Size);
+    auto reflectance = base::to_vec3(params->Rd);
+    for (int i = 0; i < RGBSpectrum::Size; ++i)
+        channel_cdf.append(reflectance[i]);
+    channel_cdf.normalize();
+    auto ch = channel_cdf.sample(sampler->randomf());
+
+    auto found = find_po(ctx, ch, profile_sample_func, sampler);
     if (!found)
         return 0;
 

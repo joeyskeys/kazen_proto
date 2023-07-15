@@ -1,5 +1,6 @@
 #include "core/renderer.h"
 #include "core/sampler.h"
+#include "core/sampling.h"
 #include "core/scene.h"
 #include "core/state.h"
 #include "config.h"
@@ -91,7 +92,8 @@ bool Renderer::render(Scene& scene, const std::string& output) const {
 bool Renderer::render(Scene& scene, const uint32_t x, const uint32_t y) const {
     Sampler sampler;
     // Meaningless but fixed seed
-    sampler.seed(1, 2);
+    //sampler.seed(1, 2);
+    sampler.seed(randomi(10000), randomi(10000));
 
     auto integrator_ptr = scene.integrator_fac.create(scene.camera.get(), scene.film.get(), &sampler, &scene.recorder);
     integrator_ptr->setup(&scene);

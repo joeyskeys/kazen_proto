@@ -34,17 +34,21 @@ Film::Film()
     spec = OIIO::ImageSpec(width, height, 3, OIIO::TypeDesc::UINT8);
 }
 
-Film::Film(unsigned int w, unsigned int h, const std::string& f)
+Film::Film(uint w, uint h, uint xres, uint yres, const std::string& f)
     : width(w)
     , height(h)
+    , tile_res_x(xres)
+    , tile_res_y(yres)
     , filename(f)
 {
     output = OIIO::ImageOutput::create(f.c_str());
 }
 
-Film::Film(unsigned int w, unsigned int h, std::string&& f)
+Film::Film(uint w, uint h, uint xres, uint yres, std::string&& f)
     : width(w)
     , height(h)
+    , tile_res_x(xres)
+    , tile_res_y(yres)
     , filename(f)
 {
     output = OIIO::ImageOutput::create(f.c_str());
@@ -59,18 +63,15 @@ bool Film::write(void* data, OIIO::TypeDesc pixel_format)
     return true;
 }
 
-void Film::generate_tiles(uint xres, uint yres)
+void Film::generate_tiles()
 {
-    tile_res_x = xres;
-    tile_res_y = yres;
-    
-    tile_width = width / xres;
-    tile_height = height / yres;
+    tile_width = width / tile_res_x;
+    tile_height = height / tile_res_y;
 
-    for (int j = 0; j < yres; j++) {
-        uint cur_tile_height = j == yres - 1 ? tile_height : height - tile_height * (yres - 1);
-        for (int i = 0; i < xres; i++) {
-            uint cur_tile_width = i == xres - 1 ? tile_width : width - tile_width * (xres - 1);
+    for (int j = 0; j < tile_res_y; j++) {
+        uint cur_tile_height = j == tile_res_y - 1 ? tile_height : height - tile_height * (tile_res_y - 1);
+        for (int i = 0; i < tile_res_x; i++) {
+            uint cur_tile_width = i == tile_res_x - 1 ? tile_width : width - tile_width * (tile_res_x - 1);
             tiles.emplace_back(Tile(i * tile_width, j * tile_height, cur_tile_width, cur_tile_height));
         }
     }
@@ -101,5 +102,9 @@ void* Film::address_of(const std::string& name) {
         return &height;
     else if (name == "filename")
         return &filename;
+    else if (name == "tile_res_x")
+        return &tile_res_x;
+    else if (name == "tile_res_y")
+        return &tile_res_y;
     return nullptr;
 }

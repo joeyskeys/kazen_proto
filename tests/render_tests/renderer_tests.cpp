@@ -8,7 +8,7 @@ TEST_CASE("Renderer test", "[single-file]") {
     Renderer renderer{5, 16};
     Scene scene;
 
-    scene.set_film(1920, 1080, "./test.png");
+    scene.set_film(1920, 1080, 4, 4, "./test.png");
     scene.set_camera(Vec3f{0.f, 0.f, 5.f},
         Vec3f{0.f, 4.371e-8f, 4.f},
         Vec3f{0.f, 1.f, 0.f},

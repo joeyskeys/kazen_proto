@@ -382,7 +382,7 @@ void bind_basetypes(py::module_& m) {
 
     py::class_<Film> pyfl(concepts, "Film");
     pyfl.def(py::init<>())
-        .def(py::init<uint, uint, const std::string&>())
+        .def(py::init<uint, uint, uint, uint, const std::string&>())
         .def("generate_tiles", &Film::generate_tiles)
         .def("write_tiles", &Film::write_tiles)
         .def("set_film_color", &Film::set_film_color)

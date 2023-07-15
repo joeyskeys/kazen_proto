@@ -46,12 +46,12 @@ private:
 class Film : public DictLike {
 public:
     Film();
-    Film(uint w, uint h, const std::string& f);
-    Film(uint w, uint h, std::string&& f);
+    Film(uint w, uint h, uint xres, uint yres, const std::string& f);
+    Film(uint w, uint h, uint xres, uint yres, std::string&& f);
 
     bool write(void* data, OIIO::TypeDesc pixel_format);
 
-    void generate_tiles(const uint xres=4, const uint yres=4);
+    void generate_tiles();
     bool write_tiles();
 
     inline void set_film_color(const RGBSpectrum& s) {

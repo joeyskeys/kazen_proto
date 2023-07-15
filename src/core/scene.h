@@ -41,8 +41,8 @@ public:
     void parse_from_file(fs::path file_path);
     std::unique_ptr<Integrator> create_integrator(Sampler& sampler);
 
-    inline void set_film(uint w, uint h, const std::string& f) {
-        film.reset(new Film{w, h, f});
+    inline void set_film(uint w, uint h, uint xres, uint yres, const std::string& f) {
+        film.reset(new Film{w, h, xres, yres, f});
         film->generate_tiles();
     }
 
