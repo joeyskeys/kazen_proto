@@ -9,7 +9,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "set build type")
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+list(APPEND CMAKE_MODULE_PATH
+    "${CMAKE_SOURCE_DIR}/cmake"
+    "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 option(USE_TBB "Whether to use TBB to enable multithreading" ON)
 
@@ -88,6 +90,21 @@ include_directories("./src")
 configure_file(resource/shader/include/kp_extension.h.in ${CMAKE_SOURCE_DIR}/resource/shader/include/kp_extension.h @ONLY)
 configure_file(src/base/config.h.in include/config.h @ONLY)
 include_directories(${CMAKE_BINARY_DIR}/include)
+
+# OptiX related
+option(USE_OPTIX "Whether to use optix" ON)
+set(OPTIX_ROOT "" CACHE PATH "Installation path of OptiX SDK")
+set(CUDA_TARGET_ARCH "sm_60" CACHE STRING "CUDA GPU architecture (e.g. sm_50)")
+
+if(${USE_OPTIX})
+    find_package(CUDA 8.0 REQUIRED)
+    find_package(OptiX 7 REQUIRED)
+    message(STATUS "Optix Include : ${OPTIX_INCLUDES}")
+    include_directories(
+        ${OPTIX_INCLUDES}
+        ${CUDA_INCLUDE_DIRS})
+endif()
+# End of OptiX related
 
 set(BASE_HEADERS
     src/base/basic_types.h
