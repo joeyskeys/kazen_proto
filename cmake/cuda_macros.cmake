@@ -23,29 +23,31 @@ function ( NVCC_COMPILE cuda_src extra_headers ptx_generated extra_nvcc_args )
     list (TRANSFORM OpenImageIO_INCLUDES PREPEND -I
           OUTPUT_VARIABLE ALL_OpenImageIO_INCLUDES)
 
-    if (${LLVM_VERSION} VERSION_GREATER_EQUAL 15.0)
+    #if (${LLVM_VERSION} VERSION_GREATER_EQUAL 15.0)
         # Until we fully support opaque pointers, we need to disable
         # them when using LLVM 15.
-        list (APPEND LLVM_COMPILE_FLAGS -Xclang -no-opaque-pointers)
-    endif ()
+        #list (APPEND LLVM_COMPILE_FLAGS -Xclang -no-opaque-pointers)
+    #endif ()
 
     add_custom_command ( OUTPUT ${cuda_ptx}
         COMMAND ${CUDA_NVCC_EXECUTABLE}
             "-I${OPTIX_INCLUDES}"
+            "-I${OPTIX_SDK_INCLUDES}"
             "-I${CUDA_INCLUDES}"
             "-I${CMAKE_CURRENT_SOURCE_DIR}"
             "-I${CMAKE_BINARY_DIR}/include"
-            "-I${PROJECT_SOURCE_DIR}/src/include"
-            "-I${PROJECT_SOURCE_DIR}/src/cuda_common"
-            ${OIIO_INCLUDE_DIRS}
+            #"-I${PROJECT_SOURCE_DIR}/src/include"
+            #"-I${PROJECT_SOURCE_DIR}/src/cuda_common"
+            #"-I${OIIO_INCLUDE_DIRS}"
             #${ALL_IMATH_INCLUDES}
             #${ALL_OPENEXR_INCLUDES}
-            "-I${Boost_INCLUDE_DIRS}"
+            #"-I${Boost_INCLUDE_DIRS}"
             "-DFMT_DEPRECATED=\"\""
             #${LLVM_COMPILE_FLAGS}
             -DOSL_USE_FAST_MATH=1
             -m64 -arch ${CUDA_TARGET_ARCH} -ptx
             --std=c++14 -dc -O3 --use_fast_math --expt-relaxed-constexpr
+            -v
             ${extra_nvcc_args}
             ${EXTRA_NVCC_ARGS}
             ${cuda_src} -o ${cuda_ptx}

@@ -54,7 +54,7 @@ TEST_CASE("OptiX initialize", "optix") {
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
     size_t input_size = 0;
-    const std::string cu_content = load_file("../tests/libusage_tests/solid.ptx");
+    const std::string cu_content = load_file("./tests/libusage_tests/solid.ptx");
     char log_buf[2048];
     size_t buf_size = sizeof(log_buf);
 

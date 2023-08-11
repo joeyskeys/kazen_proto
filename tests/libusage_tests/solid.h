@@ -6,4 +6,4 @@ struct Params {
 
 struct RayGenData {
     float r, g, b;
-}
+};

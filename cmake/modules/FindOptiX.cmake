@@ -10,6 +10,12 @@ find_path(OPTIX_INCLUDE_DIR
     PATH_SUFFIXES
         include)
 
+find_path(OPTIX_SDK_DIR
+    NAMES cuda/helpers.h
+    HINTS
+        ${OPTIX_ROOT}/SDK
+        $ENV{OPTIX_ROOT}/SDK)
+
 # We default to Optix 7 which DONT have any libraries
 
 if(OPTIX_INCLUDE_DIR)
@@ -26,9 +32,10 @@ include(FindPackageHandleStandardArgs)
 
 find_package_handle_standard_args(OptiX
     FOUND_VAR OPTIX_FOUND
-    REQUIRED_VARS OPTIX_INCLUDE_DIR OPTIX_VERSION
+    REQUIRED_VARS OPTIX_INCLUDE_DIR OPTIX_VERSION OPTIX_SDK_DIR
     VERSION_VAR OPTIX_VERSION)
 
 if(OPTIX_FOUND)
     set(OPTIX_INCLUDES ${OPTIX_INCLUDE_DIR})
+    set(OPTIX_SDK_INCLUDES ${OPTIX_SDK_DIR})
 endif()

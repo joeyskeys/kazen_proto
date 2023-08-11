@@ -103,6 +103,11 @@ if(${USE_OPTIX})
     include_directories(
         ${OPTIX_INCLUDES}
         ${CUDA_INCLUDE_DIRS})
+
+    set(CUDA_INCLUDES ${CUDA_TOOLKIT_ROOT_DIR}/include)
+    message(STATUS "CUDA include : ${CUDA_INCLUDES}")
+
+    include(cuda_macros)
 endif()
 # End of OptiX related
 
