@@ -5,6 +5,7 @@
 
 #include <optix.h>
 #include <optix_function_table_definition.h>
+#include <optix_stack_size.h>
 #include <optix_stubs.h>
 #include <cuda_runtime.h>
 
@@ -16,7 +17,7 @@ static void context_log_cb(uint32_t level, const char* tag, const char* message,
 }
 
 TEST_CASE("OptiX initialize", "optix") {
-    // Initialize CUDA
+    // Initialize CUDA and create OptiX context
     cudaFree(0);
 
     int num_devices;
@@ -37,6 +38,7 @@ TEST_CASE("OptiX initialize", "optix") {
     ret = optixDeviceContextCreate(cu_ctx, &options, &optix_ctx);
     REQUIRE(ret == OPTIX_SUCCESS);
 
+    // Create module
     OptixModule module = nullptr;
     OptixPipelineCompileOptions pipeline_compile_options = {};
 
@@ -69,4 +71,83 @@ TEST_CASE("OptiX initialize", "optix") {
     );
 
     REQUIRE(ret == OPTIX_SUCCESS);
+
+    // Create program groups
+    OptixProgramGroup raygen_prog_group = nullptr;
+    OptixProgramGroup miss_prog_group   = nullptr;
+
+    OptixProgramGroupOptions    prog_group_options = {};
+    OptixProgramGroupDesc       raygen_prog_group_desc = {};
+    raygen_prog_group_desc.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
+    raygen_prog_group_desc.raygen.module = module;
+    raygen_prog_group_desc.raygen.entryFunctionName = "__raygen__draw_solid_color";
+    ret = optixProgramGroupCreate(
+        optix_ctx,
+        &raygen_prog_group_desc,
+        1,
+        &prog_group_options,
+        log_buf, &buf_size,
+        &raygen_prog_group);
+
+    REQUIRE(ret == OPTIX_SUCCESS);
+
+    OptixProgramGroupDesc miss_prog_group_desc = {};
+    miss_prog_group_desc.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
+    optixProgramGroupCreate(
+        optix_ctx,
+        &miss_prog_group_desc,
+        1,
+        &prog_group_options,
+        log_buf, &buf_size,
+        &miss_prog_group);
+
+    REQUIRE(ret == OPTIX_SUCCESS);
+
+    // Link pipeline
+    OptixPipeline ppl = nullptr;
+    const uint32_t max_trace_depth = 0;
+    OptixProgramGroup prog_groups[] = { raygen_prog_group };
+    OptixPipelineLinkOptions ppl_link_options = {};
+    ppl_link_options.maxTraceDepth = max_trace_depth;
+    ret = optixPipelineCreate(
+        optix_ctx,
+        &pipeline_compile_options,
+        &ppl_link_options,
+        prog_groups,
+        sizeof(prog_groups) / sizeof(prog_groups[0]),
+        log_buf, &buf_size,
+        &ppl);
+
+    REQUIRE(ret == OPTIX_SUCCESS);
+
+    OptixStackSizes stack_sizes = {};
+    for (auto& prog_group : prog_groups) {
+        ret = optixUtilAccumulateStackSizes(prog_group, &stack_sizes, ppl);
+        REQUIRE(ret == OPTIX_SUCCESS);
+    }
+
+    uint32_t direct_callable_stack_size_from_traversal;
+    uint32_t direct_callable_stack_size_from_state;
+    uint32_t continuation_stack_size;
+    ret = optixUtilComputeStackSizes(
+        &stack_sizes,
+        max_trace_depth,
+        0,
+        0,
+        &direct_callable_stack_size_from_traversal,
+        &direct_callable_stack_size_from_state,
+        &continuation_stack_size);
+
+    REQUIRE(ret == OPTIX_SUCCESS);
+
+    ret = optixPipelineSetStackSize(
+        ppl,
+        direct_callable_stack_size_from_traversal,
+        direct_callable_stack_size_from_state,
+        continuation_stack_size,
+        2);
+    
+    REQUIRE(ret == OPTIX_SUCCESS);
+
+    // Setup shader binding table
 }
