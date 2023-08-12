@@ -10,11 +10,21 @@
 #include <cuda_runtime.h>
 
 #include "base/utils.h"
+#include "solid.h"
 
 static void context_log_cb(uint32_t level, const char* tag, const char* message, void*) {
     std::cerr << "[" << std::setw(2) << level << "][" << std::setw(12) << tag << "]: "
         << message << "\n";
 }
+
+template <typename T>
+struct SbtRecord {
+    __align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+    T data;
+};
+
+using RayGenSbtRecord = SbtRecord<RayGenData>;
+using MissSbtRecord = SbtRecord<int>;
 
 TEST_CASE("OptiX initialize", "optix") {
     // Initialize CUDA and create OptiX context
@@ -150,4 +160,49 @@ TEST_CASE("OptiX initialize", "optix") {
     REQUIRE(ret == OPTIX_SUCCESS);
 
     // Setup shader binding table
+    OptixShaderBindingTable sbt{};
+    // records
+    CUdeviceptr raygen_rec;
+    const size_t raygen_rec_size = sizeof(RayGenSbtRecord);
+    cudaMalloc(reinterpret_cast<void**>(&raygen_rec), raygen_rec_size);
+    RayGenSbtRecord rg_sbt;
+    ret = optixSbtRecordPackHeader(raygen_prog_group, &rg_sbt);
+    REQUIRE(ret == OPTIX_SUCCESS);
+    rg_sbt.data = {0.4f, 0.7f, 0.f};
+    cudaMemcpy(
+        reinterpret_cast<void*>(raygen_rec),
+        &rg_sbt,
+        raygen_rec_size,
+        cudaMemcpyHostToDevice);
+
+    CUdeviceptr miss_rec;
+    size_t miss_rec_size = sizeof(MissSbtRecord);
+    cudaMalloc(reinterpret_cast<void**>(&miss_rec), miss_rec_size);
+    RayGenSbtRecord ms_sbt;
+    ret = optixSbtRecordPackHeader(miss_prog_group, &ms_sbt);
+    REQUIRE(ret == OPTIX_SUCCESS);
+    cudaMemcpy(
+        reinterpret_cast<void*>(miss_rec),
+        &ms_sbt,
+        miss_rec_size,
+        cudaMemcpyHostToDevice);
+
+    sbt.raygenRecord = raygen_rec;
+    sbt.missRecordBase = miss_rec;
+    sbt.missRecordStrideInBytes = sizeof(MissSbtRecord);
+    sbt.missRecordCount = 1;
+
+    cudaFree(reinterpret_cast<void*>(sbt.raygenRecord));
+    cudaFree(reinterpret_cast<void*>(sbt.missRecordBase));
+
+    ret = optixPipelineDestroy(ppl);
+    REQUIRE(ret == OPTIX_SUCCESS);
+    ret = optixProgramGroupDestroy(miss_prog_group);
+    REQUIRE(ret == OPTIX_SUCCESS);
+    ret = optixProgramGroupDestroy(raygen_prog_group);
+    REQUIRE(ret == OPTIX_SUCCESS);
+    ret = optixModuleDestroy(module);
+    REQUIRE(ret == OPTIX_SUCCESS);
+    ret = optixDeviceContextDestroy(optix_ctx);
+    REQUIRE(ret == OPTIX_SUCCESS);
 }
