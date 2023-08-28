@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(kazen-prototype LANGUAGES CXX C)
+project(kazen-prototype LANGUAGES CXX C CUDA)
 
 cmake_policy(SET CMP0074 NEW)
 set(CMAKE_CXX_STANDARD 20)

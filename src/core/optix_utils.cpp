@@ -1,5 +1,6 @@
 #include "base/utils.h"
 #include "core/optix_utils.h"
+#include "kernel/types.h"
 
 OptixDeviceContext create_optix_ctx(const OptixDeviceContextOptions* options) {
     cudaFree(0);
@@ -69,4 +70,45 @@ bool create_optix_pg(
                     fmt::format("Creating program group: {}", optix_log_buf));
 
     return true;
+}
+
+bool link_optix_ppl(
+    const OptixDeviceContext ctx,
+    const OptixPipelineCompileOptions& compile_options,
+    const OptixPipelineLinkOptions& link_options,
+    const std::vector<OptixProgramGroup>& pgs
+    OptixPipeline* ppl)
+{
+    OPTIX_CHECK_MSG(optixPipelineCreate(ctx, &compile_options, &link_options,
+                                        pgs.data(), pgs.size(),
+                                        optix_log_buf, &optix_log_buf_size, ppl),
+                    fmt::format("Linking pipeline: {}", optix_log_buf));
+
+    OptixStackSizes stack_sizes{};
+    for (auto& pg : pgs)
+        OPTIX_CHECK(optixUtilAccumulateStackSizes(pg, &stack_sizes, *ppl));
+
+    uint32_t direct_callable_stack_size_from_traversal;
+    uint32_t direct_callable_stack_size_from_state;
+    uint32_t continuation_stack_size;
+    OPTIX_CHECK(optixUtilComputeStackSizes(&stack_sizes, link_options.maxTraceDepth,
+                                           0,
+                                           0,
+                                           &direct_callable_stack_size_from_traversal,
+                                           &direct_callable_stack_size_from_state,
+                                           &continuation_stack_size));
+    OPTIX_CHECK(optixPipelineSetStackSize(*ppl, direct_callable_stack_size_from_traversal,
+                                          direct_callable_stack_size_from_state,
+                                          continuation_stack_size,
+                                          2 // maxTraversableDepth
+                                          ));
+
+    return true;
+}
+
+std::vector<GenericRecord> generate_records(const std::vector<OptixProgramGroup>& gps) {
+    std::vector<GenericRecord> recs(gps.size());
+    for (int i = 0; i < group_size; ++i)
+        OPTIX_CHECK(optixSbtRecordPackHeader(gps[i], &recs[i]));
+    return recs;
 }

@@ -59,4 +59,6 @@ bool                load_optix_module(const char*, const OptixDeviceContext,
     OptixModule*);
 bool                create_optix_pg(const OptixDeviceContext, const OptixProgramGroupDesc*,
     const int, OptixProgramGroupOptions*, OptixProgramGroup*);
-
+bool                link_optix_ppl(const OptixDeviceContext, const OptixPipelineLinkOptions&,
+    const OptixPipelineCompileOptions&, const std::vector<OptixProgramGroup>&, OptixPipeline*);
+std::vector<GenericRecord> generate_records(const uint32_t group_size);
