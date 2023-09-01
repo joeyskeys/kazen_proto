@@ -241,6 +241,8 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/bin
     COMMAND ${CMAKE_COMMAND} -E copy ${OSL_COMPILER} ${CMAKE_INSTALL_PREFIX}/bin/)
 
+add_subdirectory(plugin)
+
 # Installs
 install(FILES ${OSL_HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/shader/include)
 install(DIRECTORY ${CMAKE_BINARY_DIR}/shader DESTINATION ${CMAKE_INSTALL_PREFIX})

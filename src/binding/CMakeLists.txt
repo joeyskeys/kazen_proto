@@ -24,4 +24,12 @@ target_link_libraries(pyzen PRIVATE
     ${EMBREE_LIBRARIES}
     kazen_proto_lib)
 
+add_custom_command(TARGET pyzen POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        $<TARGET_FILE:pyzen>
+        ${CMAKE_SOURCE_DIR}/plugin/bazen)
+
+add_custom_target(copylib ALL
+    DEPENDS pyzen)
+
 install(TARGETS pyzen DESTINATION ${CMAKE_INSTALL_PREFIX}/python)

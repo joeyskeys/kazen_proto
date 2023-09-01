@@ -51,6 +51,15 @@ static void context_log_cb(uint32_t lv, const char* tag, const char* msg, void*)
 constexpr static uint32_t optix_log_buf_size = 4096;
 static char optix_log_buf[optix_log_buf_size];
 
+enum OPTIX_STAGE {
+    RAYGEN,
+    MISS,
+    ANYHIT,
+    CLOESTHIT,
+    EXCEPTION,
+    CALLABLE
+};
+
 OptixDeviceContext  create_optix_ctx(const OptixDeviceContextOptions*);
 void                destroy_optix_ctx(const OptixDeviceContext);
 
