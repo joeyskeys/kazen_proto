@@ -72,7 +72,7 @@ bool create_optix_pg(
     return true;
 }
 
-bool link_optix_ppl(
+bool create_optix_ppl(
     const OptixDeviceContext ctx,
     const OptixPipelineCompileOptions& compile_options,
     const OptixPipelineLinkOptions& link_options,

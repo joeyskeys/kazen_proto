@@ -12,7 +12,14 @@ struct GenericRecord {
     void* data;
 };
 
+template <typename T>
+struct GenericLocalRecord {
+    __align__(
+        OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+    T data;
+};
+
 struct ParamsForTest {
-    uchar4* image;
-    uint32_t image_width;
+    CUDeviceptr*    pixels;
+    uint32_t        image_width;
 };
