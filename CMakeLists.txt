@@ -129,6 +129,7 @@ set(CORE_HEADERS
     src/core/light.h
     src/core/light_path.h
     src/core/material.h
+    src/core/optix_utils.h
     src/core/ray.h
     src/core/renderer.h
     src/core/sampler.h
@@ -154,6 +155,7 @@ set(CORE_SOURCES
     src/core/light.cpp
     src/core/light_path.cpp
     src/core/material.cpp
+    src/core/optix_utils.cpp
     src/core/ray.cpp
     src/core/renderer.cpp
     src/core/sampler.cpp
@@ -184,6 +186,12 @@ add_executable(kazen src/proto/main.cpp)
 target_link_libraries(kazen
     ${OIIO_LIBRARIES}
     ${TBB_LIBRARIES}
+    kazen_proto_lib)
+
+add_executable(kazen_gpu src/proto/optix_main.cpp)
+target_link_libraries(kazen_gpu
+    ${OIIO_LIBRARIES}
+    ${CUDA_LIBRARIES}
     kazen_proto_lib)
 
 if (BUILD_TESTS)

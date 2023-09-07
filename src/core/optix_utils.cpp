@@ -39,9 +39,9 @@ bool load_optix_module(
 {
     //char msg_log[8192];
 
-    const std::string program_ptx = load_file(file_name);
+    const std::string program_ptx = load_file(filename);
     if (program_ptx.empty()) {
-        std::cout << "Cannot find PTX file : " << file_name << std::endl;
+        std::cout << "Cannot find PTX file : " << filename << std::endl;
         return false; 
     }
 
@@ -51,7 +51,7 @@ bool load_optix_module(
                                       pipeline_compile_options,
                                       program_ptx.c_str(),
                                       program_ptx.size(), optix_log_buf,
-                                      &optix_log_buf_size, module),
+                                      &log_size, module),
                     fmt::format("Creating module from PTX-file {}", optix_log_buf));
 
     return true;
@@ -66,7 +66,7 @@ bool create_optix_pg(
 {
     OPTIX_CHECK_MSG(optixProgramGroupCreate(ctx, pg_desc, num_pg,
                                             pg_options, optix_log_buf,
-                                            &optix_log_buf_size, pg),
+                                            &log_size, pg),
                     fmt::format("Creating program group: {}", optix_log_buf));
 
     return true;
@@ -76,12 +76,12 @@ bool create_optix_ppl(
     const OptixDeviceContext ctx,
     const OptixPipelineCompileOptions& compile_options,
     const OptixPipelineLinkOptions& link_options,
-    const std::vector<OptixProgramGroup>& pgs
+    const std::vector<OptixProgramGroup>& pgs,
     OptixPipeline* ppl)
 {
     OPTIX_CHECK_MSG(optixPipelineCreate(ctx, &compile_options, &link_options,
                                         pgs.data(), pgs.size(),
-                                        optix_log_buf, &optix_log_buf_size, ppl),
+                                        optix_log_buf, &log_size, ppl),
                     fmt::format("Linking pipeline: {}", optix_log_buf));
 
     OptixStackSizes stack_sizes{};
@@ -108,7 +108,7 @@ bool create_optix_ppl(
 
 std::vector<GenericRecord> generate_records(const std::vector<OptixProgramGroup>& gps) {
     std::vector<GenericRecord> recs(gps.size());
-    for (int i = 0; i < group_size; ++i)
+    for (int i = 0; i < gps.size(); ++i)
         OPTIX_CHECK(optixSbtRecordPackHeader(gps[i], &recs[i]));
     return recs;
 }

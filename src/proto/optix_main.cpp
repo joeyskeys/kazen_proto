@@ -1,11 +1,13 @@
+#include <OpenImageIO/imageio.h>
+#include <optix_function_table_definition.h>
 
 #include "core/optix_utils.h"
 #include "kernel/types.h"
 
 int main(int argc, const char **argv) {
     std::string outfile;
-    int w = 512;
-    int h = 384;
+    uint32_t w = 512;
+    uint32_t h = 384;
 
     OptixDeviceContextOptions ctx_options{};
     ctx_options.logCallbackFunction = &context_log_cb;
@@ -25,8 +27,10 @@ int main(int argc, const char **argv) {
 
     OptixProgramGroupDesc rg_pg_desc {
         .kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN,
-        .raygen.module = mod_rg;
-        .raygen.entryFunctionName = "__raygen__fixed";
+        .raygen = {
+            .module = mod_rg,
+            .entryFunctionName = "__raygen__fixed"
+        }
     };
     create_optix_pg(ctx, &rg_pg_desc, 1, &pg_options, &rg_pg);
 
@@ -39,8 +43,8 @@ int main(int argc, const char **argv) {
     const uint32_t max_trace_depth = 0;
     std::vector<OptixProgramGroup> pgs { rg_pg, miss_pg };
     OptixPipelineLinkOptions ppl_link_options{};
-    ppl_options.maxTraceDepth = max_trace_depth;
-    create_optix_ppl(ctx, &ppl_compile_options, &ppl_link_options,
+    ppl_link_options.maxTraceDepth = max_trace_depth;
+    create_optix_ppl(ctx, ppl_compile_options, ppl_link_options,
         pgs, &ppl);
 
     enum STAGE {
@@ -66,24 +70,24 @@ int main(int argc, const char **argv) {
     }
 
     OptixShaderBindingTable sbt{};
-    sbt.raygenRecord            = records[RAGEN];
+    sbt.raygenRecord            = records[RAYGEN];
     sbt.missRecordBase          = records[MISS];
-    sbt.missRecordStrideBytes   = sizeof(GenericLocalRecord<Pixel>);
+    sbt.missRecordStrideInBytes = sizeof(GenericLocalRecord<Pixel>);
     sbt.missRecordCount         = 1;
 
-    CUDeviceptr output;
+    CUdeviceptr output;
     auto buf_size = w * h * 3 * sizeof(float);
-    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&output, buf_size)));
-    CUDA_CHECK(cudaMemset(reinterpret_cast<void*>(output, 0, buf_size)));
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&output), buf_size));
+    CUDA_CHECK(cudaMemset(reinterpret_cast<void*>(output), 0, buf_size));
 
     ParamsForTest params {
-        .pixels = output,
+        .pixels = &output,
         .image_width = w
     };
 
-    CUDeviceptr param_ptr;
-    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&param_ptr,
-        sizeof(ParamsForTest))));
+    CUdeviceptr param_ptr;
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&param_ptr),
+        sizeof(ParamsForTest)));
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(param_ptr), &params,
         sizeof(ParamsForTest), cudaMemcpyHostToDevice));
 
@@ -93,9 +97,16 @@ int main(int argc, const char **argv) {
     OPTIX_CHECK(optixLaunch(ppl, stream, param_ptr, sizeof(ParamsForTest),
         &sbt, w, h, 1));
 
-    cudaFree(param_ptr);
+    cudaFree(reinterpret_cast<void*>(param_ptr));
 
     // TODO : output the image
+    float* host_data = new float[w * h * 3];
+    CUDA_CHECK(cudaMemcpy(static_cast<void*>(host_data), reinterpret_cast<void*>(output),
+        w * h * 3 * sizeof(float), cudaMemcpyDeviceToHost));
+    auto oiio_out = OIIO::ImageOutput::create("test.png");
+    auto spec = OIIO::ImageSpec(w, h, 3, OIIO::TypeDesc::FLOAT);
+    oiio_out->write_image(OIIO::TypeDesc::FLOAT, host_data);
+    delete[] host_data;
 
     cudaFree(reinterpret_cast<void*>(sbt.raygenRecord));
     cudaFree(reinterpret_cast<void*>(sbt.missRecordBase));

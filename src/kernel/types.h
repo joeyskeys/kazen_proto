@@ -20,6 +20,6 @@ struct GenericLocalRecord {
 };
 
 struct ParamsForTest {
-    CUDeviceptr*    pixels;
+    CUdeviceptr*    pixels;
     uint32_t        image_width;
 };

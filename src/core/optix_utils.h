@@ -4,40 +4,41 @@
 #include <iomanip>
 
 #include <optix.h>
-#include <optix_function_table_definition.h>
 #include <optix_stack_size.h>
 #include <optix_stubs.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-#define CUDA_CHECK(call)
+#include "kernel/types.h"
+
+#define CUDA_CHECK( call )                                                          \
     {                                                                               \
         cudaError_t res = call;                                                     \
         if (res != cudaSuccess) {                                                   \
-            std::cerr << fmt::format("[CUDA ERROR] Cuda call '{}' failed with"      \
-                " error: {} ({}:{})").format(#call,                                 \
-                cudaGetErrorString(res), __FILE__,  __LINE__) << std::endl;         \
+            fmt::print(stderr, "[CUDA ERROR] Cuda call '{}' failed with "           \
+                "error: {} ({}:{})", #call, cudaGetErrorString(res),                \
+                __FILE__,  __LINE__);                                               \
             exit(1);                                                                \
         }                                                                           \
     }
 
-#define OPTIX_CHECK(call)                                                           \
+#define OPTIX_CHECK( call )                                                         \
     {                                                                               \
         OptixResult res = call;                                                     \
         if (res != OPTIX_SUCCESS) {                                                 \
-            std::cerr << fmt::format("[OPTIX ERROR] OptiX call '{}' failed with"    \
-                " error: {} ({}:{})").format(#call, optixGetErrorName(res),         \
-                __FILE__, __LINE__) << std::endl;                                   \
+            fmt::print(stderr, "[OPTIX ERROR] OptiX call '{}' failed with "         \
+                "error: {} ({}:{})", #call, optixGetErrorName(res), __FILE__,       \
+                __LINE__);                                                          \
             exit(1);                                                                \
         }                                                                           \
     }
 
-#define OPTIX_CHECK_MSG(call, msg)                                                  \
+#define OPTIX_CHECK_MSG( call, msg )                                                \
     {                                                                               \
         OptixResult res = call;                                                     \
         if (res != OPTIX_SUCCESS) {                                                 \
-            std::cerr << fmt::format("[OPTIX ERROR] OptiX call '{}' failed with"    \
-                "error: {} ({}:{})\nMessage: {}").format(#call,                     \
+            fmt::print(stderr, "[OPTIX ERROR] OptiX call '{}' failed with "         \
+                "error: {} ({}:{})\nMessage: {}", #call,                            \
                 optixGetErrorName(res), __FILE__, __LINE__, msg);                   \
             exit(1);                                                                \
         }                                                                           \
@@ -48,8 +49,9 @@ static void context_log_cb(uint32_t lv, const char* tag, const char* msg, void*)
         << msg << std::endl;
 }
 
-constexpr static uint32_t optix_log_buf_size = 4096;
-static char optix_log_buf[optix_log_buf_size];
+#define OPTIX_LOG_BUF_SIZE 4096
+static char optix_log_buf[OPTIX_LOG_BUF_SIZE];
+static size_t log_size = 0;
 
 enum OPTIX_STAGE {
     RAYGEN,
@@ -68,6 +70,6 @@ bool                load_optix_module(const char*, const OptixDeviceContext,
     OptixModule*);
 bool                create_optix_pg(const OptixDeviceContext, const OptixProgramGroupDesc*,
     const int, OptixProgramGroupOptions*, OptixProgramGroup*);
-bool                create_optix_ppl(const OptixDeviceContext, const OptixPipelineLinkOptions&,
-    const OptixPipelineCompileOptions&, const std::vector<OptixProgramGroup>&, OptixPipeline*);
+bool                create_optix_ppl(const OptixDeviceContext, const OptixPipelineCompileOptions&,
+    const OptixPipelineLinkOptions&, const std::vector<OptixProgramGroup>&, OptixPipeline*);
 std::vector<GenericRecord> generate_records(const uint32_t group_size);
