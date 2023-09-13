@@ -79,7 +79,7 @@ include_directories(${Pugixml_INCLUDE_DIRS})
 find_package(FMT REQUIRED)
 include_directories(${FMT_INCLUDE_DIRS})
 
-find_package(embree 3.13.0 REQUIRED)
+find_package(embree 4 REQUIRED)
 include_directories(${EMBREE_INCLUDE_DIRS})
 
 find_package(PCG32 REQUIRED)

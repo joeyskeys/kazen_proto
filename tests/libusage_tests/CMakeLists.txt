@@ -15,6 +15,12 @@ foreach (cuda_src ${cuda_srcs})
     list (APPEND ptx_list ${ptx_generated})
 endforeach()
 
+add_executable(embree_tests embree_tests.cpp)
+target_link_libraries(embree_tests
+    PRIVATE
+        Catch2::Catch2WithMain
+        ${EMBREE_LIBRARIES})
+
 add_custom_target(libusage_ptx ALL
     DEPENDS ${ptx_list}
     SOURCES ${cuda_srcs})

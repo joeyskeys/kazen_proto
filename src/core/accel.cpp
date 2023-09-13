@@ -316,8 +316,8 @@ void EmbreeAccel::build() {
 }
 
 bool EmbreeAccel::intersect(const Ray& r, Intersection& isect) const {
-    RTCIntersectContext isect_ctx;
-    rtcInitIntersectContext(&isect_ctx);
+    RTCIntersectArguments iargs;
+    rtcInitIntersectArguments(&iargs);
 
     RTCRayHit rayhit;
     rayhit.ray.org_x = r.origin.x();
@@ -328,11 +328,12 @@ bool EmbreeAccel::intersect(const Ray& r, Intersection& isect) const {
     rayhit.ray.dir_z = r.direction.z();
     rayhit.ray.tnear = r.tmin;
     rayhit.ray.tfar = r.tmax;
-    rayhit.ray.mask = -1;
+    rayhit.ray.mask = 1;
     rayhit.ray.flags = 0;
     rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+    rayhit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
 
-    rtcIntersect1(m_scene, &isect_ctx, &rayhit);
+    rtcIntersect1(m_scene, &rayhit, &iargs);
     if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
         isect.ray = const_cast<Ray*>(&r);
         isect.ray_t = rayhit.ray.tfar;
@@ -375,8 +376,8 @@ bool EmbreeAccel::intersect(const Ray& r, Intersection& isect) const {
 }
 
 bool EmbreeAccel::intersect(const Ray& r, float& t) const {
-    RTCIntersectContext isect_ctx;
-    rtcInitIntersectContext(&isect_ctx);
+    RTCIntersectArguments iargs;
+    rtcInitIntersectArguments(&iargs);
 
     RTCRayHit rayhit;
     rayhit.ray.org_x = r.origin.x();
@@ -391,7 +392,7 @@ bool EmbreeAccel::intersect(const Ray& r, float& t) const {
     rayhit.ray.flags = 0;
     rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
 
-    rtcIntersect1(m_scene, &isect_ctx, &rayhit);
+    rtcIntersect1(m_scene, &rayhit, &iargs);
     if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
         t = rayhit.ray.tfar;
         return true;
