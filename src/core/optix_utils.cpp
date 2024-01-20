@@ -30,29 +30,94 @@ void destroy_optix_ctx(const OptixDeviceContext optix_ctx) {
         OPTIX_CHECK(optixDeviceContextDestroy(optix_ctx));
 }
 
-bool load_optix_module(
+std::string cu_to_ptx(const char* inc_dir, const char* cu_str, const char* name,
+    const std::vector<const char*>& compiler_options)
+{
+    // Create program
+    nvrtcProgram prog = 0;
+    NVRTC_CHECK(nvrtcCreateProgram(&prog, cu_str, name, 0, NULL, NULL));
+
+    // Gather options
+    std::vector<const char*> options;
+    if (inc_dir) {
+        auto inc_option = std::string("-I") + inc_dir;
+        options.push_back(inc_option.c_str());
+    }
+
+    std::copy(std::begin(compiler_options), std::end(compiler_options), std::back_inserter(options));
+
+    // JIT compile CU to PTX, not considering OPTIXIR for now
+    const nvrtcResult ret = nvrtcCompileProgram(prog, (int)options.size(), options.data());
+
+    // Retrieve log output
+    NVRTC_CHECK(nvrtcGetProgramLogSize(prog, &log_size));
+    log_size = std::min(static_cast<int>(log_size), LOG_BUF_SIZE - 1);
+    if (log_size > 1)
+        NVRTC_CHECK(nvrtcGetProgramLog(prog, log_buf));
+    if (ret != NVRTC_SUCCESS) {
+        fmt::print(stderr, "nvrtc compile error: {}", log_buf);
+        exit(1);
+    }
+
+    // Retrieve PTX code
+    size_t ptx_size = 0;
+    NVRTC_CHECK(nvrtcGetPTXSize(prog, &ptx_size));
+    std::string ptx;
+    ptx.resize(ptx_size);
+    nvrtcGetPTX(prog, ptx.data());
+
+    // Cleanup
+    nvrtcDestroyProgram(&prog);
+
+    return ptx;
+}
+
+bool load_optix_module_ptx(
     const char* filename,
     const OptixDeviceContext ctx,
     const OptixModuleCompileOptions* module_compile_options,
     const OptixPipelineCompileOptions* pipeline_compile_options,
     OptixModule* module)
 {
-    //char msg_log[8192];
-
     const std::string program_ptx = load_file(filename);
     if (program_ptx.empty()) {
         std::cout << "Cannot find PTX file : " << filename << std::endl;
         return false; 
     }
 
-    //size_t log_size = sizeof(msg_log);
     OPTIX_CHECK_MSG(optixModuleCreate(ctx,
                                       module_compile_options,
                                       pipeline_compile_options,
                                       program_ptx.c_str(),
-                                      program_ptx.size(), optix_log_buf,
+                                      program_ptx.size(), log_buf,
                                       &log_size, module),
-                    fmt::format("Creating module from PTX-file {}", optix_log_buf));
+                    fmt::format("Creating module from PTX-file {}", log_buf));
+
+    return true;
+}
+
+bool load_optix_module_cu(
+    const char* filename,
+    const OptixDeviceContext ctx,
+    const OptixModuleCompileOptions* module_compile_options,
+    const OptixPipelineCompileOptions* pipeline_compile_options,
+    OptixModule* module)
+{
+    const std::string program_cu = load_file(filename);
+    if (program_cu.empty()) {
+        std::cout << "Cannot find cu file : " << filename << std::endl;
+        return false; 
+    }
+    const std::string program_ptx = cu_to_ptx(nullptr, program_cu.c_str(),
+        filename);
+
+    OPTIX_CHECK_MSG(optixModuleCreate(ctx,
+                                      module_compile_options,
+                                      pipeline_compile_options,
+                                      program_ptx.c_str(),
+                                      program_ptx.size(), log_buf,
+                                      &log_size, module),
+                    fmt::format("Creating module from PTX-file {}", log_buf));
 
     return true;
 }
@@ -65,9 +130,9 @@ bool create_optix_pg(
     OptixProgramGroup* pg)
 {
     OPTIX_CHECK_MSG(optixProgramGroupCreate(ctx, pg_desc, num_pg,
-                                            pg_options, optix_log_buf,
+                                            pg_options, log_buf,
                                             &log_size, pg),
-                    fmt::format("Creating program group: {}", optix_log_buf));
+                    fmt::format("Creating program group: {}", log_buf));
 
     return true;
 }
@@ -81,8 +146,8 @@ bool create_optix_ppl(
 {
     OPTIX_CHECK_MSG(optixPipelineCreate(ctx, &compile_options, &link_options,
                                         pgs.data(), pgs.size(),
-                                        optix_log_buf, &log_size, ppl),
-                    fmt::format("Linking pipeline: {}", optix_log_buf));
+                                        log_buf, &log_size, ppl),
+                    fmt::format("Linking pipeline: {}", log_buf));
 
     OptixStackSizes stack_sizes{};
     for (auto& pg : pgs)

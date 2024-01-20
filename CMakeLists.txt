@@ -103,7 +103,6 @@ if(${USE_OPTIX})
     message(STATUS "Optix Include : ${OPTIX_INCLUDES}")
     include_directories(
         ${OPTIX_INCLUDES}
-        #${CUDA_INCLUDE_DIRS})
         ${CUDAToolkit_INCLUDE_DIRS})
 
     set(CUDA_INCLUDES ${CUDA_TOOLKIT_ROOT_DIR}/include)
@@ -192,6 +191,7 @@ add_executable(kazen_gpu src/proto/optix_main.cpp)
 target_link_libraries(kazen_gpu
     ${OIIO_LIBRARIES}
     CUDA::cudart
+    CUDA::nvrtc
     kazen_proto_lib)
 
 if (BUILD_TESTS)

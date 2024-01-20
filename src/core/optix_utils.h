@@ -8,6 +8,7 @@
 #include <optix_stubs.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <nvrtc.h>
 
 #include "kernel/types.h"
 
@@ -44,13 +45,24 @@
         }                                                                           \
     }
 
+#define NVRTC_CHECK( call )                                                         \
+    {                                                                               \
+        nvrtcResult code = call;                                                    \
+        if (code != NVRTC_SUCCESS) {                                                \
+            fmt::print(stderr, "[NVRTC ERROR] NVRTC call '{}' failed with "         \
+                "error: {} ({}:{})", #call,                                         \
+                nvrtcGetErrorString(code), __FILE__, __LINE__);                     \
+            exit(1);                                                                \
+        }                                                                           \
+    }
+
 static void context_log_cb(uint32_t lv, const char* tag, const char* msg, void*) {
     std::cerr << "[" << std::setw(2) << lv << "][" << std::setw(12) << tag << "]: "
         << msg << std::endl;
 }
 
-#define OPTIX_LOG_BUF_SIZE 4096
-static char optix_log_buf[OPTIX_LOG_BUF_SIZE];
+#define LOG_BUF_SIZE 4096
+static char log_buf[LOG_BUF_SIZE];
 static size_t log_size = 0;
 
 enum OPTIX_STAGE {
@@ -62,12 +74,27 @@ enum OPTIX_STAGE {
     CALLABLE
 };
 
+#define CUDA_NVRTC_OPTIONS \
+    "-std=c++17", \
+    "-arch", \
+    "compute_50", \
+    "-use_fast_math", \
+    "-lineinfo", \
+    "-default-device", \
+    "-rdc", \
+    "true", \
+    "-D__x86_64", \
+    "-DOPTIX_OPTIONAL_FEATURE_OPTIX7",
+
 OptixDeviceContext  create_optix_ctx(const OptixDeviceContextOptions*);
 void                destroy_optix_ctx(const OptixDeviceContext);
 
-void                cu_to_ptx(std::string& output_ptx, const char* inc_dir, const char* cu_src,
-    const char* name, const char** log, const std::vector<const char*>& options);
-bool                load_optix_module(const char*, const OptixDeviceContext,
+std::string         cu_to_ptx(const char*, const char*, const char*,
+    const std::vector<const char*>& compiler_options = {CUDA_NVRTC_OPTIONS});
+bool                load_optix_module_ptx(const char*, const OptixDeviceContext,
+    const OptixModuleCompileOptions*, const OptixPipelineCompileOptions*,
+    OptixModule*);
+bool                load_optix_module_cu(const char*, const OptixDeviceContext,
     const OptixModuleCompileOptions*, const OptixPipelineCompileOptions*,
     OptixModule*);
 bool                create_optix_pg(const OptixDeviceContext, const OptixProgramGroupDesc*,

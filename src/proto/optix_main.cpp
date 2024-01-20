@@ -18,7 +18,7 @@ int main(int argc, const char **argv) {
 
     OptixModuleCompileOptions mod_options{};
     OptixModule mod_rg;
-    load_optix_module("../src/kernel/device/optix/kernels.cu",
+    load_optix_module_cu("../src/kernel/device/optix/kernels.cu",
         ctx, &mod_options, &ppl_compile_options, &mod_rg);
 
     OptixProgramGroup rg_pg = nullptr;
