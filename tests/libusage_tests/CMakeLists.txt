@@ -28,4 +28,4 @@ add_custom_target(libusage_ptx ALL
 add_executable(optix_tests optix_tests.cpp)
 target_link_libraries(optix_tests
     PRIVATE
-        Catch2::Catch2WithMain ${CUDA_LIBRARIES})
+        Catch2::Catch2WithMain CUDA::cudart)

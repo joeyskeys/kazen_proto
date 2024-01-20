@@ -30,10 +30,10 @@ function ( NVCC_COMPILE cuda_src extra_headers ptx_generated extra_nvcc_args )
     #endif ()
 
     add_custom_command ( OUTPUT ${cuda_ptx}
-        COMMAND ${CUDA_NVCC_EXECUTABLE}
+        COMMAND ${CUDAToolkit_NVCC_EXECUTABLE}
             "-I${OPTIX_INCLUDES}"
             "-I${OPTIX_SDK_INCLUDES}"
-            "-I${CUDA_INCLUDES}"
+            #"-I${CUDA_INCLUDES}"
             "-I${CMAKE_CURRENT_SOURCE_DIR}"
             "-I${CMAKE_BINARY_DIR}/include"
             #"-I${PROJECT_SOURCE_DIR}/src/include"

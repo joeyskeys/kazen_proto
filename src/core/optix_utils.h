@@ -65,6 +65,8 @@ enum OPTIX_STAGE {
 OptixDeviceContext  create_optix_ctx(const OptixDeviceContextOptions*);
 void                destroy_optix_ctx(const OptixDeviceContext);
 
+void                cu_to_ptx(std::string& output_ptx, const char* inc_dir, const char* cu_src,
+    const char* name, const char** log, const std::vector<const char*>& options);
 bool                load_optix_module(const char*, const OptixDeviceContext,
     const OptixModuleCompileOptions*, const OptixPipelineCompileOptions*,
     OptixModule*);

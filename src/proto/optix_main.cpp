@@ -14,9 +14,9 @@ int main(int argc, const char **argv) {
     ctx_options.logCallbackLevel = 4;
     auto ctx = create_optix_ctx(&ctx_options);
 
-    OptixPipelineCompileOptions ppl_compile_options;
+    OptixPipelineCompileOptions ppl_compile_options{};
 
-    OptixModuleCompileOptions mod_options;
+    OptixModuleCompileOptions mod_options{};
     OptixModule mod_rg;
     load_optix_module("../src/kernel/device/optix/kernels.cu",
         ctx, &mod_options, &ppl_compile_options, &mod_rg);
@@ -99,7 +99,7 @@ int main(int argc, const char **argv) {
 
     cudaFree(reinterpret_cast<void*>(param_ptr));
 
-    // TODO : output the image
+    // Output the image
     float* host_data = new float[w * h * 3];
     CUDA_CHECK(cudaMemcpy(static_cast<void*>(host_data), reinterpret_cast<void*>(output),
         w * h * 3 * sizeof(float), cudaMemcpyDeviceToHost));

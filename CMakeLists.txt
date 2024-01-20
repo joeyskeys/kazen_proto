@@ -94,19 +94,19 @@ include_directories(${CMAKE_BINARY_DIR}/include)
 # OptiX related
 option(USE_OPTIX "Whether to use optix" ON)
 set(OPTIX_ROOT "" CACHE PATH "Installation path of OptiX SDK")
+set(CUDAToolkit_ROOT "/opt/cuda" CACHE PATH "Installation path of CUDA")
 set(CUDA_TARGET_ARCH "sm_60" CACHE STRING "CUDA GPU architecture (e.g. sm_50)")
 
 if(${USE_OPTIX})
-    find_package(CUDA 8.0 REQUIRED)
+    find_package(CUDAToolkit 8.0 REQUIRED)
     find_package(OptiX 7 REQUIRED)
     message(STATUS "Optix Include : ${OPTIX_INCLUDES}")
     include_directories(
         ${OPTIX_INCLUDES}
-        ${CUDA_INCLUDE_DIRS})
+        #${CUDA_INCLUDE_DIRS})
+        ${CUDAToolkit_INCLUDE_DIRS})
 
     set(CUDA_INCLUDES ${CUDA_TOOLKIT_ROOT_DIR}/include)
-    message(STATUS "CUDA include : ${CUDA_INCLUDES}")
-
     include(cuda_macros)
 endif()
 # End of OptiX related
@@ -191,7 +191,7 @@ target_link_libraries(kazen
 add_executable(kazen_gpu src/proto/optix_main.cpp)
 target_link_libraries(kazen_gpu
     ${OIIO_LIBRARIES}
-    ${CUDA_LIBRARIES}
+    CUDA::cudart
     kazen_proto_lib)
 
 if (BUILD_TESTS)
