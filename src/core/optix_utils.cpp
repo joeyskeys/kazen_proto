@@ -30,7 +30,8 @@ void destroy_optix_ctx(const OptixDeviceContext optix_ctx) {
         OPTIX_CHECK(optixDeviceContextDestroy(optix_ctx));
 }
 
-std::string cu_to_ptx(const char* inc_dir, const char* cu_str, const char* name,
+std::string cu_to_ptx(const char* cu_str, const char* name,
+    const std::vector<const char*>& inc_dirs,
     const std::vector<const char*>& compiler_options)
 {
     // Create program
@@ -39,11 +40,13 @@ std::string cu_to_ptx(const char* inc_dir, const char* cu_str, const char* name,
 
     // Gather options
     std::vector<const char*> options;
-    if (inc_dir) {
+    /*
+    for (const auto& inc_dir : inc_dirs) {
         auto inc_option = std::string("-I") + inc_dir;
-        options.push_back(inc_option.c_str());
+        options.emplace_back(inc_option.c_str());
     }
-
+    */
+    std::copy(std::begin(inc_dirs), std::end(inc_dirs), std::back_inserter(options));
     std::copy(std::begin(compiler_options), std::end(compiler_options), std::back_inserter(options));
 
     // JIT compile CU to PTX, not considering OPTIXIR for now
@@ -108,7 +111,8 @@ bool load_optix_module_cu(
         std::cout << "Cannot find cu file : " << filename << std::endl;
         return false; 
     }
-    const std::string program_ptx = cu_to_ptx(nullptr, program_cu.c_str(),
+    // Use a const temporarily
+    const std::string program_ptx = cu_to_ptx(program_cu.c_str(),
         filename);
 
     OPTIX_CHECK_MSG(optixModuleCreate(ctx,

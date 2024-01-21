@@ -75,7 +75,7 @@ enum OPTIX_STAGE {
 };
 
 #define CUDA_NVRTC_OPTIONS \
-    "-std=c++17", \
+    "-std=c++14", \
     "-arch", \
     "compute_50", \
     "-use_fast_math", \
@@ -84,12 +84,20 @@ enum OPTIX_STAGE {
     "-rdc", \
     "true", \
     "-D__x86_64", \
-    "-DOPTIX_OPTIONAL_FEATURE_OPTIX7",
+    "-DOPTIX_OPTIONAL_FEATURE_OPTIX7"
+
+// TODO : remove it later
+#define OPTIX_INC_DIRS \
+    "-I/home/joey/Desktop/softs/optix/NVIDIA-OptiX-SDK-8.0.0-linux64-x86_64/include", \
+    "-I/home/joey/Desktop/softs/optix/NVIDIA-OptiX-SDK-8.0.0-linux64-x86_64/SDK", \
+    "-I/opt/cuda/include", \
+    "-I/home/joey/Desktop/repos/kazen_proto/src/kernel",
 
 OptixDeviceContext  create_optix_ctx(const OptixDeviceContextOptions*);
 void                destroy_optix_ctx(const OptixDeviceContext);
 
-std::string         cu_to_ptx(const char*, const char*, const char*,
+std::string         cu_to_ptx(const char*, const char*,
+    const std::vector<const char*>& inc_dirs = {OPTIX_INC_DIRS},
     const std::vector<const char*>& compiler_options = {CUDA_NVRTC_OPTIONS});
 bool                load_optix_module_ptx(const char*, const OptixDeviceContext,
     const OptixModuleCompileOptions*, const OptixPipelineCompileOptions*,
