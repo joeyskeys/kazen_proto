@@ -403,3 +403,55 @@ bool EmbreeAccel::intersect(const Ray& r, float& t) const {
 void EmbreeAccel::print_info() const {
     std::cout << "Embree Accelerator" << std::endl;
 }
+
+OptixAccel::OptixAccel(const OptixDeviceContext& c)
+    : ctx(c)
+{}
+
+OptixAccel::~OptixAccel() {
+    if (gas_handles.size() > 0) {
+        for (const auto& gas_handle : gas_handles)
+            CUDA_CHECK(cudaFree(reinterpret_cast<void*>(gas_handle)));
+        CUDA_CHECK(cudaFree(reinterpret_cast<void*>(ias_handle)));
+    }
+}
+
+void OptixAccel::add_sphere(std::shared_ptr<Sphere& s) {
+    OptixAccelBuildOptions accel_options {
+        .buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS,
+        .operation = OPTIX_BUILD_OPERATION_BUILD
+    };
+
+    CUdeviceptr d_vertex_buf;
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_vertex_buf), sizeof(float3)));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_vertex_buf), &s.center_n_radius,
+        sizeof(float3), cudaMemcpyHostToDevice));
+}
+
+void OptixAccel::add_quad(std::shared_ptr<Quad>& q) {
+
+}
+
+void OptixAccel::add_triangle(std::shared_ptr<Triangle>& t) {
+
+}
+
+void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
+
+}
+
+void OptixAccel::add_spheres(std::vector<std::shared_ptr<Sphere>& ss) {
+
+}
+
+void OptixAccel::add_trianglemeshes(std::vector<std::shared_ptr<TriangleMesh>>& ts) {
+
+}
+
+void OptixAccel::build() {
+
+}
+
+void OptixAccel::print_info() {
+
+}

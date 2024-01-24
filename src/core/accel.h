@@ -6,8 +6,9 @@
 
 #include <embree4/rtcore.h>
 
-#include "hitable.h"
-#include "shape.h"
+#include "core/hitable.h"
+#include "core/shape.h"
+#include "core/optix_utils.h"
 
 class Accelerator : public Hitable {
 public:
@@ -22,6 +23,8 @@ public:
     virtual void add_quad(std::shared_ptr<Quad>& q);
     virtual void add_triangle(std::shared_ptr<Triangle>& t);
     virtual void add_trianglemesh(std::shared_ptr<TriangleMesh>& t);
+    virtual void add_spheres(std::vector<std::shared_ptr<Sphere>& ss);
+    virtual void add_trianglemeshes(std::vector<std::shared_ptr<TriangleMesh>& ts);
     virtual void build() {}
 
     bool intersect(const Ray& r, Intersection& isect) const override;
@@ -70,3 +73,27 @@ private:
     RTCScene    m_scene = nullptr;
     std::unordered_map<uint32_t, std::pair<RTCScene, std::shared_ptr<Hitable>>> m_subscenes;
 };
+
+class OptixAccel : public Accelerator {
+public:
+    OptixAccel(const OptixDeviceContext&);
+    ~OptixAccel();
+
+    void add_sphere(std::shared_ptr<Sphere>& s) override;
+    void add_quad(std::shared_ptr<Quad>& q) override;
+    void add_triangle(std::shared_ptr<Triangle>& t) override;
+    void add_trianglemesh(std::shared_ptr<TriangleMesh>& t) override;
+    void add_spheres(std::vector<std::shared_ptr<Sphere>& ss) override;
+    void add_trianglemeshes(std::vector<std::shared_ptr<TriangleMesh>>& ts) override;
+    void build() override;
+    //bool intersect(const Ray& r, Intersection& isect) const override;
+    //bool intersect(const Ray& r, float& t) const override;
+    void print_info() const override;
+
+private:
+    OptixDeviceContext                  ctx;
+    std::vector<OptixTraversableHandle> gas_handles;
+    std::vector<CUdeviceptr>            gas_output_bufs;
+    OptixTraversableHandle              ias_handle;
+    CUdeviceptr                         ias_output_buf;
+}
