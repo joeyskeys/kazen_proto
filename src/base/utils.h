@@ -237,3 +237,8 @@ inline float exponential_distribution_pdf(const float t, const float s) {
     assert(t >= 0.f);
     return s * std::exp(-s * t);
 }
+
+template <typename IT>
+inline IT round_up(IT x, IT y) {
+    return ((x + y - 1) / y) * y;
+}

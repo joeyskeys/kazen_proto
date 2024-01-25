@@ -426,6 +426,65 @@ void OptixAccel::add_sphere(std::shared_ptr<Sphere& s) {
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_vertex_buf), sizeof(float3)));
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_vertex_buf), &s.center_n_radius,
         sizeof(float3), cudaMemcpyHostToDevice));
+
+    CUdeviceptr d_radius_buf;
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_radius_buf), sizeof(float)));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_radius_buf), &s.center_n_radius[3],
+        sizeof(float), cudaMemcpyHostToDevice));
+
+    OptixBuildInput input = {};
+    input.type = OPTIX_BUILD_INPUT_TYPE_SPHERES;
+    input.sphereArray.vertexBuffers = &d_vertex_buf;
+    input.sphereArray.numVertices = 1;
+    input.sphereArray.radiusBuffers = &d_radius_buf;
+
+    uint32_t input_flags[1] = {OPTIX_GEOMETRY_FLAG_NONE};
+    input.sphereArray.flags = input_flags;
+    input.sphereArray.numSbtRecords = 1;
+
+    OptixAccelBufferSizes buf_sizes;
+    OPTIX_CHECK(optixAccelComputeMemoryUsage(ctx, &accel_options, &sphere_input, 1, &buf_sizes));
+    CUdeviceptr d_temp_buf;
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_temp_buf), buf_sizes.tempSizeInBytes));
+
+    CUdeviceptr d_non_compact_output;
+    size_t compact_size_offset = round_up<size_t>(buf_sizes.outputSizeInBytes, 8ull);
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_non_compact_output),
+        compact_size_offset + 8));
+
+    OptixAccelEmitDesc emit_prop = {};
+    emit_prop.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
+    emit_prop.result = (CUdeviceptr)((char*)d_non_compact_output + compact_size_offset);
+
+    OptixTraversableHandle handle;
+    OPTIX_CHECK(optixAccelBuild(ctx,
+                                0,
+                                &accel_options, &input,
+                                1,
+                                d_temp_buf, buf_sizes.tempSizeInBytes,
+                                d_non_compact_output, buf_sizes.outputSizeInBytes, &handle,
+                                &emit_prop,
+                                1));
+
+    CUdeviceptr d_output;
+    CUDA_CHECK(cudaFree((void*)d_temp_buf));
+    CUDA_CHECK(cudaFree((void*)d_vertex_buf));
+    CUDA_CHECK(cudaFree((void*)d_radius_buf));
+
+    size_t compact_size;
+    CUDA_CHECK(cudaMemcpy(&compact_size, (void*)emit_prop.result, sizeof(size_t), cudaMemcpyDeviceToHost));
+
+    if (compact_size < buf_sizes.outputSizeInBytes) {
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_output), compact_size));
+        OPTIX_CHECK(optixAccelCompact(ctx, 0, handle, d_output, compact_size, &handle));
+        CUDA_CHECK(cudaFree((void*)d_non_compact_output));
+    }
+    else {
+        d_output = d_non_compact_output;
+    }
+
+    gas_handles.push_back(handle);
+    gas_output_bufs.push_back(d_output);
 }
 
 void OptixAccel::add_quad(std::shared_ptr<Quad>& q) {
@@ -437,7 +496,91 @@ void OptixAccel::add_triangle(std::shared_ptr<Triangle>& t) {
 }
 
 void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
+    CUdeviceptr d_vertices, d_indices;
+    const size_t vertices_size = t->verts.size() * sizeof(Vec3f);
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_vertices), vertices_size));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_vertices), t->verts.data(),
+        vertices_size, cudaMemcpyHostToDevice));
+    const size_t indices_size = t->indice.size() * sizeof(Vec3i);
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_indices), indices_size));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_indices), t->indice.data(),
+        indices_size, cudaMemcpyHostToDevice));
 
+    uint32_t input_flags[1] = {OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT};
+    OptixBuildInput input {
+        .type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES,
+        .triangleArray = {
+            .vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3,
+            .vertexStrideInBytes = sizeof(float3),
+            .numVertices = static_cast<uint32_t>(t->verts.size()),
+            .vertexBuffers = &d_vertices,
+            .flags = input_flags,
+            .numSbtRecords = 1,
+            .sbtIndexOffsetBuffer = d_indices,
+            .sbtIndexOffsetSizeInBytes = sizeof(uint32_t),
+            .sbtIndexOffsetStrideInBytes = sizeof(uint32_t)
+        }
+    };
+
+    OptixAccelBuildOptions accel_options = {
+        .buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION,
+        .operation = OPTIX_BUILD_OPERATION_BUILD
+    };
+
+    OptixAccelBufferSizes buf_sizes;
+    OPTIX_CHECK(optixAccelComputeMemoryUsage(
+        ctx,
+        &accel_options,
+        &input,
+        1,
+        &buf_sizes
+    ));
+
+    CUdeviceptr d_tmp_buf;
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_tmp_buf), buf_sizes.tempSizeInBytes));
+
+    CUdeviceptr d_non_compact_output;
+    size_t compact_size_offset = round_up<size_t>(buf_sizes.outputSizeInBytes, 8ull);
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_tmp_buf), compact_size_offset + 8));
+
+    OptixAccelEmitDesc emit_prop = {
+        .type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE,
+        .result = (CUdeviceptr)((char*)d_non_compact_output + compact_size_offset);
+    };
+
+    OptixTraversableHandle handle;
+    OPTIX_CHECK(optixAccelBuild(ctx,
+                                0,
+                                &accel_options,
+                                &input,
+                                1,
+                                d_tmp_buf,
+                                buf_sizes.tempSizeInBytes,
+                                d_non_compact_output,
+                                buf_sizes.outputSizeInBytes,
+                                &handle,
+                                &emit_prop,
+                                1));
+    
+    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_tmp_buf)));
+    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_vertices)));
+    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_indices)));
+
+    size_t compact_size;
+    CUDA_CHECK(cudaMemcpy(&compact_size, (void*)emit_prop.result, sizeof(size_t), cudaMemcpyDeviceToHost));
+
+    CUdeviceptr d_output;
+    if (compact_size < buf_sizes.outputSizeInBytes) {
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_output), compact_size));
+        OPTIX_CHECK(optixAccelCompact(ctx, 0, handle, d_output, compact_size, &handle));
+        CUDA_CHECK(cudaFree((void*)d_non_compact_output));
+    }
+    else {
+        d_output = d_non_compact_output;
+    }
+
+    gas_handles.push_back(handle);
+    gas_output_bufs.push_back(d_output);
 }
 
 void OptixAccel::add_spheres(std::vector<std::shared_ptr<Sphere>& ss) {
