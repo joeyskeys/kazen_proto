@@ -96,4 +96,5 @@ private:
     std::vector<CUdeviceptr>            gas_output_bufs;
     OptixTraversableHandle              ias_handle;
     CUdeviceptr                         ias_output_buf;
+    std::vector<OptixInstance>          instances;
 }

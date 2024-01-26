@@ -417,6 +417,7 @@ OptixAccel::~OptixAccel() {
 }
 
 void OptixAccel::add_sphere(std::shared_ptr<Sphere& s) {
+    // GAS
     OptixAccelBuildOptions accel_options {
         .buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS,
         .operation = OPTIX_BUILD_OPERATION_BUILD
@@ -485,6 +486,17 @@ void OptixAccel::add_sphere(std::shared_ptr<Sphere& s) {
 
     gas_handles.push_back(handle);
     gas_output_bufs.push_back(d_output);
+
+    // IAS information
+    OptixInstance inst;
+    const auto optix_transform = base::transpose(s->local_to_world.mat);
+    memcpy(inst.transform, optix_transform.data(), sizeof(float) * 12);
+    inst.instanceId             = s->id;
+    inst.visibilityMask         = 255;
+    inst.sbtOffset              = 0;
+    inst.flags                  = OPTIX_INSTANCE_FLAG_NONE;
+    inst.OptixTraversableHandle = handle;
+    instances.push_back(inst);
 }
 
 void OptixAccel::add_quad(std::shared_ptr<Quad>& q) {
@@ -581,6 +593,17 @@ void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
 
     gas_handles.push_back(handle);
     gas_output_bufs.push_back(d_output);
+
+    // IAS information
+    OptixInstance inst;
+    const auto optix_transform = base::transpose(t->local_to_world.mat);
+    memcpy(inst.transform, optix_transform.data(), sizeof(float) * 12);
+    inst.instanceId             = s->id;
+    inst.visibilityMask         = 255;
+    inst.sbtOffset              = 0;
+    inst.flags                  = OPTIX_INSTANCE_FLAG_NONE;
+    inst.OptixTraversableHandle = handle;
+    instances.push_back(inst);
 }
 
 void OptixAccel::add_spheres(std::vector<std::shared_ptr<Sphere>& ss) {
@@ -592,7 +615,46 @@ void OptixAccel::add_trianglemeshes(std::vector<std::shared_ptr<TriangleMesh>>& 
 }
 
 void OptixAccel::build() {
+    CUdeviceptr d_inst;
+    size_t inst_size = instances.size() * sizeof(OptixInstance);
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_inst), inst_size));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_inst), instances.data(), inst_size));
 
+    OptixBuildInput input {
+        .type = OPTIX_BUILD_INPUT_TYPE_INSTANCES,
+        .buildFlags = OPTIX_BUILD_INPUT_TYPE_INSTANCES,
+        .instanceArray = {
+            .instances = d_inst,
+            .numInstances = instances.size()
+        }
+    };
+    OptixAccelBuildOptions accel_options {
+        .buildFlags = OPTIX_BUILD_FLAG_NONE,
+        .operation = OPTIX_BUILD_OPERATION_BUILD
+    };
+
+    OptixAccelBufferSizes buf_sizes;
+    OPTIX_CHECK(optixAccelComputeMemoryUsage(ctx, &accel_options, &input, 1, &buf_sizes));
+    CUdeviceptr d_tmp_buf, d_output;
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_tmp_buf), buf_sizes.tempSizeInBytes));
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_output), buf_sizes.outputSizeInBytes));
+    
+    OPTIX_CHECK(optixAccelBuild(
+        ctx,
+        0,
+        &accel_options,
+        &input,
+        1,
+        d_tmp_buf,
+        ias_buf_sizes.tempSizeInBytes,
+        d_output,
+        ias_buf_sizes.outputSizeInBytes,
+        &ias_handle,
+        nullptr,
+        0));
+    
+    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_tmp_buf)));
+    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_inst)));
 }
 
 void OptixAccel::print_info() {
