@@ -23,3 +23,18 @@ struct ParamsForTest {
     CUdeviceptr     image;
     unsigned        image_width;
 };
+
+struct Params {
+    // Output
+    CUdeviceptr     image;
+    // Film info
+    int             width;
+    int             height;
+    // Sampling info
+    int             sample_cnt;
+    // Camera info
+    float3          eye;
+    float3          U;
+    float3          V;
+    float3          W;
+}
