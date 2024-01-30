@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optix.h>
+
 struct Pixel {
     float r;
     float g;
@@ -37,4 +39,33 @@ struct Params {
     float3          U;
     float3          V;
     float3          W;
-}
+    // Accel
+    OptixTraversableHandle handle;
+};
+
+struct ShaderGlobalTmp {
+    float3          attenuation;
+    unsigned int    seed;
+    int             depth;
+
+    float3          emitted;
+    float3          radiance;
+    float3          origin;
+    float3          direction;
+    int             done;
+};
+
+constexpr unsigned int RAY_TYPE_COUNT = 1;
+constexpr OptixPayloadTypeID PAYLOAD_TYPE_RADIANCE = OPTIX_PAYLOAD_TYPE_ID_0;
+
+struct MissData {
+    float4 bg_color;
+};
+
+struct RaygenData {};
+
+struct HitGroupData {
+    float3 emission_color;
+    float3 diffuse_color;
+    float4* vertices;
+};
