@@ -25,6 +25,13 @@ public:
     virtual void add_trianglemesh(std::shared_ptr<TriangleMesh>& t);
     virtual void add_spheres(std::vector<std::shared_ptr<Sphere>& ss);
     virtual void add_trianglemeshes(std::vector<std::shared_ptr<TriangleMesh>& ts);
+
+    // New set of APIs
+    virtual uint32_t add_gas_trianglemesh(std::shared_ptr<TriangleMesh>& t) {}
+    virtual uint32_t add_gas_spheres(std::vector<std::shared_ptr<Sphere>& ss) {}
+    virtual void add_ias_trianglemesh(std::shared_ptr<TriangleMesh>& t) {}
+    virtual void add_ias_spheres(std::vector<std::shared_ptr<Sphere>& ss) {}
+
     virtual void build() {}
 
     bool intersect(const Ray& r, Intersection& isect) const override;
