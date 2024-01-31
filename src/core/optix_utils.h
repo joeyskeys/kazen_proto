@@ -68,8 +68,8 @@ static size_t log_size = 0;
 enum OPTIX_STAGE {
     RAYGEN,
     MISS,
+    CLOSESTHIT,
     ANYHIT,
-    CLOESTHIT,
     EXCEPTION,
     CALLABLE
 };

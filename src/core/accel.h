@@ -92,6 +92,8 @@ public:
 
 private:
     OptixDeviceContext                  ctx;
+    CUdeviceptr                         d_sphere_data;
+    std::vector<CUdeviceptr>            d_mesh_vertice_data;
     std::vector<OptixTraversableHandle> gas_handles;
     std::vector<CUdeviceptr>            gas_output_bufs;
     OptixTraversableHandle              ias_handle;

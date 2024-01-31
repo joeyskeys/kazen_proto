@@ -4,6 +4,10 @@
 #include "core/optix_utils.h"
 #include "kernel/types.h"
 
+using GenericLocalRecord<RaygenData>    RaygenRecord;
+using GenericLocalRecord<MissData>      MissRecord;
+using GenericLocalRecord<HitGroupData>  HitGroupRecord;
+
 int main(int argc, const char **argv) {
     std::string outfile;
     uint32_t w = 512;
@@ -25,51 +29,59 @@ int main(int argc, const char **argv) {
         .exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE,
         .pipelineLaunchParamsVariableName = "params"
     };
-    OptixModule mod_rg;
+    OptixModule mod;
     load_optix_module_cu("../src/kernel/device/optix/kernels.cu",
-        ctx, &mod_options, &ppl_compile_options, &mod_rg);
+        ctx, &mod_options, &ppl_compile_options, &mod);
 
     OptixProgramGroup rg_pg = nullptr;
     OptixProgramGroup miss_pg = nullptr;
+    OpitxProgramGroup ch_pg = nullptr;
     OptixProgramGroupOptions pg_options = {};
 
     OptixProgramGroupDesc rg_pg_desc {
         .kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN,
         .raygen = {
-            .module = mod_rg,
-            .entryFunctionName = "__raygen__fixed"
+            .module = mod,
+            .entryFunctionName = "__raygen__main"
         }
     };
-    rg_pg_desc.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
-    rg_pg_desc.raygen.module = mod_rg;
-    rg_pg_desc.raygen.entryFunctionName = "__raygen__fixed";
     create_optix_pg(ctx, &rg_pg_desc, 1, &pg_options, &rg_pg);
 
     OptixProgramGroupDesc miss_pg_desc {
-        .kind = OPTIX_PROGRAM_GROUP_KIND_MISS
+        .kind = OPTIX_PROGRAM_GROUP_KIND_MISS,
+        .miss = {
+            .module = mod,
+            .entryFunctionName = "__miss_radiance"
+        }
     };
     create_optix_pg(ctx, &miss_pg_desc, 1, &pg_options, &miss_pg);
 
+    OptixProgramGroupDesc ch_pg_desc {
+        .kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP,
+        .hitgroup = {
+            .moduleCH = mod,
+            .entryFunctionName = "__closesthit_radiance"
+        }
+    }
+    create_optix_pg(ctx, &ch_pg_desc, 1, &pg_options, &ch_pg);
+
     OptixPipeline ppl = nullptr;
-    const uint32_t max_trace_depth = 0;
+    const uint32_t max_trace_depth = 2;
     //std::vector<OptixProgramGroup> pgs { rg_pg, miss_pg };
-    std::vector<OptixProgramGroup> pgs { rg_pg, miss_pg };
+    std::vector<OptixProgramGroup> pgs { rg_pg, miss_pg, ch_pg };
     OptixPipelineLinkOptions ppl_link_options{};
     ppl_link_options.maxTraceDepth = max_trace_depth;
     create_optix_ppl(ctx, ppl_compile_options, ppl_link_options,
         pgs, &ppl);
 
-    enum STAGE {
-        RAYGEN,
-        MISS
-    };
-
     struct Pixel {
         float r, g, b;
     };
 
-    std::array<CUdeviceptr, 2> records;
+    std::array<CUdeviceptr, 3> records;
+    /*
     const auto record_size = sizeof(GenericLocalRecord<Pixel>);
+    const size_t rec_sizes[] = { sizeof(raygenRecord), sizeof(MissRecord), sizeof(HitGroupRecord) };
     for (auto& rec : records)
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&rec), record_size));
 
@@ -80,12 +92,45 @@ int main(int argc, const char **argv) {
         CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(records[i]),
             &sbts[i], record_size, cudaMemcpyHostToDevice));
     }
+    */
+
+    const size_t rg_record_size = sizeof(RaygenRecord);
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&records[RAYGEN]), rg_record_size));
+    RaygenRecord rg_sbt = {};
+    OPTIX_CHECK(optixSbtRecordPackHeader(rg_pg, &rg_sbt));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(records[RAYGEN]),
+        &rg_sbt, rg_record_size, cudaMemcpyHostToDevice));
+
+    const size_t ms_record_size = sizeof(MissRecord);
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&records[MISS]), ms_record_size * RAY_TYPE_COUNT));
+    MissRecord ms_sbt[1];
+    OPTIX_CHECK(optixSbtRecordPackHeader(miss_pg, &ms_sbt[0]));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(records[MISS]), ms_sbt,
+        ms_record_size * RAY_TYPE_COUNT, cudaMemcpyHostToDevice));
+
+    const size_t MAT_COUNT = 1;
+    HitGroupRecord hg_record_size = sizeof(HitGroupRecord);
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&records[CLOSESTHIT]),
+        hg_record_size * RAY_TYPE_COUNT * MAT_COUNT));
+    HitGroupRecord hg_records[RAY_TYPE_COUNT * MAT_COUNT];
+    for (int i = 0; i < MAT_COUNT; ++i) {
+        const int sbt_idx = i * RAY_TYPE_COUNT + 0;
+        OPTIX_CHECK(optixSbtRecordPackHeader(ch_pg, &hg_records[sbt_idx]));
+        hg_records[sbt_idx].data.emission_color = g_emission_colors[i];
+        hg_records[sbt_idx].data.diffuse_color = g_diffuse_colors[i];
+        hg_records[sbt_idx].data.vertices = reinterpret_cast<float3*>();
+    }
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(records[CLOSESTHIT]), hg_records,
+        hg_record_size * RAY_TYPE_COUNT * MAT_COUNT, cudaMemcpyHostToDevice));
 
     OptixShaderBindingTable sbt{};
-    sbt.raygenRecord            = records[RAYGEN];
-    sbt.missRecordBase          = records[MISS];
-    sbt.missRecordStrideInBytes = sizeof(GenericLocalRecord<Pixel>);
-    sbt.missRecordCount         = 1;
+    sbt.raygenRecord                = records[RAYGEN];
+    sbt.missRecordBase              = records[MISS];
+    sbt.missRecordStrideInBytes     = static_cast<uint32_t>(ms_record_size);
+    sbt.missRecordCount             = RAY_TYPE_COUNT;
+    sbt.hitgroupRecordBase          = records[CLOSESTHIT];
+    sbt.hitgroupRecordStrideInBytes = static_cast<uint32_t>(hg_record_size);
+    sbt.hitgroupRecordCount         = RAY_TYPE_COUNT * MAT_COUNT;
 
     /*
     OptixShaderBindingTable sbt{};

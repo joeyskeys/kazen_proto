@@ -3,6 +3,7 @@
 #include <cuda/random.h>
 
 #include "types.h"
+#include "vec_math.h"
 
 extern "C" {
     __constant__ Params params;
@@ -125,7 +126,7 @@ __global__ void __raygen__main() {
     output[idx.y * w + idx.x] = radiance;
 }
 
-static __forceinline__ __device__ void store_miss_radiace_sg(ShaderGlobalTmp sg) {
+static __forceinline__ __device__ void store_MS_sg(ShaderGlobalTmp sg) {
     optixSetPayload_5(__float_as_uint(sg.emitted.x));
     optixSetPayload_6(__float_as_uint(sg.emitted.y));
     optixSetPayload_7(__float_as_uint(sg.emitted.z));
@@ -137,6 +138,43 @@ static __forceinline__ __device__ void store_miss_radiace_sg(ShaderGlobalTmp sg)
     optixSetPayload_17(sg.done);
 }
 
+static __forceinline__ __device__ ShaderGlobalTmp load_CH_sg() {
+    ShaderGlobalTmp sg{};
+    sg.attenuation.x = __uint_as_float(optixGetPayload_0());
+    sg.attenuation.y = __uint_as_float(optixGetPayload_1());
+    sg.attenuation.z = __uint_as_float(optixGetPayload_2());
+    sg.seed = optixGetPayload_3();
+    sg.depth = optixGetPayload_4();
+    return sg;
+}
+
+static __forceinline__ __device__ void store_CH_sg(ShaderGlobalTmp sg) {
+    optixSetPayload_0( __float_as_uint( sg.attenuation.x ) );
+    optixSetPayload_1( __float_as_uint( sg.attenuation.y ) );
+    optixSetPayload_2( __float_as_uint( sg.attenuation.z ) );
+
+    optixSetPayload_3( sg.seed );
+    optixSetPayload_4( sg.depth );
+
+    optixSetPayload_5( __float_as_uint( sg.emitted.x ) );
+    optixSetPayload_6( __float_as_uint( sg.emitted.y ) );
+    optixSetPayload_7( __float_as_uint( sg.emitted.z ) );
+
+    optixSetPayload_8( __float_as_uint( sg.radiance.x ) );
+    optixSetPayload_9( __float_as_uint( sg.radiance.y ) );
+    optixSetPayload_10( __float_as_uint( sg.radiance.z ) );
+
+    optixSetPayload_11( __float_as_uint( sg.origin.x ) );
+    optixSetPayload_12( __float_as_uint( sg.origin.y ) );
+    optixSetPayload_13( __float_as_uint( sg.origin.z ) );
+
+    optixSetPayload_14( __float_as_uint( sg.direction.x ) );
+    optixSetPayload_15( __float_as_uint( sg.direction.y ) );
+    optixSetPayload_16( __float_as_uint( sg.direction.z ) );
+
+    optixSetPayload_17( sg.done );
+}
+
 extern "C" __global__ void __miss__radiance() {
     optixSetPayloadTypes(PAYLOAD_TYPE_RADIANCE);
     auto data = reinterpret_cast<MissData*>(optixGetSbtDataPointer());
@@ -146,9 +184,135 @@ extern "C" __global__ void __miss__radiance() {
     sg.emitted  = make_float3(0.f);
     sg.done     = true;
 
-    store_miss_radiace_sg(sg);
+    store_MS_sg(sg);
+}
+
+struct Onb
+{
+  __forceinline__ __device__ Onb(const float3& normal)
+  {
+    m_normal = normal;
+
+    if( fabs(m_normal.x) > fabs(m_normal.z) )
+    {
+      m_binormal.x = -m_normal.y;
+      m_binormal.y =  m_normal.x;
+      m_binormal.z =  0;
+    }
+    else
+    {
+      m_binormal.x =  0;
+      m_binormal.y = -m_normal.z;
+      m_binormal.z =  m_normal.y;
+    }
+
+    m_binormal = normalize(m_binormal);
+    m_tangent = cross( m_binormal, m_normal );
+  }
+
+  __forceinline__ __device__ void inverse_transform(float3& p) const
+  {
+    p = p.x*m_tangent + p.y*m_binormal + p.z*m_normal;
+  }
+
+  float3 m_tangent;
+  float3 m_binormal;
+  float3 m_normal;
+};
+
+static __forceinline__ __device__ void cosine_sample_hemisphere(const float u1, const float u2, float3& p)
+{
+  // Uniformly sample disk.
+  const float r   = sqrtf( u1 );
+  const float phi = 2.0f*M_PIf * u2;
+  p.x = r * cosf( phi );
+  p.y = r * sinf( phi );
+
+  // Project up to hemisphere.
+  p.z = sqrtf( fmaxf( 0.0f, 1.0f - p.x*p.x - p.y*p.y ) );
+}
+
+static __forceinline__ __device__ bool trace_occlusion(
+    OptixTraversableHandle  handle,
+    float3                  ray_pos,
+    float3                  ray_dir,
+    float                   tmin,
+    float                   tmax)
+{
+    optixTraverse(
+        handle,
+        ray_pos,
+        ray_dir,
+        tmin,
+        tmax,
+        0.f, // rayTime
+        OptixVisibilityMask(1),
+        OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT | OPTIX_RAY_FLAG_DISABLE_ANYHIT,
+        0, //SBT offset
+        RAY_TYPE_COUNT, // SBT stride
+        0  // miss SBT index
+    );
+    return optixHitObjectIsHit();
 }
 
 extern "C" __global__ void __closesthit_radiance() {
+    optixSetPayloadTypes(PAYLOAD_TYPE_RADIANCE);
+    HitGroupData* rt_data = reinterpret_cast<HitGroupData*>(optixGetSbtDataPointer());
 
+    const int prim_idx = optixGetPrimitiveIndex();
+    const float3 ray_dir = optixGetWorldRayDirection();
+    const int vert_idx_offset = prim_idx * 3;
+
+    const float3 v0 = make_float3(rt_data->vertices[vert_idx_offset    ]);
+    const float3 v1 = make_float3(rt_data->vertices[vert_idx_offset + 1]);
+    const float3 v2 = make_float3(rt_data->vertices[vert_idx_offset + 2]);
+    const float3 N_0 = normalize(cross(v1 - v0, v2 - v0));
+    const float3 N  = faceforward(N_0, -ray_dir, N_0);
+    const float3 P  = optixGetWorldRayOrigin() + optixGetRayTmax() * ray_dir;
+    ShaderGlobalTmp sg = load_CH_sg();
+
+    if (sg.depth == 0)
+        sg.emitted = rt_data->emission_color;
+    else
+        sg.emitted = make_float3(0.f);
+
+    unsigned int seed = sg.seed;
+    {
+        const float z1 = rnd(seed);
+        const float z2 = rnd(seed);
+        float3 w_in;
+        cosine_sample_hemisphere(z1, z2, w_in);
+        Onb onb(N);
+        onb.inverse_transform(w_in);
+        sg.direction = w_in;
+        sg.origin = P;
+        sg.attenuation *= rt_data->diffuse_color;
+    }
+
+    // fake a light for now
+    const float3 light_pos = make_float3(0.f, 10.f, 0.f);
+    const float  Ldist = length(light_pos - P);
+    const float3 L     = normalize(light_pos - P);
+    const float  nDl   = dot(N, L);
+    const float  LnDl  = -dot(make_float3(0.f, -1.f, 0.f), L);
+
+    float weight = 0.f;
+    if (nDl > 0.f && LnDl > 0.f) {
+        const bool occluded = trace_occlusion(
+            params.handle,
+            P,
+            L,
+            0.0001f,
+            Ldist - 0.0001f);
+
+        if (!occluded) {
+            const float A = 5.f; // fake area data
+            weight = nDl * LnDl * A / (M_PIf * Ldist * Ldist);
+        }
+    }
+
+    sg.radiance = light.emission * weight;
+    sg.done = false;
+
+    store_CH_sg(sg);
 }
