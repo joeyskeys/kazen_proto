@@ -24,14 +24,7 @@ public:
     virtual void add_triangle(std::shared_ptr<Triangle>& t);
     virtual void add_trianglemesh(std::shared_ptr<TriangleMesh>& t);
     virtual void add_spheres(std::vector<std::shared_ptr<Sphere>& ss);
-    virtual void add_trianglemeshes(std::vector<std::shared_ptr<TriangleMesh>& ts);
-
-    // New set of APIs
-    virtual uint32_t add_gas_trianglemesh(std::shared_ptr<TriangleMesh>& t) {}
-    virtual uint32_t add_gas_spheres(std::vector<std::shared_ptr<Sphere>& ss) {}
-    virtual void add_ias_trianglemesh(std::shared_ptr<TriangleMesh>& t) {}
-    virtual void add_ias_spheres(std::vector<std::shared_ptr<Sphere>& ss) {}
-
+    virtual void add_instances(std::vector<std::string>&) {}
     virtual void build() {}
 
     bool intersect(const Ray& r, Intersection& isect) const override;
@@ -40,6 +33,7 @@ public:
 
 public:
     std::vector<std::shared_ptr<Hitable>>*  hitables;
+    std::vector<uint32_t>               inst_ids;
 };
 
 class BVHNode;
@@ -83,6 +77,8 @@ private:
 
 class OptixAccel : public Accelerator {
 public:
+    using handle_map = std::unordered_map<std::string, std::pair<OptixTraversableHandle, CUdeviceptr>>;
+
     OptixAccel(const OptixDeviceContext&);
     ~OptixAccel();
 
@@ -91,7 +87,7 @@ public:
     void add_triangle(std::shared_ptr<Triangle>& t) override;
     void add_trianglemesh(std::shared_ptr<TriangleMesh>& t) override;
     void add_spheres(std::vector<std::shared_ptr<Sphere>& ss) override;
-    void add_trianglemeshes(std::vector<std::shared_ptr<TriangleMesh>>& ts) override;
+    void add_instances(std::vector<uint32_t>&) override;
     void build() override;
     //bool intersect(const Ray& r, Intersection& isect) const override;
     //bool intersect(const Ray& r, float& t) const override;
@@ -99,11 +95,7 @@ public:
 
 private:
     OptixDeviceContext                  ctx;
-    CUdeviceptr                         d_sphere_data;
-    std::vector<CUdeviceptr>            d_mesh_vertice_data;
-    std::vector<OptixTraversableHandle> gas_handles;
-    std::vector<CUdeviceptr>            gas_output_bufs;
-    OptixTraversableHandle              ias_handle;
-    CUdeviceptr                         ias_output_buf;
-    std::vector<OptixInstance>          instances;
+    handle_map                          handles;
+    OptixTraversableHandle              root_handle;
+    CUdeviceptr                         root_buf;
 }
