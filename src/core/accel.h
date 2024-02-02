@@ -24,8 +24,10 @@ public:
     virtual void add_triangle(std::shared_ptr<Triangle>& t);
     virtual void add_trianglemesh(std::shared_ptr<TriangleMesh>& t);
     virtual void add_spheres(std::vector<std::shared_ptr<Sphere>& ss);
-    virtual void add_instances(std::vector<std::string>&) {}
-    virtual void build() {}
+    virtual void add_instances(const std::string& name,
+        const std::vector<std::string>& instance_names,
+        const Transform& trans = Transform()) {}
+    virtual void build(const std::vector<std::string>&) {}
 
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
@@ -45,7 +47,7 @@ public:
         , root(nullptr)
     {}
 
-    void build() override;
+    void build(const std::vector<std::string>&) override;
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
     void print_info() const override;
@@ -64,7 +66,10 @@ public:
     void add_quad(std::shared_ptr<Quad>& q) override;
     void add_triangle(std::shared_ptr<Triangle>& t) override;
     void add_trianglemesh(std::shared_ptr<TriangleMesh>& t) override;
-    void build() override;
+    void add_instances(const std::string& name,
+        const std::vector<std::string>& instance_names,
+        const Transform& trans = Transform()) override;
+    void build(const std::vector<std::string>&) override;
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
     void print_info() const override;
@@ -72,7 +77,7 @@ public:
 private:
     RTCDevice   m_device = nullptr;
     RTCScene    m_scene = nullptr;
-    std::unordered_map<uint32_t, std::pair<RTCScene, std::shared_ptr<Hitable>>> m_subscenes;
+    std::unordered_map<std::string, RTCGeometry> m_geoms;
 };
 
 class OptixAccel : public Accelerator {
@@ -87,8 +92,10 @@ public:
     void add_triangle(std::shared_ptr<Triangle>& t) override;
     void add_trianglemesh(std::shared_ptr<TriangleMesh>& t) override;
     void add_spheres(std::vector<std::shared_ptr<Sphere>& ss) override;
-    void add_instances(std::vector<uint32_t>&) override;
-    void build() override;
+    void add_instances(const std::string& name,
+        const std::vector<std::string>& instance_names,
+        const Transform& trans = Transform()) override;
+    void build(const std::vector<std::string>&) override;
     //bool intersect(const Ray& r, Intersection& isect) const override;
     //bool intersect(const Ray& r, float& t) const override;
     void print_info() const override;

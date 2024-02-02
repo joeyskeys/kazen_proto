@@ -196,8 +196,8 @@ EmbreeAccel::EmbreeAccel(std::vector<std::shared_ptr<Hitable>>* hs)
 EmbreeAccel::~EmbreeAccel() {
     if (m_scene)
         rtcReleaseScene(m_scene);
-    for (auto subscene_pair : m_subscenes)
-        rtcReleaseScene(subscene_pair.second.first);
+    for (auto geom : m_geoms)
+        rtcReleaseScene(geom);
 
     if (m_device)
         rtcReleaseDevice(m_device);
@@ -304,14 +304,39 @@ void EmbreeAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
     rtcSetGeometryTimeStepCount(instance, 1);
     rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, t->local_to_world.mat.data());
     rtcCommitGeometry(instance);
-    auto ins_id = rtcAttachGeometry(m_scene, instance);
-    rtcReleaseGeometry(instance);
+    //auto ins_id = rtcAttachGeometry(m_scene, instance);
+    //rtcReleaseGeometry(instance);
     rtcReleaseScene(subscene);
 
-    m_subscenes.emplace(ins_id, std::make_pair(subscene, t));
+    m_geoms.emplace(t->name, instance);
 }
 
-void EmbreeAccel::build() {
+void EmbreeAccel::add_instances(const std::string& name, std::vector<std::string>& instance_names, const Transform& trans) {
+    auto subscene = rtcNewScene(m_device);
+    rtcSetSceneFlags(subscene, RTC_SCENE_FLAG_ROBUST);
+    rtcSetSceneBuildQuality(subscene, RTC_BUILD_QUALITY_HIGH);
+    for (const auto& instance_name : instance_names) {
+        auto geom = m_geoms.find(instance_name);
+        assert(geom != m_geoms.end());
+        rtcAttachGeometry(subscene, *geom);
+    }
+    rtcCommitScene(subscene);
+    RTCGeometry instance = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_INSTANCE);
+    rtcSetGeometryInstancedScene(instance, subscene);
+    rtcSetGeometryTimeStepCount(instance, 1);
+    rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, trans->local_to_world.mat.data());
+    rtcCommitGeometry(instance);
+    rtcReleaseScene(subscene);
+
+    m_geoms.emplace(name, instance);
+}
+
+void EmbreeAccel::build(const std::vector<std::string>& instance_names) {
+    for (const auto& instance_name : instance_names) {
+        auto geom = m_geoms.find(instance_name);
+        assert(geom != m_geoms.end());
+        rtcAttachGeometry(m_scene, *geom);
+    }
     rtcCommitScene(m_scene);
 }
 
@@ -410,9 +435,9 @@ OptixAccel::OptixAccel(const OptixDeviceContext& c)
 
 OptixAccel::~OptixAccel() {
     if (gas_handles.size() > 0) {
-        for (const auto& gas_handle : gas_handles)
-            CUDA_CHECK(cudaFree(reinterpret_cast<void*>(gas_handle)));
-        CUDA_CHECK(cudaFree(reinterpret_cast<void*>(ias_handle)));
+        for (const auto& handle_pair : handles)
+            CUDA_CHECK(cudaFree(reinterpret_cast<void*>(handle_pair.second)));
+        CUDA_CHECK(cudaFree(reinterpret_cast<void*>(root_buf)));
     }
 }
 
@@ -606,7 +631,7 @@ void OptixAccel::add_spheres(std::vector<std::shared_ptr<Sphere>& ss) {
 
 }
 
-OptixTraversableHandle OptixAccel::add_instances(std::vector<std::string>& handle_names, const Transfrom& trans) {
+OptixTraversableHandle OptixAccel::add_instances(const std::string& name, const std::vector<std::string>& handle_names, const Transform& trans) {
     // Create an array of instances input first
     CUdeviceptr d_inst;
     size_t inst_size = handle_names.size() * sizeof(OptixInstance);
@@ -665,20 +690,36 @@ OptixTraversableHandle OptixAccel::add_instances(std::vector<std::string>& handl
     CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_tmp_buf)));
     CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_inst)));
 
-    return ias_handle;
+    handles.emplace_back(name, ias_handle, d_output);
 }
 
-void OptixAccel::build() {
+void OptixAccel::build(const std::vector<std::string>& handle_names) {
     CUdeviceptr d_inst;
     size_t inst_size = instances.size() * sizeof(OptixInstance);
+    std::vector<OptixInstance> insts(handle_names.size());
+    for (const auto& handle_name : handle_names) {
+        auto handle = handles.find(handle_name);
+        assert(handle != handles.end());
+
+        OptixInstance inst;
+        const auto optix_transform = base::transpose(trans.local_to_world.mat);
+        memcpy(inst.transform, optix_transform.data(), sizeof(float) * 12);
+        inst.instanceId             = handles.size();
+        inst.visibilityMask         = 255;
+        inst.sbtOffset              = 0;
+        inst.flags                  = OPTIX_INSTANCE_FLAG_NONE;
+        inst.OptixTraversableHandle = handle;
+
+        insts.push_back(inst);
+    }
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_inst), inst_size));
-    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_inst), instances.data(), inst_size));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_inst), insts.data(), inst_size));
 
     OptixBuildInput input {
         .type = OPTIX_BUILD_INPUT_TYPE_INSTANCES,
         .instanceArray = {
             .instances = d_inst,
-            .numInstances = instances.size()
+            .numInstances = insts.size()
         }
     };
     OptixAccelBuildOptions accel_options {

@@ -15,12 +15,14 @@ class Light;
 
 class Shape : public Hitable, public DictLike {
 public:
-    Shape(size_t id)
+    Shape(const std::string& n, const size_t id)
         : Hitable(Transform())
+        , name(n)
         , geom_id(id)
     {}
 
-    Shape(const Transform& l2w, std::string m, bool is_l, const uint& id)
+    Shape(const Transform& l2w, const std::string& n, const std::string& m,
+        bool is_l, const uint& id)
         : Hitable(l2w)
         , shader_name(m)
         , is_light(is_l)
@@ -36,6 +38,7 @@ public:
     void print_bound() const override;
 
 public:
+    std::string name;
     std::string shader_name;
     bool        is_light = false;
     //std::weak_ptr<Light> light;
@@ -45,13 +48,13 @@ public:
 
 class Sphere : public Shape {
 public:
-    Sphere(size_t id)
-        : Shape(id)
+    Sphere(const std::string& n, const size_t id)
+        : Shape(n, id)
         , center_n_radius(Vec4f(0, 0, 0, 1))
     {}
 
-    Sphere(const Transform& l2w, const uint& id, const Vec4f cnr, const std::string& m="", bool is_l=false)
-        : Shape(l2w, m, is_l, id)
+    Sphere(const Transform& l2w, const std::string& n, const uint& id, const Vec4f cnr, const std::string& m="", bool is_l=false)
+        : Shape(l2w, n, m, is_l, id)
         , center_n_radius(cnr)
     {}
 
@@ -74,8 +77,8 @@ public:
 
 class Quad : public Shape {
 public:
-    Quad(size_t id)
-        : Shape(id)
+    Quad(const std::string& n, const size_t id)
+        : Shape(n, id)
         , center(Vec3f{0, 0, 0})
         , dir(Vec3f{0, 1, 0})
         , vertical_vec(Vec3f{0, 0, 1})
@@ -86,8 +89,8 @@ public:
         down_left = center - horizontal_vec * half_width - vertical_vec * half_height;
     }
 
-    Quad(const Transform& l2w, const Vec3f& c, const Vec3f& d, const Vec3f& u, const float w, const float h, const std::string& m="", bool is_l=false)
-        : Shape(l2w, m, is_l, 2)
+    Quad(const Transform& l2w, const Vec3f& c, const Vec3f& d, const Vec3f& u, const float w, const float h, const std::string& n, const std::string& m="", bool is_l=false)
+        : Shape(l2w, n, m, is_l, 2)
         , center(c)
         , dir(normalize(d))
         , vertical_vec(normalize(u))
@@ -121,8 +124,8 @@ public:
 
 class Triangle : public Shape {
 public:
-    Triangle(size_t id)
-        : Shape(id)
+    Triangle(const std::string& n, size_t id)
+        : Shape(n, id)
     {
         verts[0] = Vec3f(0, 0, 0);
         verts[1] = Vec3f(1, 0, 0);
@@ -130,8 +133,8 @@ public:
         normal = base::normalize(base::cross(verts[1] - verts[0], verts[2] - verts[0]));
     }
 
-    Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c, const std::string m="", bool is_l=false)
-        : Shape(l2w, m, is_l, 1)
+    Triangle(const Transform& l2w, const Vec3f& a, const Vec3f& b, const Vec3f& c, const std::string& n, const std::string m="", bool is_l=false)
+        : Shape(l2w, n, m, is_l, 1)
     {
         verts[0] = a;
         verts[1] = b;
@@ -155,12 +158,12 @@ public:
 
 class TriangleMesh : public Shape {
 public:
-    TriangleMesh(size_t id)
+    TriangleMesh(const std::string& n, const size_t id)
         : Shape(id)
     {}
 
-    TriangleMesh(const Transform& l2w, std::vector<Vec3f>&& vs, std::vector<Vec3f>&& ns, std::vector<Vec2f>&& ts, std::vector<Vec3i>&& idx, const std::string m="", bool is_l=false)
-        : Shape(l2w, m, is_l, 0)
+    TriangleMesh(const Transform& l2w, std::vector<Vec3f>&& vs, std::vector<Vec3f>&& ns, std::vector<Vec2f>&& ts, std::vector<Vec3i>&& idx, const std::string n, const std::string m="", bool is_l=false)
+        : Shape(l2w, n, m, is_l, 0)
         , verts(vs)
         , norms(ns)
         , uvs(ts)
@@ -169,9 +172,9 @@ public:
 
     TriangleMesh(const Transform& l2w, const std::vector<Vec3f>& vs,
         const std::vector<Vec3f>& ns, const std::vector<Vec2f>& ts,
-        const std::vector<Vec3i>& idx, const std::string& m="",
-        bool is_l=false)
-        : Shape(l2w, m, is_l, 0)
+        const std::vector<Vec3i>& idx, const std::string& n,
+        const std::string& m="", bool is_l=false)
+        : Shape(l2w, n, m, is_l, 0)
         , verts(vs)
         , norms(ns)
         , uvs(ts)
