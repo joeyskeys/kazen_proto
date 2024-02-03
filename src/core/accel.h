@@ -26,7 +26,8 @@ public:
     virtual void add_spheres(std::vector<std::shared_ptr<Sphere>& ss);
     virtual void add_instances(const std::string& name,
         const std::vector<std::string>& instance_names,
-        const Transform& trans = Transform()) {}
+        const Transform& trans = Transform(),
+        bool root = false) {}
     virtual void build(const std::vector<std::string>&) {}
 
     bool intersect(const Ray& r, Intersection& isect) const override;
@@ -68,8 +69,11 @@ public:
     void add_trianglemesh(std::shared_ptr<TriangleMesh>& t) override;
     void add_instances(const std::string& name,
         const std::vector<std::string>& instance_names,
-        const Transform& trans = Transform()) override;
-    void build(const std::vector<std::string>&) override;
+        const Transform& trans = Transform(),
+        bool root = false) override;
+    inline void build(const std::vector<std::string>& instance_names) override {
+        add_instances("root", instance_names, Transform(), true);
+    }
     bool intersect(const Ray& r, Intersection& isect) const override;
     bool intersect(const Ray& r, float& t) const override;
     void print_info() const override;
@@ -94,8 +98,11 @@ public:
     void add_spheres(std::vector<std::shared_ptr<Sphere>& ss) override;
     void add_instances(const std::string& name,
         const std::vector<std::string>& instance_names,
-        const Transform& trans = Transform()) override;
-    void build(const std::vector<std::string>&) override;
+        const Transform& trans = Transform(),
+        bool root = false) override;
+    inline void build(const std::vector<std::string>& instance_names) override {
+        add_instances("root", instance_names, Transform(), true);
+    }
     //bool intersect(const Ray& r, Intersection& isect) const override;
     //bool intersect(const Ray& r, float& t) const override;
     void print_info() const override;

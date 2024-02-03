@@ -311,33 +311,35 @@ void EmbreeAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
     m_geoms.emplace(t->name, instance);
 }
 
-void EmbreeAccel::add_instances(const std::string& name, std::vector<std::string>& instance_names, const Transform& trans) {
-    auto subscene = rtcNewScene(m_device);
-    rtcSetSceneFlags(subscene, RTC_SCENE_FLAG_ROBUST);
-    rtcSetSceneBuildQuality(subscene, RTC_BUILD_QUALITY_HIGH);
+void EmbreeAccel::add_instances(const std::string& name, std::vector<std::string>& instance_names, const Transform& trans,
+    bool root)
+{
+    RTCScene scene;
+    if (root)
+        scene = m_scene;
+    else {
+        scene = rtcNewScene(m_device);
+        rtcSetSceneFlags(scene, RTC_SCENE_FLAG_ROBUST);
+        rtcSetSceneBuildQuality(scene, RTC_BUILD_QUALITY_HIGH);
+    }
+
     for (const auto& instance_name : instance_names) {
         auto geom = m_geoms.find(instance_name);
         assert(geom != m_geoms.end());
-        rtcAttachGeometry(subscene, *geom);
+        rtcAttachGeometry(scene, *geom);
     }
-    rtcCommitScene(subscene);
-    RTCGeometry instance = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_INSTANCE);
-    rtcSetGeometryInstancedScene(instance, subscene);
-    rtcSetGeometryTimeStepCount(instance, 1);
-    rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, trans->local_to_world.mat.data());
-    rtcCommitGeometry(instance);
-    rtcReleaseScene(subscene);
+    rtcCommitScene(scene);
 
-    m_geoms.emplace(name, instance);
-}
-
-void EmbreeAccel::build(const std::vector<std::string>& instance_names) {
-    for (const auto& instance_name : instance_names) {
-        auto geom = m_geoms.find(instance_name);
-        assert(geom != m_geoms.end());
-        rtcAttachGeometry(m_scene, *geom);
+    if (!root) {
+        RTCGeometry instance = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_INSTANCE);
+        rtcSetGeometryInstancedScene(instance, scene);
+        rtcSetGeometryTimeStepCount(instance, 1);
+        rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, trans->local_to_world.mat.data());
+        rtcCommitGeometry(instance);
+        rtcReleaseScene(scene);
+        // Store the instance for future reuse
+        m_geoms.emplace(name, instance);
     }
-    rtcCommitScene(m_scene);
 }
 
 bool EmbreeAccel::intersect(const Ray& r, Intersection& isect) const {
@@ -631,7 +633,9 @@ void OptixAccel::add_spheres(std::vector<std::shared_ptr<Sphere>& ss) {
 
 }
 
-OptixTraversableHandle OptixAccel::add_instances(const std::string& name, const std::vector<std::string>& handle_names, const Transform& trans) {
+OptixTraversableHandle OptixAccel::add_instances(const std::string& name, const std::vector<std::string>& handle_names,
+    const Transform& trans, bool root)
+{
     // Create an array of instances input first
     CUdeviceptr d_inst;
     size_t inst_size = handle_names.size() * sizeof(OptixInstance);
@@ -684,71 +688,14 @@ OptixTraversableHandle OptixAccel::add_instances(const std::string& name, const 
         buf_sizes.tempSizeInBytes,
         d_output,
         buf_sizes.outputSizeInBytes,
-        &ias_handle,
+        root ? &root_handle : &ias_handle,
         nullptr,
         0));
     CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_tmp_buf)));
     CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_inst)));
 
-    handles.emplace_back(name, ias_handle, d_output);
-}
-
-void OptixAccel::build(const std::vector<std::string>& handle_names) {
-    CUdeviceptr d_inst;
-    size_t inst_size = instances.size() * sizeof(OptixInstance);
-    std::vector<OptixInstance> insts(handle_names.size());
-    for (const auto& handle_name : handle_names) {
-        auto handle = handles.find(handle_name);
-        assert(handle != handles.end());
-
-        OptixInstance inst;
-        const auto optix_transform = base::transpose(trans.local_to_world.mat);
-        memcpy(inst.transform, optix_transform.data(), sizeof(float) * 12);
-        inst.instanceId             = handles.size();
-        inst.visibilityMask         = 255;
-        inst.sbtOffset              = 0;
-        inst.flags                  = OPTIX_INSTANCE_FLAG_NONE;
-        inst.OptixTraversableHandle = handle;
-
-        insts.push_back(inst);
-    }
-    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_inst), inst_size));
-    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_inst), insts.data(), inst_size));
-
-    OptixBuildInput input {
-        .type = OPTIX_BUILD_INPUT_TYPE_INSTANCES,
-        .instanceArray = {
-            .instances = d_inst,
-            .numInstances = insts.size()
-        }
-    };
-    OptixAccelBuildOptions accel_options {
-        .buildFlags = OPTIX_BUILD_FLAG_NONE,
-        .operation = OPTIX_BUILD_OPERATION_BUILD
-    };
-
-    OptixAccelBufferSizes buf_sizes;
-    OPTIX_CHECK(optixAccelComputeMemoryUsage(ctx, &accel_options, &input, 1, &buf_sizes));
-    CUdeviceptr d_tmp_buf, d_output;
-    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_tmp_buf), buf_sizes.tempSizeInBytes));
-    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_output), buf_sizes.outputSizeInBytes));
-    
-    OPTIX_CHECK(optixAccelBuild(
-        ctx,
-        0,
-        &accel_options,
-        &input,
-        1,
-        d_tmp_buf,
-        buf_sizes.tempSizeInBytes,
-        d_output,
-        buf_sizes.outputSizeInBytes,
-        &root_handle,
-        nullptr,
-        0));
-    
-    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_tmp_buf)));
-    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_inst)));
+    if (!root)
+        handles.emplace_back(name, ias_handle, d_output);
 }
 
 void OptixAccel::print_info() {
