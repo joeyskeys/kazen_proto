@@ -5,7 +5,7 @@
 int main() {
     Transform t;
     t.translate(Vec3f{0.f, 0.f, -5.f});
-    Sphere s{t, 0, 1.f};
+    Sphere s{t, "test", 0, 1.f};
 
     Ray r{Vec3f{0.5f, 0.5f, 5.f}, Vec3f{0.f, 0.f, -1.f}};
 

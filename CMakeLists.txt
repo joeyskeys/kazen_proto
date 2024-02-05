@@ -179,7 +179,8 @@ target_link_libraries(kazen_proto_lib
     ${Pugixml_LIBRARIES}
     ${OCIO_LIBRARIES}
     ${OSL_LIBRARIES}
-    ${EMBREE_LIBRARIES})
+    ${EMBREE_LIBRARIES}
+    CUDA::cudart)
 
 add_executable(kazen src/proto/main.cpp)
 target_link_libraries(kazen

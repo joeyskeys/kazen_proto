@@ -1,5 +1,7 @@
 #include <limits>
 
+#include <optix_function_table_definition.h>
+
 #include "accel.h"
 #include "material.h"
 #include "sampling.h"
@@ -164,7 +166,7 @@ void BVHNode::print_info() const {
     children[1]->print_info();
 }
 
-void BVHAccel::build() {
+void BVHAccel::build(const std::vector<std::string>& names) {
     root = std::make_shared<BVHNode>(*hitables, 0, hitables->size());
 }
 
@@ -196,8 +198,8 @@ EmbreeAccel::EmbreeAccel(std::vector<std::shared_ptr<Hitable>>* hs)
 EmbreeAccel::~EmbreeAccel() {
     if (m_scene)
         rtcReleaseScene(m_scene);
-    for (auto geom : m_geoms)
-        rtcReleaseScene(geom);
+    for (const auto& geom_pair : m_geoms)
+        rtcReleaseGeometry(geom_pair.second);
 
     if (m_device)
         rtcReleaseDevice(m_device);
@@ -309,9 +311,10 @@ void EmbreeAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
     rtcReleaseScene(subscene);
 
     m_geoms.emplace(t->name, instance);
+    m_meshes.emplace(geom_id, t);
 }
 
-void EmbreeAccel::add_instances(const std::string& name, std::vector<std::string>& instance_names, const Transform& trans,
+void EmbreeAccel::add_instances(const std::string& name, const std::vector<std::string>& instance_names, const Transform& trans,
     bool root)
 {
     RTCScene scene;
@@ -326,7 +329,7 @@ void EmbreeAccel::add_instances(const std::string& name, std::vector<std::string
     for (const auto& instance_name : instance_names) {
         auto geom = m_geoms.find(instance_name);
         assert(geom != m_geoms.end());
-        rtcAttachGeometry(scene, *geom);
+        rtcAttachGeometry(scene, geom->second);
     }
     rtcCommitScene(scene);
 
@@ -334,7 +337,7 @@ void EmbreeAccel::add_instances(const std::string& name, std::vector<std::string
         RTCGeometry instance = rtcNewGeometry(m_device, RTC_GEOMETRY_TYPE_INSTANCE);
         rtcSetGeometryInstancedScene(instance, scene);
         rtcSetGeometryTimeStepCount(instance, 1);
-        rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, trans->local_to_world.mat.data());
+        rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, trans.mat.data());
         rtcCommitGeometry(instance);
         rtcReleaseScene(scene);
         // Store the instance for future reuse
@@ -392,7 +395,8 @@ bool EmbreeAccel::intersect(const Ray& r, Intersection& isect) const {
         // TODO : This is a convinient solution for adding transform and the
         // scene description does not support instancing for now.
         // But nested instancing need to handle instID array correctly.
-        isect.shape = reinterpret_cast<Shape*>(m_subscenes.at(rayhit.hit.instID[0]).second.get());
+
+        isect.shape = reinterpret_cast<Shape*>(m_meshes.at(rayhit.hit.geomID).get());
         isect.shape->post_hit(isect);
         isect.frame = Frame(isect.shading_normal);
     
@@ -436,14 +440,14 @@ OptixAccel::OptixAccel(const OptixDeviceContext& c)
 {}
 
 OptixAccel::~OptixAccel() {
-    if (gas_handles.size() > 0) {
+    if (handles.size() > 0) {
         for (const auto& handle_pair : handles)
-            CUDA_CHECK(cudaFree(reinterpret_cast<void*>(handle_pair.second)));
+            CUDA_CHECK(cudaFree(reinterpret_cast<void*>(handle_pair.second.second)));
         CUDA_CHECK(cudaFree(reinterpret_cast<void*>(root_buf)));
     }
 }
 
-void OptixAccel::add_sphere(std::shared_ptr<Sphere& s) {
+void OptixAccel::add_sphere(std::shared_ptr<Sphere>& s) {
     // GAS
     OptixAccelBuildOptions accel_options {
         .buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS,
@@ -452,12 +456,12 @@ void OptixAccel::add_sphere(std::shared_ptr<Sphere& s) {
 
     CUdeviceptr d_vertex_buf;
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_vertex_buf), sizeof(float3)));
-    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_vertex_buf), &s.center_n_radius,
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_vertex_buf), &s->center_n_radius,
         sizeof(float3), cudaMemcpyHostToDevice));
 
     CUdeviceptr d_radius_buf;
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_radius_buf), sizeof(float)));
-    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_radius_buf), &s.center_n_radius[3],
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_radius_buf), &s->center_n_radius[3],
         sizeof(float), cudaMemcpyHostToDevice));
 
     OptixBuildInput input = {};
@@ -471,7 +475,7 @@ void OptixAccel::add_sphere(std::shared_ptr<Sphere& s) {
     input.sphereArray.numSbtRecords = 1;
 
     OptixAccelBufferSizes buf_sizes;
-    OPTIX_CHECK(optixAccelComputeMemoryUsage(ctx, &accel_options, &sphere_input, 1, &buf_sizes));
+    OPTIX_CHECK(optixAccelComputeMemoryUsage(ctx, &accel_options, &input, 1, &buf_sizes));
     CUdeviceptr d_temp_buf;
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_temp_buf), buf_sizes.tempSizeInBytes));
 
@@ -511,19 +515,7 @@ void OptixAccel::add_sphere(std::shared_ptr<Sphere& s) {
         d_output = d_non_compact_output;
     }
 
-    gas_handles.push_back(handle);
-    gas_output_bufs.push_back(d_output);
-
-    // IAS information
-    OptixInstance inst;
-    const auto optix_transform = base::transpose(s->local_to_world.mat);
-    memcpy(inst.transform, optix_transform.data(), sizeof(float) * 12);
-    inst.instanceId             = s->id;
-    inst.visibilityMask         = 255;
-    inst.sbtOffset              = 0;
-    inst.flags                  = OPTIX_INSTANCE_FLAG_NONE;
-    inst.OptixTraversableHandle = handle;
-    instances.push_back(inst);
+    handles.emplace(s->name, std::make_pair(handle, d_output));
 }
 
 void OptixAccel::add_quad(std::shared_ptr<Quad>& q) {
@@ -549,23 +541,26 @@ void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_trans), t->local_to_world.mat.transpose().data(),
         trans_size, cudaMemcpyHostToDevice));
 
-    uint32_t input_flags[1] = {OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT,
+    uint32_t input_flags[2] = {OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT,
         OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS};
-    OptixBuildInputTriangleArray gas_input {
-        .vertexBuffers = &d_vertices,
-        .numVertices = static_cast<uint32_t>(t->verts.size()),
-        .vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3,
-        .vertexStrideInBytes = sizeof(float3),
-        .indexBuffer = &d_indices,
-        .numIndexTriplets = static_cast<uint32_t>(t->indice.size()),
-        .indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3,
-        .indexStrideBytes = sizeof(uint3),
-        .preTransform = d_trans,
-        .flags = input_flags,
-        .numSbtRecords = 1,
-        .sbtIndexOffsetBuffer = nullptr,
-        .sbtIndexOffsetSizeInBytes = sizeof(uint32_t),
-        .sbtIndexOffsetStrideInBytes = sizeof(uint32_t)
+    OptixBuildInput gas_input {
+        .type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES,
+        .triangleArray = {
+            .vertexBuffers = &d_vertices,
+            .numVertices = static_cast<uint32_t>(t->verts.size()),
+            .vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3,
+            .vertexStrideInBytes = sizeof(float3),
+            .indexBuffer = d_indices,
+            .numIndexTriplets = static_cast<uint32_t>(t->indice.size()),
+            .indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3,
+            .indexStrideInBytes = sizeof(uint3),
+            .preTransform = d_trans,
+            .flags = input_flags,
+            .numSbtRecords = 1,
+            .sbtIndexOffsetBuffer = 0,
+            .sbtIndexOffsetSizeInBytes = sizeof(uint32_t),
+            .sbtIndexOffsetStrideInBytes = sizeof(uint32_t)
+        }
     };
 
     OptixAccelBuildOptions gas_accel_options = {
@@ -590,22 +585,22 @@ void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_non_compact_output), compact_size_offset + 8));
 
     OptixAccelEmitDesc emit_prop = {
-        .type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE,
-        .result = (CUdeviceptr)((char*)d_non_compact_output + compact_size_offset);
+        .result = (CUdeviceptr)((char*)d_non_compact_output + compact_size_offset),
+        .type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE
     };
 
     OptixTraversableHandle gas_handle;
-    OPTIX_CHECK(optixAccelBuild(ctx,
-                                0,
-                                &gas_accel_options,
-                                &gas_input,
-                                1,
-                                d_tmp_buf,
-                                gas_buf_sizes.tempSizeInBytes,
-                                d_non_compact_output,
-                                gas_buf_sizes.outputSizeInBytes,
-                                &gashandle,
-                                &emit_prop,
+    OPTIX_CHECK(optixAccelBuild(ctx, \
+                                0, \
+                                &gas_accel_options, \
+                                &gas_input, \
+                                1, \
+                                d_tmp_buf, \
+                                gas_buf_sizes.tempSizeInBytes, \
+                                d_non_compact_output, \
+                                gas_buf_sizes.outputSizeInBytes, \
+                                &gas_handle, \
+                                &emit_prop, \
                                 1));
     
     CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_tmp_buf)));
@@ -616,7 +611,7 @@ void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
     CUDA_CHECK(cudaMemcpy(&compact_size, (void*)emit_prop.result, sizeof(size_t), cudaMemcpyDeviceToHost));
 
     CUdeviceptr d_output;
-    if (compact_size < buf_sizes.outputSizeInBytes) {
+    if (compact_size < gas_buf_sizes.outputSizeInBytes) {
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_output), compact_size));
         OPTIX_CHECK(optixAccelCompact(ctx, 0, gas_handle, d_output, compact_size, &gas_handle));
         CUDA_CHECK(cudaFree((void*)d_non_compact_output));
@@ -625,15 +620,14 @@ void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
         d_output = d_non_compact_output;
     }
 
-    gas_handles.push_back(gas_handle);
-    gas_output_bufs.push_back(d_output);
+    handles.emplace(t->name, std::make_pair(gas_handle, d_output));
 }
 
-void OptixAccel::add_spheres(std::vector<std::shared_ptr<Sphere>& ss) {
+void OptixAccel::add_spheres(std::vector<std::shared_ptr<Sphere>>& ss) {
 
 }
 
-OptixTraversableHandle OptixAccel::add_instances(const std::string& name, const std::vector<std::string>& handle_names,
+void OptixAccel::add_instances(const std::string& name, const std::vector<std::string>& handle_names,
     const Transform& trans, bool root)
 {
     // Create an array of instances input first
@@ -641,28 +635,28 @@ OptixTraversableHandle OptixAccel::add_instances(const std::string& name, const 
     size_t inst_size = handle_names.size() * sizeof(OptixInstance);
     std::vector<OptixInstance> insts(handle_names.size());
     for (const auto& handle_name : handle_names) {
-        auto handle = handles.find(handle_name);
-        assert(handle != handles.end());
+        auto handle_found = handles.find(handle_name);
+        assert(handle_found != handles.end());
 
         OptixInstance inst;
-        const auto optix_transform = base::transpose(trans.local_to_world.mat);
+        const auto optix_transform = base::transpose(trans.mat);
         memcpy(inst.transform, optix_transform.data(), sizeof(float) * 12);
         inst.instanceId             = handles.size();
         inst.visibilityMask         = 255;
         inst.sbtOffset              = 0;
         inst.flags                  = OPTIX_INSTANCE_FLAG_NONE;
-        inst.OptixTraversableHandle = handle;
+        inst.traversableHandle      = handle_found->second.first;
 
         insts.push_back(inst);
     }
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_inst), inst_size));
-    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_inst), insts.data(), inst_size));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_inst), insts.data(), inst_size, cudaMemcpyHostToDevice));
 
     OptixBuildInput input {
         .type = OPTIX_BUILD_INPUT_TYPE_INSTANCES,
         .instanceArray = {
             .instances = d_inst,
-            .numInstances = insts.size();
+            .numInstances = static_cast<uint32_t>(insts.size())
         }
     };
 
@@ -678,26 +672,26 @@ OptixTraversableHandle OptixAccel::add_instances(const std::string& name, const 
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_output), buf_sizes.outputSizeInBytes));
 
     OptixTraversableHandle ias_handle;
-    OPTIX_CHECK(optixAccelBuild(
-        ctx,
-        0,
-        &accel_options,
-        &input,
-        1,
-        d_tmp_buf,
-        buf_sizes.tempSizeInBytes,
-        d_output,
-        buf_sizes.outputSizeInBytes,
-        root ? &root_handle : &ias_handle,
-        nullptr,
+    OPTIX_CHECK(optixAccelBuild( \
+        ctx, \
+        0, \
+        &accel_options, \
+        &input, \
+        1, \
+        d_tmp_buf, \
+        buf_sizes.tempSizeInBytes, \
+        d_output, \
+        buf_sizes.outputSizeInBytes, \
+        root ? &root_handle : &ias_handle, \
+        nullptr, \
         0));
     CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_tmp_buf)));
     CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_inst)));
 
     if (!root)
-        handles.emplace_back(name, ias_handle, d_output);
+        handles.emplace(name, std::make_pair(ias_handle, d_output));
 }
 
-void OptixAccel::print_info() {
+void OptixAccel::print_info() const {
 
 }

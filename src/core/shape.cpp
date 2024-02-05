@@ -129,14 +129,16 @@ AABBf Sphere::bbox() const {
     return AABBf{center_in_world - radius_vec, center_in_world + radius_vec};
 }
 
-void* Sphere::address_of(const std::string& name) {
-    if (name == "center_n_radius")
+void* Sphere::address_of(const std::string& n) {
+    if (n == "center_n_radius")
         return &center_n_radius;
-    else if (name == "shader_name")
+    else if (n == "name")
+        return &name;
+    else if (n == "shader_name")
         return &shader_name;
-    else if (name == "is_light")
+    else if (n == "is_light")
         return &is_light;
-    else if (name == "translate")
+    else if (n == "translate")
         // function call param is kinda special
         return this;
     return nullptr;
@@ -287,24 +289,26 @@ AABBf Quad::bbox() const {
     return bound_union(bbox_of_three_pt, up_right_pt);
 }
 
-void* Quad::address_of(const std::string& name) {
-    if (name == "center")
+void* Quad::address_of(const std::string& n) {
+    if (n == "center")
         return &center;
-    else if (name == "dir")
+    else if (n== "dir")
         return &dir;
-    else if (name == "vertical_vec")
+    else if (n == "vertical_vec")
         return &vertical_vec;
-    else if (name == "horizontal_vec")
+    else if (n == "horizontal_vec")
         return &horizontal_vec;
-    else if (name == "half_width")
+    else if (n == "half_width")
         return &half_width;
-    else if (name == "half_height")
+    else if (n == "half_height")
         return &half_height;
-    else if (name == "shader_name")
+    else if (n == "name")
+        return &name;
+    else if (n == "shader_name")
         return &shader_name;
-    else if (name == "is_light")
+    else if (n == "is_light")
         return &is_light;
-    else if (name == "translate")
+    else if (n == "translate")
         return this;
     else
         return nullptr;
@@ -457,18 +461,20 @@ AABBf Triangle::bbox() const {
     return bbox_of_triangle(v0_in_world, v1_in_world, v2_in_world);
 }
 
-void* Triangle::address_of(const std::string& name) {
-    if (name == "verta")
+void* Triangle::address_of(const std::string& n) {
+    if (n== "verta")
         return &verts[0];
-    else if (name == "vertb")
+    else if (n== "vertb")
         return &verts[1];
-    else if (name == "vertc")
+    else if (n== "vertc")
         return &verts[2];
-    else if (name == "shader_name")
+    else if (n== "name")
+        return &name;
+    else if (n== "shader_name")
         return &shader_name;
-    else if (name == "is_light")
+    else if (n== "is_light")
         return &is_light;
-    else if (name == "translate")
+    else if (n== "translate")
         return this;
     return nullptr;
 }

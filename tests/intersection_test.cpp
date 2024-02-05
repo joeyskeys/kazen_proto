@@ -37,7 +37,7 @@ int main() {
 
     auto tt = Transform();
     tt.translate(Vec3f{0.f, 0.f, -10.f});
-    Triangle tri{tt, Vec3f{0.f, 0.f, 0.f}, Vec3f{2.f, 0.f, 0.f}, Vec3f{0.f, 2.f, 0.f}};
+    Triangle tri{tt, Vec3f{0.f, 0.f, 0.f}, Vec3f{2.f, 0.f, 0.f}, Vec3f{0.f, 2.f, 0.f}, "test"};
     Ray r2{Vec3f{2.f, 1.5f, 2.f}, Vec3f{0.f, 0.f, -1.f}};
     hit = tri.intersect(r2, isect);
 
@@ -48,7 +48,7 @@ int main() {
 
     std::vector<std::shared_ptr<Hitable>> hitables;
     Accelerator list{&hitables};
-    list.add_hitable(std::make_shared<Sphere>(t, 0, 1.f));
+    list.add_hitable(std::make_shared<Sphere>(t, "sphere", 0, 1.f));
 
     auto sh = std::make_shared<Transform>();
     auto acc = std::make_shared<BVHAccel>(&hitables);

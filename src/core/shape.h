@@ -15,15 +15,15 @@ class Light;
 
 class Shape : public Hitable, public DictLike {
 public:
-    Shape(const std::string& n, const size_t id)
+    Shape(const size_t id)
         : Hitable(Transform())
-        , name(n)
         , geom_id(id)
     {}
 
     Shape(const Transform& l2w, const std::string& n, const std::string& m,
         bool is_l, const uint& id)
         : Hitable(l2w)
+        , name(n)
         , shader_name(m)
         , is_light(is_l)
         , geom_id(id)
@@ -48,8 +48,8 @@ public:
 
 class Sphere : public Shape {
 public:
-    Sphere(const std::string& n, const size_t id)
-        : Shape(n, id)
+    Sphere(const size_t id)
+        : Shape(id)
         , center_n_radius(Vec4f(0, 0, 0, 1))
     {}
 
@@ -77,8 +77,8 @@ public:
 
 class Quad : public Shape {
 public:
-    Quad(const std::string& n, const size_t id)
-        : Shape(n, id)
+    Quad(const size_t id)
+        : Shape(id)
         , center(Vec3f{0, 0, 0})
         , dir(Vec3f{0, 1, 0})
         , vertical_vec(Vec3f{0, 0, 1})
@@ -124,8 +124,8 @@ public:
 
 class Triangle : public Shape {
 public:
-    Triangle(const std::string& n, size_t id)
-        : Shape(n, id)
+    Triangle(size_t id)
+        : Shape(id)
     {
         verts[0] = Vec3f(0, 0, 0);
         verts[1] = Vec3f(1, 0, 0);
@@ -158,7 +158,7 @@ public:
 
 class TriangleMesh : public Shape {
 public:
-    TriangleMesh(const std::string& n, const size_t id)
+    TriangleMesh(const size_t id)
         : Shape(id)
     {}
 

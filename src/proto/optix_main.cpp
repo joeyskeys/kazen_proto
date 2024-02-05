@@ -4,9 +4,9 @@
 #include "core/optix_utils.h"
 #include "kernel/types.h"
 
-using GenericLocalRecord<RaygenData>    RaygenRecord;
-using GenericLocalRecord<MissData>      MissRecord;
-using GenericLocalRecord<HitGroupData>  HitGroupRecord;
+using RaygenRecord   = GenericLocalRecord<RaygenData>;
+using MissRecord     = GenericLocalRecord<MissData>;
+using HitGroupRecord = GenericLocalRecord<HitGroupData>;
 
 int main(int argc, const char **argv) {
     std::string outfile;
@@ -35,7 +35,7 @@ int main(int argc, const char **argv) {
 
     OptixProgramGroup rg_pg = nullptr;
     OptixProgramGroup miss_pg = nullptr;
-    OpitxProgramGroup ch_pg = nullptr;
+    OptixProgramGroup ch_pg = nullptr;
     OptixProgramGroupOptions pg_options = {};
 
     OptixProgramGroupDesc rg_pg_desc {
@@ -60,9 +60,9 @@ int main(int argc, const char **argv) {
         .kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP,
         .hitgroup = {
             .moduleCH = mod,
-            .entryFunctionName = "__closesthit_radiance"
+            .entryFunctionNameCH = "__closesthit_radiance"
         }
-    }
+    };
     create_optix_pg(ctx, &ch_pg_desc, 1, &pg_options, &ch_pg);
 
     OptixPipeline ppl = nullptr;
@@ -109,7 +109,7 @@ int main(int argc, const char **argv) {
         ms_record_size * RAY_TYPE_COUNT, cudaMemcpyHostToDevice));
 
     const size_t MAT_COUNT = 1;
-    HitGroupRecord hg_record_size = sizeof(HitGroupRecord);
+    size_t hg_record_size = sizeof(HitGroupRecord);
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&records[CLOSESTHIT]),
         hg_record_size * RAY_TYPE_COUNT * MAT_COUNT));
     HitGroupRecord hg_records[RAY_TYPE_COUNT * MAT_COUNT];

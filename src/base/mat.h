@@ -376,6 +376,10 @@ public:
         return arr.data();
     }
 
+    auto data() const {
+        return arr.data();
+    }
+
     operator OSL::Matrix44() const {
         // We only need this for Mat4
         static_assert(N == 4);

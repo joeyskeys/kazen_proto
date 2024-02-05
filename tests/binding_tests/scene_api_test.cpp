@@ -25,5 +25,5 @@ TEST_CASE("Scene API test", "[single-file]") {
     uvs.push_back(v2);
     auto faces = std::vector<Vec3i>();
     faces.push_back(v3);
-    scene.add_mesh(m, verts, normals, uvs, faces, "test", false);
+    scene.add_mesh(m, verts, normals, uvs, faces, "test", "test", false);
 }

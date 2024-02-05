@@ -702,7 +702,11 @@ void Scene::parse_from_file(fs::path filepath) {
     }
 
     // Construct acceleration structure after all data is parsed
-    accelerator->build();
+    // Update of acceleration structure cause the scene description to
+    // change and is not yet reflected in the parsing code here, we
+    // cannot have the instance name list here to build the IAS,
+    // TODO: update the scene description and build the IAS
+    //accelerator->build();
 }
 
 std::unique_ptr<Integrator> Scene::create_integrator(Sampler& sampler) {

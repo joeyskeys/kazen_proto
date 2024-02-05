@@ -2,7 +2,7 @@
 
 #include <optix.h>
 
-struct Pixel {
+struct OptixPixel {
     float r;
     float g;
     float b;

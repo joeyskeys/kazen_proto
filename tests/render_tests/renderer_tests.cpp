@@ -50,8 +50,8 @@ TEST_CASE("Renderer test", "[single-file]") {
         Vec3i{0, 1, 2},
         Vec3i{3, 4, 5},
     };
-    scene.add_mesh(mat, verts, norms, ts, idx, "test");
-    scene.build_bvh();
+    scene.add_mesh(mat, verts, norms, ts, idx, "test", "test");
+    scene.build_bvh({"test"});
 
     scene.add_point_light(RGBSpectrum{1.f, 1.f, 1.f},
         Vec3f{0.f, 3.f, 3.f}, "light_shader");

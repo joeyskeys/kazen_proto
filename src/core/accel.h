@@ -12,7 +12,7 @@
 
 class Accelerator : public Hitable {
 public:
-    Accelerator(std::vector<std::shared_ptr<Hitable>>* hs)
+    Accelerator(std::vector<std::shared_ptr<Hitable>>* hs = nullptr)
         : hitables(hs)
     {}
 
@@ -23,7 +23,7 @@ public:
     virtual void add_quad(std::shared_ptr<Quad>& q);
     virtual void add_triangle(std::shared_ptr<Triangle>& t);
     virtual void add_trianglemesh(std::shared_ptr<TriangleMesh>& t);
-    virtual void add_spheres(std::vector<std::shared_ptr<Sphere>& ss);
+    virtual void add_spheres(std::vector<std::shared_ptr<Sphere>>& ss) {}
     virtual void add_instances(const std::string& name,
         const std::vector<std::string>& instance_names,
         const Transform& trans = Transform(),
@@ -66,7 +66,7 @@ public:
     void add_sphere(std::shared_ptr<Sphere>& s) override;
     void add_quad(std::shared_ptr<Quad>& q) override;
     void add_triangle(std::shared_ptr<Triangle>& t) override;
-    void add_trianglemesh(std::shared_ptr<TriangleMesh>& t) override;
+    void add_trianglemesh(std::shared_ptr<TriangleMesh>&) override;
     void add_instances(const std::string& name,
         const std::vector<std::string>& instance_names,
         const Transform& trans = Transform(),
@@ -82,6 +82,7 @@ private:
     RTCDevice   m_device = nullptr;
     RTCScene    m_scene = nullptr;
     std::unordered_map<std::string, RTCGeometry> m_geoms;
+    std::unordered_map<uint32_t, std::shared_ptr<Hitable>> m_meshes;
 };
 
 class OptixAccel : public Accelerator {
@@ -94,8 +95,8 @@ public:
     void add_sphere(std::shared_ptr<Sphere>& s) override;
     void add_quad(std::shared_ptr<Quad>& q) override;
     void add_triangle(std::shared_ptr<Triangle>& t) override;
-    void add_trianglemesh(std::shared_ptr<TriangleMesh>& t) override;
-    void add_spheres(std::vector<std::shared_ptr<Sphere>& ss) override;
+    void add_trianglemesh(std::shared_ptr<TriangleMesh>&) override;
+    void add_spheres(std::vector<std::shared_ptr<Sphere>>& ss) override;
     void add_instances(const std::string& name,
         const std::vector<std::string>& instance_names,
         const Transform& trans = Transform(),
@@ -103,8 +104,6 @@ public:
     inline void build(const std::vector<std::string>& instance_names) override {
         add_instances("root", instance_names, Transform(), true);
     }
-    //bool intersect(const Ray& r, Intersection& isect) const override;
-    //bool intersect(const Ray& r, float& t) const override;
     void print_info() const override;
 
 private:
@@ -112,4 +111,4 @@ private:
     handle_map                          handles;
     OptixTraversableHandle              root_handle;
     CUdeviceptr                         root_buf;
-}
+};

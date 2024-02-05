@@ -12,7 +12,7 @@ extern "C" {
 extern "C"
 __global__ void __raygen__fixed() {
     uint3 launch_idx = optixGetLaunchIndex();
-    Pixel* data = reinterpret_cast<Pixel*>(optixGetSbtDataPointer());
+    OptixPixel* data = reinterpret_cast<OptixPixel*>(optixGetSbtDataPointer());
     float3* output = reinterpret_cast<float3*>(params.image);
     output[launch_idx.y * params.width + launch_idx.x] =
         make_float3(data->r, data->g, data->b);
