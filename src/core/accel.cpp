@@ -557,6 +557,13 @@ void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
             .preTransform = d_trans,
             .flags = input_flags,
             .numSbtRecords = 1,
+            /* Usage for sbt records here:
+             * Assign per-prim material, whether different geometry squashed
+             * together or face material is used, neither is considered for
+             * now,
+             * TODO: add face material support;
+             * TODO: allow automatic static mesh squash for better performance
+             */
             .sbtIndexOffsetBuffer = 0,
             .sbtIndexOffsetSizeInBytes = sizeof(uint32_t),
             .sbtIndexOffsetStrideInBytes = sizeof(uint32_t)
@@ -643,7 +650,7 @@ void OptixAccel::add_instances(const std::string& name, const std::vector<std::s
         memcpy(inst.transform, optix_transform.data(), sizeof(float) * 12);
         inst.instanceId             = handles.size();
         inst.visibilityMask         = 255;
-        inst.sbtOffset              = 0;
+        inst.sbtOffset              = inst_cnt;
         inst.flags                  = OPTIX_INSTANCE_FLAG_NONE;
         inst.traversableHandle      = handle_found->second.first;
 
@@ -690,6 +697,9 @@ void OptixAccel::add_instances(const std::string& name, const std::vector<std::s
 
     if (!root)
         handles.emplace(name, std::make_pair(ias_handle, d_output));
+
+    // one sbtRecord for each GAS(for now)
+    inst_cnt += handle_names.size();
 }
 
 void OptixAccel::print_info() const {

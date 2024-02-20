@@ -1,4 +1,6 @@
 #include <OpenImageIO/imageio.h>
+#include <OpenImageIO/argparse.h>
+
 #include <optix_function_table_definition.h>
 
 #include "core/optix_utils.h"
@@ -10,8 +12,32 @@ using HitGroupRecord = GenericLocalRecord<HitGroupData>;
 
 int main(int argc, const char **argv) {
     std::string outfile;
+    OIIO::ArgParse ap;
+    bool debug = false;
     uint32_t w = 512;
     uint32_t h = 384;
+    int debug_x = -1;
+    int debug_y = -1;
+
+    ap.intro("Kazen Render GPU")
+        .usage("kazen_gpu [options] filename")
+        .print_defaults(true);
+
+    ap.separator("Options:");
+    ap.arg("-o %s", &outfile)
+        .help("output filename");
+
+    ap.arg("-d", &debug)
+        .help("enable debug mode");
+
+    ap.arg("--pixel %d %d", &debug_x, &debug_y)
+        .help("specify the pixel of interest");
+
+    if (ap.parse(argc, argv) < 0) {
+        std::cerr << ap.geterror() << std::endl;
+        ap.print_help();
+        return 0;
+    }
 
     OptixDeviceContextOptions ctx_options{};
     ctx_options.logCallbackFunction = &context_log_cb;
@@ -79,20 +105,6 @@ int main(int argc, const char **argv) {
     };
 
     std::array<CUdeviceptr, 3> records;
-    /*
-    const auto record_size = sizeof(GenericLocalRecord<Pixel>);
-    const size_t rec_sizes[] = { sizeof(raygenRecord), sizeof(MissRecord), sizeof(HitGroupRecord) };
-    for (auto& rec : records)
-        CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&rec), record_size));
-
-    std::array<GenericLocalRecord<Pixel>, 2> sbts;
-    sbts[RAYGEN].data = {0.462f, 0.725f, 0.f};
-    for (int i = 0; i < 2; ++i) {
-        OPTIX_CHECK(optixSbtRecordPackHeader(pgs[i], &sbts[i]));
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(records[i]),
-            &sbts[i], record_size, cudaMemcpyHostToDevice));
-    }
-    */
 
     const size_t rg_record_size = sizeof(RaygenRecord);
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&records[RAYGEN]), rg_record_size));
@@ -131,41 +143,6 @@ int main(int argc, const char **argv) {
     sbt.hitgroupRecordBase          = records[CLOSESTHIT];
     sbt.hitgroupRecordStrideInBytes = static_cast<uint32_t>(hg_record_size);
     sbt.hitgroupRecordCount         = RAY_TYPE_COUNT * MAT_COUNT;
-
-    /*
-    OptixShaderBindingTable sbt{};
-    {
-        CUdeviceptr rg_record;
-        const size_t rg_record_size = sizeof(GenericLocalRecord<Pixel>);
-        CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&rg_record), rg_record_size));
-        GenericLocalRecord<Pixel> rg_sbt;
-        OPTIX_CHECK(optixSbtRecordPackHeader(rg_pg, &rg_sbt));
-        rg_sbt.data = {0.462f, 0.725f, 0.f};
-        CUDA_CHECK(cudaMemcpy(
-            reinterpret_cast<void*>(rg_record),
-            &rg_sbt,
-            rg_record_size,
-            cudaMemcpyHostToDevice
-        ));
-
-        CUdeviceptr ms_record;
-        const size_t ms_record_size = sizeof(GenericLocalRecord<int>);
-        CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&ms_record), ms_record_size));
-        GenericLocalRecord<int> ms_sbt;
-        OPTIX_CHECK(optixSbtRecordPackHeader(miss_pg, &ms_sbt));
-        CUDA_CHECK(cudaMemcpy(
-            reinterpret_cast<void*>(ms_record),
-            &ms_sbt,
-            ms_record_size,
-            cudaMemcpyHostToDevice
-        ));
-
-        sbt.raygenRecord = rg_record;
-        sbt.missRecordBase = ms_record;
-        sbt.missRecordStrideInBytes = sizeof(GenericLocalRecord<int>);
-        sbt.missRecordCount = 1;
-    }
-    */
 
     CUdeviceptr output;
     auto buf_size = w * h * 3 *sizeof(float);

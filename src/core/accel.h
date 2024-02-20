@@ -111,4 +111,5 @@ private:
     handle_map                          handles;
     OptixTraversableHandle              root_handle;
     CUdeviceptr                         root_buf;
+    uint32_t                            inst_cnt = 0;
 };

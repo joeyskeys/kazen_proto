@@ -744,3 +744,33 @@ void Scene::connect_shader(const std::string& src_layer, const std::string& src_
 {
     shadingsys->ConnectShaders(src_layer, src_param, dst_layer, dst_param);
 }
+
+SceneGPU::SceneGPU() {
+
+}
+
+SceneGPU::~SceneGPU() {
+
+}
+
+void SceneGPU::set_film(uint32_t w, uint32_t h, const std::string& out) {
+
+}
+
+void SceneGPU::set_camera(const Vec3f& p, const Vec3f& l, const Vec3f& u,
+    const float np, const float fp, const float fov)
+{
+
+}
+
+void SceneGPU::add_mesh(const Mat4f& world, const std::vector<Vec3f>& vs,
+    const std::vector<Vec3f>& ns, const std::vector<Vec2f>& ts,
+    const std::vector<Vec3i>& idx, const std::string& name,
+    const std::string& shader_name, bool is_light = false)
+{
+
+}
+
+void SceneGPU::build_bvh(const std::vector<std::string>& names) {
+    
+}

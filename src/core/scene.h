@@ -22,7 +22,8 @@ namespace fs = std::filesystem;
 
 enum class AcceleratorType {
     BVH,
-    Embree
+    Embree,
+    Optix
 };
 
 enum class IntegratorType {
@@ -231,3 +232,20 @@ private:
     // This is a temprory variable for use of shader group begin&end
     OSL::ShaderGroupRef current_shader_group;
 };
+
+class SceneGPU {
+public:
+    SceneGPU();
+    virtual ~SceneGPU();
+
+    void set_film(uint32_t w, uint32_t h, const std::string& out);
+    void set_camera(const Vec3f& p, const Vec3f& l, const Vec3f& u,
+        const float near_plane = 1, const float far_plane = 1000,
+        const float fov = 60);
+
+    void add_mesh(const Mat4f& world, const std::vector<Vec3f>& vs,
+        const std::vector<Vec3f>& ns, const std::vector<Vec2f>& ts,
+        const std::vector<Vec3i>& idx, const std::string& name,
+        const std::string& shader_name, bool is_light = false);
+    void build_bvh(const std::vector<std::string>& names);
+}
