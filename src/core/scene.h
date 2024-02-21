@@ -16,6 +16,7 @@
 #include "core/light.h"
 #include "core/material.h"
 #include "core/shape.h"
+#include "kernel/types.h"
 #include "shading/compiler.h"
 
 namespace fs = std::filesystem;
@@ -235,9 +236,10 @@ private:
 
 class SceneGPU {
 public:
-    SceneGPU();
+    SceneGPU(bool default_pipeline = true);
     virtual ~SceneGPU();
 
+    void create_default_pipeline();
     void set_film(uint32_t w, uint32_t h, const std::string& out);
     void set_camera(const Vec3f& p, const Vec3f& l, const Vec3f& u,
         const float near_plane = 1, const float far_plane = 1000,
@@ -248,4 +250,12 @@ public:
         const std::vector<Vec3i>& idx, const std::string& name,
         const std::string& shader_name, bool is_light = false);
     void build_bvh(const std::vector<std::string>& names);
+
+private:
+    OptixDeviceContext          ctx;
+    OptixPipeline               ppl = nullptr;
+    OptixShaderBindingTable     sbt = {};
+    OptixTraversableHandle      accel = 0;
+    Params                      params = {};
+    std::string                 output = "./test.png";
 }

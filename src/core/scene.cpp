@@ -14,7 +14,8 @@
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
 
-#include "scene.h"
+#include "core/scene.h"
+#include "core/optix_utils.h"
 #include "shading/shader.h"
 
 enum ETag {
@@ -745,22 +746,97 @@ void Scene::connect_shader(const std::string& src_layer, const std::string& src_
     shadingsys->ConnectShaders(src_layer, src_param, dst_layer, dst_param);
 }
 
-SceneGPU::SceneGPU() {
+SceneGPU::SceneGPU(bool default_pipeline) {
+    // Create context
+    OptixDeviceContextOptions ctx_options{};
+    ctx_options.logCallbackFunction = &context_log_cb;
+    ctx_options.logCallbackLevel = 4;
+    ctx = create_optix_ctx(&ctx_options);
 
+    if (default_pipeline)
+        create_default_pipeline();
 }
 
 SceneGPU::~SceneGPU() {
+    if (ppl != nullptr)
+        optixPipelineDestroy(ppl);
+    optixDeviceContextDestroy(ctx);
+}
 
+void SceneGPU::create_default_pipeline() {
+    OptixModuleCompileOptions mod_options{
+        .optLevel = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0,
+        .debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL
+    };
+    OptixPipelineCompileOptions ppl_compile_options {
+        .usesMotionBlur = false,
+        .numPayloadValues = 2,
+        .numAttributeValues = 2,
+        .exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE,
+        .pipelineLaunchParamsVariableName = "params"
+    };
+    OptixModule mod;
+    load_optix_module_cu("../src/kernel/device/optix/kernels.cu",
+        ctx, &mod_options, &ppl_compile_options, &mod);
+
+    OptixProgramGroup rg_pg = nullptr;
+    OptixProgramGroup miss_pg = nullptr;
+    OptixProgramGroup ch_pg = nullptr;
+    OptixProgramGroupOptions pg_options = {};
+
+    OptixProgramGroupDesc rg_pg_desc {
+        .kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN,
+        .raygen = {
+            .module = mod,
+            .entryFunctionName = "__raygen__main"
+        }
+    };
+    create_optix_pg(ctx, &rg_pg_desc, 1, &pg_options, &rg_pg);
+
+    OptixProgramGroupDesc miss_pg_desc {
+        .kind = OPTIX_PROGRAM_GROUP_KIND_MISS,
+        .miss = {
+            .module = mod,
+            .entryFunctionName = "__miss_radiance"
+        }
+    };
+    create_optix_pg(ctx, &miss_pg_desc, 1, &pg_options, &miss_pg);
+
+    OptixProgramGroupDesc ch_pg_desc {
+        .kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP,
+        .hitgroup = {
+            .moduleCH = mod,
+            .entryFunctionNameCH = "__closesthit_radiance"
+        }
+    };
+    create_optix_pg(ctx, &ch_pg_desc, 1, &pg_options, &ch_pg);
+
+    const uint32_t max_trace_depth = 2;
+    std::vector<OptixProgramGroup> pgs { rg_pg, miss_pg, ch_pg };
+    OptixPipelineLinkOptions ppl_link_options{};
+    ppl_link_options.maxTraceDepth = max_trace_depth;
+    create_optix_ppl(ctx, ppl_compile_options, ppl_link_options,
+        pgs, &ppl);
+
+    optixProgramGroupDestroy(rg_pg);
+    optixProgramGroupDestroy(miss_pg);
+    optixProgramGroupDestroy(ch_pg);
+    optixModuleDestroy(mod);
 }
 
 void SceneGPU::set_film(uint32_t w, uint32_t h, const std::string& out) {
-
+    params.width = w;
+    params.height = h;
+    output = out;
 }
 
 void SceneGPU::set_camera(const Vec3f& p, const Vec3f& l, const Vec3f& u,
     const float np, const float fp, const float fov)
 {
-
+    //params.eye = p;
+    //params.U = ;
+    //params.V = ;
+    //params.W = make_float3();
 }
 
 void SceneGPU::add_mesh(const Mat4f& world, const std::vector<Vec3f>& vs,
