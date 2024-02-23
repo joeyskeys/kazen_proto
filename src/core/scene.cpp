@@ -16,6 +16,7 @@
 
 #include "core/scene.h"
 #include "core/optix_utils.h"
+#include "kernel/mathutils.h"
 #include "shading/shader.h"
 
 enum ETag {
@@ -752,6 +753,7 @@ SceneGPU::SceneGPU(bool default_pipeline) {
     ctx_options.logCallbackFunction = &context_log_cb;
     ctx_options.logCallbackLevel = 4;
     ctx = create_optix_ctx(&ctx_options);
+    accel.reset(new OptixAccel(ctx));
 
     if (default_pipeline)
         create_default_pipeline();
@@ -831,12 +833,17 @@ void SceneGPU::set_film(uint32_t w, uint32_t h, const std::string& out) {
 }
 
 void SceneGPU::set_camera(const Vec3f& p, const Vec3f& l, const Vec3f& u,
-    const float np, const float fp, const float fov)
+    const float np, const float fp, const float ratio, const float fov)
 {
-    //params.eye = p;
-    //params.U = ;
-    //params.V = ;
-    //params.W = make_float3();
+    params.eye = convert_to_cuda_type(p);
+    auto front = (l - p).normalized();
+    auto right = base::cross(front, u);
+    auto up = base::cross(right, front);
+    auto fov_in_radian = to_radian(fov);
+    auto scaled_height = std::tan(fov_in_radian);
+    params.U = convert_to_cuda_type(scaled_height * up);
+    params.V = convert_to_cuda_type(scaled_height * ratio * right);
+    params.W = convert_to_cuda_type(front);
 }
 
 void SceneGPU::add_mesh(const Mat4f& world, const std::vector<Vec3f>& vs,
@@ -844,9 +851,19 @@ void SceneGPU::add_mesh(const Mat4f& world, const std::vector<Vec3f>& vs,
     const std::vector<Vec3i>& idx, const std::string& name,
     const std::string& shader_name, bool is_light = false)
 {
-
+    Transform trans{world};
+    auto obj_ptr = std::make_shared<TriangleMesh>(trans, vs, ns, ts, idx,
+        name, shader_name, is_light);
+    obj_ptr->setup_dpdf();
+    accel->add_trianglemesh(obj_ptr);
+    if (is_light) {
+        auto light = std::make_unique<GeometryLight>(lights.size(),
+            obj_ptr->shader_name, obj_ptr);
+        obj_ptr->light = light.get();
+        lights.emplace_back(std::move(light));
+    }
 }
 
 void SceneGPU::build_bvh(const std::vector<std::string>& names) {
-    
+    accel->build(names);
 }
