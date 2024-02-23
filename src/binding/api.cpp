@@ -169,6 +169,19 @@ void bind_api(py::module_& m) {
          .def("set_shader_param_ustr", &Scene::set_shader_param<OSL::ustring>,
             "set ustring shader parameter value");
 
+    py::class_<SceneGPU> scene_gpu(api, "SceneGPU");
+    scene_gpu.def(py::init<bool>())
+             .def("create_default_pipleine", &SceneGPU::create_default_pipeline,
+                "create default pipeline")
+             .def("set_film", &SceneGPU::set_film,
+                "set film parameters")
+             .def("set_camera", &SceneGPU::set_camera,
+                "set camera parameters")
+             .def("add_mesh", &SceneGPU::add_mesh,
+                "add a triangle mesh")
+             .def("build_bvh", &SceneGPU::build_bvh,
+                "build bvh");
+
     py::enum_<AcceleratorType>(api, "AcceleratorType", "Accelerator type enum")
         .value("BVH", AcceleratorType::BVH)
         .value("Embree", AcceleratorType::Embree);
