@@ -3,8 +3,11 @@
 
 #include <optix_function_table_definition.h>
 
+#include "base/vec.h"
+#include "core/accel.h"
 #include "core/optix_utils.h"
 #include "kernel/types.h"
+#include "kernel/mathutils.h"
 
 using RaygenRecord   = GenericLocalRecord<RaygenData>;
 using MissRecord     = GenericLocalRecord<MissData>;
@@ -149,21 +152,78 @@ int main(int argc, const char **argv) {
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&output), buf_size));
     CUDA_CHECK(cudaMemset(reinterpret_cast<void*>(output), 0, buf_size));
 
+    std::vector<base::Vec3f> vs = {
+        Vec3f{-1.f, -1.f, -1.f}, // 0
+        Vec3f{ 1.f, -1.f, -1.f}, // 1
+        Vec3f{ 1.f,  1.f, -1.f}, // 2
+        Vec3f{-1.f,  1.f, -1.f}, // 3
+        Vec3f{-1.f, -1.f,  1.f}, // 4
+        Vec3f{ 1.f, -1.f,  1.f}, // 5
+        Vec3f{ 1.f,  1.f,  1.f}, // 6
+        Vec3f{-1.f,  1.f,  1.f}, // 7
+    };
+    std::vector<base::Vec3i> idx = {
+        // back
+        Vec3i{0, 3, 1},
+        Vec3i{1, 3, 2},
+        // front
+        Vec3i{4, 5, 6},
+        Vec3i{4, 6, 7},
+        // left
+        Vec3i{0, 4, 3},
+        Vec3i{4, 7, 3},
+        // right
+        Vec3i{5, 1, 2},
+        Vec3i{5, 2, 6},
+        // bottom
+        Vec3i{4, 0, 1},
+        Vec3i{4, 1, 5},
+        // top
+        Vec3i{7, 6, 2},
+        Vec3i{7, 2, 3}
+    };
+    auto mesh_ptr = std::make_shared<TriangleMesh>(Mat4f::idenity(), vs, {}, {}, idx,
+        "test", "shader");
+    OptixAccel accel(ctx);
+    accel.add_trianglemesh(mesh_ptr);
+
     CUstream stream;
     CUDA_CHECK(cudaStreamCreate(&stream));
 
+    /*
     ParamsForTest params {
         .image = output,
-        .image_width = w
+        .image_width = w,
+    };
+    */
+
+    float3 eye = make_float3(0.f, 5.f, 10.f);
+    float3 lookat = make_float3(0.f, 0.f, 0.f);
+    float3 front = normalize(lookat - eye);
+    float3 right = cross(front, make_float3(0, 1, 0));
+    float3 up = cross(right, front);
+    float ratio = static_cast<float>(w) / h;
+    float fov = to_radian(60.f);
+    float scaled_height = std::tan(fov);
+    Params params {
+        .image = output,
+        .width = w,
+        .height = h,
+        .sample_cnt = 5,
+        .eye = eye,
+        .U = up * scaled_height,
+        .V = right * ratio * scaled_height,
+        .W = front,
+        .handle = accel.get_root_handle()
     };
 
     CUdeviceptr param_ptr;
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&param_ptr),
-        sizeof(ParamsForTest)));
+        sizeof(Params)));
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(param_ptr), &params,
-        sizeof(ParamsForTest), cudaMemcpyHostToDevice));
+        sizeof(Params), cudaMemcpyHostToDevice));
 
-    OPTIX_CHECK(optixLaunch(ppl, stream, param_ptr, sizeof(ParamsForTest),
+    OPTIX_CHECK(optixLaunch(ppl, stream, param_ptr, sizeof(Params),
         &sbt, w, h, 1));
 
     // Output the image

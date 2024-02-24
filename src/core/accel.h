@@ -106,6 +106,10 @@ public:
     }
     void print_info() const override;
 
+    inline OptixTraverableHandle get_root_handle() const {
+        return root_handle;
+    }
+
 private:
     OptixDeviceContext                  ctx;
     handle_map                          handles;
