@@ -833,7 +833,7 @@ void SceneGPU::set_film(uint32_t w, uint32_t h, const std::string& out) {
 }
 
 void SceneGPU::set_camera(const Vec3f& p, const Vec3f& l, const Vec3f& u,
-    const float np, const float fp, const float ratio, const float fov)
+    const float ratio, const float np, const float fp, const float fov)
 {
     params.eye = convert_to_cuda_type(p);
     auto front = (l - p).normalized();
@@ -849,7 +849,7 @@ void SceneGPU::set_camera(const Vec3f& p, const Vec3f& l, const Vec3f& u,
 void SceneGPU::add_mesh(const Mat4f& world, const std::vector<Vec3f>& vs,
     const std::vector<Vec3f>& ns, const std::vector<Vec2f>& ts,
     const std::vector<Vec3i>& idx, const std::string& name,
-    const std::string& shader_name, bool is_light = false)
+    const std::string& shader_name, bool is_light)
 {
     Transform trans{world};
     auto obj_ptr = std::make_shared<TriangleMesh>(trans, vs, ns, ts, idx,

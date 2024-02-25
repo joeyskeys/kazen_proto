@@ -242,8 +242,8 @@ public:
     void create_default_pipeline();
     void set_film(uint32_t w, uint32_t h, const std::string& out);
     void set_camera(const Vec3f& p, const Vec3f& l, const Vec3f& u,
-        const float near_plane = 1, const float far_plane = 1000,
-        const float ratio, const float fov = 60);
+        const float ratio, const float near_plane = 1,
+        const float far_plane = 1000, const float fov = 60.f);
 
     void add_mesh(const Mat4f& world, const std::vector<Vec3f>& vs,
         const std::vector<Vec3f>& ns, const std::vector<Vec2f>& ts,
@@ -257,5 +257,6 @@ private:
     OptixShaderBindingTable     sbt = {};
     std::unique_ptr<OptixAccel> accel = nullptr;
     Params                      params = {};
+    std::vector<std::unique_ptr<Light>> lights;
     std::string                 output = "./test.png";
-}
+};

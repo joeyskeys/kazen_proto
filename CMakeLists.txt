@@ -180,7 +180,8 @@ target_link_libraries(kazen_proto_lib
     ${OCIO_LIBRARIES}
     ${OSL_LIBRARIES}
     ${EMBREE_LIBRARIES}
-    CUDA::cudart)
+    CUDA::cudart
+    CUDA::nvrtc)
 
 add_executable(kazen src/proto/main.cpp)
 target_link_libraries(kazen

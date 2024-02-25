@@ -182,7 +182,7 @@ int main(int argc, const char **argv) {
         Vec3i{7, 6, 2},
         Vec3i{7, 2, 3}
     };
-    auto mesh_ptr = std::make_shared<TriangleMesh>(Mat4f::idenity(), vs, {}, {}, idx,
+    auto mesh_ptr = std::make_shared<TriangleMesh>(Mat4f(), vs, std::vector<Vec3f>(), std::vector<Vec2f>(), idx,
         "test", "shader");
     OptixAccel accel(ctx);
     accel.add_trianglemesh(mesh_ptr);
@@ -207,8 +207,8 @@ int main(int argc, const char **argv) {
     float scaled_height = std::tan(fov);
     Params params {
         .image = output,
-        .width = w,
-        .height = h,
+        .width = static_cast<int>(w),
+        .height = static_cast<int>(h),
         .sample_cnt = 5,
         .eye = eye,
         .U = up * scaled_height,

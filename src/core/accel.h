@@ -106,7 +106,7 @@ public:
     }
     void print_info() const override;
 
-    inline OptixTraverableHandle get_root_handle() const {
+    inline OptixTraversableHandle get_root_handle() const {
         return root_handle;
     }
 
