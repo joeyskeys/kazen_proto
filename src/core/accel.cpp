@@ -571,7 +571,7 @@ void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
     };
 
     OptixAccelBuildOptions gas_accel_options = {
-        .buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION,
+        .buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION & OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS,
         .operation = OPTIX_BUILD_OPERATION_BUILD
     };
 

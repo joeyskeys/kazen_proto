@@ -1,7 +1,7 @@
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/argparse.h>
 
-#include <optix_function_table_definition.h>
+//#include <optix_function_table_definition.h>
 
 #include "base/vec.h"
 #include "core/accel.h"
@@ -12,6 +12,16 @@
 using RaygenRecord   = GenericLocalRecord<RaygenData>;
 using MissRecord     = GenericLocalRecord<MissData>;
 using HitGroupRecord = GenericLocalRecord<HitGroupData>;
+
+const size_t MAT_COUNT = 1;
+
+const std::array<float3, MAT_COUNT> g_emission_colors = {
+    {0.8f, 0.8f, 0.8f}
+};
+
+const std::array<float3, MAT_COUNT> g_diffuse_colors = {
+    {0.8f, 0.05f, 0.05f}
+};
 
 int main(int argc, const char **argv) {
     std::string outfile;
@@ -123,7 +133,6 @@ int main(int argc, const char **argv) {
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(records[MISS]), ms_sbt,
         ms_record_size * RAY_TYPE_COUNT, cudaMemcpyHostToDevice));
 
-    const size_t MAT_COUNT = 1;
     size_t hg_record_size = sizeof(HitGroupRecord);
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&records[CLOSESTHIT]),
         hg_record_size * RAY_TYPE_COUNT * MAT_COUNT));
@@ -133,7 +142,7 @@ int main(int argc, const char **argv) {
         OPTIX_CHECK(optixSbtRecordPackHeader(ch_pg, &hg_records[sbt_idx]));
         hg_records[sbt_idx].data.emission_color = g_emission_colors[i];
         hg_records[sbt_idx].data.diffuse_color = g_diffuse_colors[i];
-        hg_records[sbt_idx].data.vertices = reinterpret_cast<float3*>();
+        hg_records[sbt_idx].data.vertices = nullptr;
     }
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(records[CLOSESTHIT]), hg_records,
         hg_record_size * RAY_TYPE_COUNT * MAT_COUNT, cudaMemcpyHostToDevice));

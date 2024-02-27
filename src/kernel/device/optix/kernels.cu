@@ -260,13 +260,17 @@ extern "C" __global__ void __closesthit_radiance() {
     HitGroupData* rt_data = reinterpret_cast<HitGroupData*>(optixGetSbtDataPointer());
 
     const int prim_idx = optixGetPrimitiveIndex();
+    auto gas = optixGetGASTraversableHandle();
+    auto sbt_idx = optixGetSbtGASIndex();
     const float3 ray_dir = optixGetWorldRayDirection();
     const int vert_idx_offset = prim_idx * 3;
 
-    const float3 v0 = make_float3(rt_data->vertices[vert_idx_offset    ]);
-    const float3 v1 = make_float3(rt_data->vertices[vert_idx_offset + 1]);
-    const float3 v2 = make_float3(rt_data->vertices[vert_idx_offset + 2]);
-    const float3 N_0 = normalize(cross(v1 - v0, v2 - v0));
+    //const float3 v0 = make_float3(rt_data->vertices[vert_idx_offset    ]);
+    //const float3 v1 = make_float3(rt_data->vertices[vert_idx_offset + 1]);
+    //const float3 v2 = make_float3(rt_data->vertices[vert_idx_offset + 2]);
+    float3 verts[3];
+    optixGetTriangleVertexData(gas, prim_idx, sbt_idx, 0.f, verts);
+    const float3 N_0 = normalize(cross(verts[1] - verts[0], verts[2] - verts[0]));
     const float3 N  = faceforward(N_0, -ray_dir, N_0);
     const float3 P  = optixGetWorldRayOrigin() + optixGetRayTmax() * ray_dir;
     ShaderGlobalTmp sg = load_CH_sg();
