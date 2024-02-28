@@ -1,11 +1,11 @@
 #pragma once
 
-#include <type_traits>
+#include <cuda/std/type_traits>
+
 #include <vector_functions.h>
 #include <vector_types.h>
 
-#include "base/vec.h"
-#include "kernel/device/optix/device_config.h"
+#include "device/optix/device_config.h"
 
 // TODO: unify these interface with the CPU side code which will help
 // to unify the general kernal code(XPU)
@@ -75,8 +75,8 @@ VEC_OP_WITH_SCALAR(*)
 VEC_OP_WITH_SCALAR(/)
 
 template <typename T>
-concept cuda_floats = std::is_same_v<float2, T> &&
-    std::is_same_v<float3, T> && std::is_same_v<float4, T>;
+concept cuda_floats = cuda::std::is_same_v<float2, T> &&
+    cuda::std::is_same_v<float3, T> && cuda::std::is_same_v<float4, T>;
 
 // Special one for operator *
 template <cuda_floats T>
@@ -113,10 +113,6 @@ kazen_inline kazen_hostdevice float dot(const T& a, const T& b) {
     return hsum(a * b);
 }
 
-kazen_inline kazen_hostdevice float3 cross(const float3& a, const float3& b) {
-    return make_float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-}
-
 template <typename T>
 kazen_inline kazen_hostdevice float length(const T& a) {
     return sqrtf(dot(a, a));
@@ -143,15 +139,4 @@ kazen_inline kazen_hostdevice T reflect(const T& i, const T& n) {
 template <typename T>
 kazen_inline kazen_hostdevice T faceforward(const T& n, const T& i, const T& nref) {
     return n * copysignf(1.f, dot(i, nref));
-}
-
-// Host side conversion func
-template <typename T>
-auto convert_to_cuda_type(const T& a) {
-    if constexpr (sizeof(T) == 8)
-        return make_float2(a[0], a[1]);
-    else if constexpr (sizeof(T) == 12)
-        return make_float3(a[0], a[1], a[2]);
-    else
-        return make_float4(a[0], a[1], a[2], a[3]);
 }

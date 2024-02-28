@@ -7,6 +7,7 @@
 #include "core/accel.h"
 #include "core/optix_utils.h"
 #include "kernel/types.h"
+#include "kernel/hostutils.h"
 #include "kernel/mathutils.h"
 
 using RaygenRecord   = GenericLocalRecord<RaygenData>;
@@ -21,6 +22,35 @@ const std::array<float3, MAT_COUNT> g_emission_colors = {
 
 const std::array<float3, MAT_COUNT> g_diffuse_colors = {
     {0.8f, 0.05f, 0.05f}
+};
+
+const unsigned int payload_semantics[18] = {
+    // RadiancePRD::attenuation
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ_WRITE | OPTIX_PAYLOAD_SEMANTICS_CH_READ_WRITE,
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ_WRITE | OPTIX_PAYLOAD_SEMANTICS_CH_READ_WRITE,
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ_WRITE | OPTIX_PAYLOAD_SEMANTICS_CH_READ_WRITE,
+    // RadiancePRD::seed
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ_WRITE | OPTIX_PAYLOAD_SEMANTICS_CH_READ_WRITE,
+    // RadiancePRD::depth
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ_WRITE | OPTIX_PAYLOAD_SEMANTICS_CH_READ_WRITE,
+    // RadiancePRD::emitted
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ | OPTIX_PAYLOAD_SEMANTICS_CH_WRITE | OPTIX_PAYLOAD_SEMANTICS_MS_WRITE,
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ | OPTIX_PAYLOAD_SEMANTICS_CH_WRITE | OPTIX_PAYLOAD_SEMANTICS_MS_WRITE,
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ | OPTIX_PAYLOAD_SEMANTICS_CH_WRITE | OPTIX_PAYLOAD_SEMANTICS_MS_WRITE,
+    // RadiancePRD::radiance
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ | OPTIX_PAYLOAD_SEMANTICS_CH_WRITE | OPTIX_PAYLOAD_SEMANTICS_MS_WRITE,
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ | OPTIX_PAYLOAD_SEMANTICS_CH_WRITE | OPTIX_PAYLOAD_SEMANTICS_MS_WRITE,
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ | OPTIX_PAYLOAD_SEMANTICS_CH_WRITE | OPTIX_PAYLOAD_SEMANTICS_MS_WRITE,
+    // RadiancePRD::origin
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ | OPTIX_PAYLOAD_SEMANTICS_CH_WRITE,
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ | OPTIX_PAYLOAD_SEMANTICS_CH_WRITE,
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ | OPTIX_PAYLOAD_SEMANTICS_CH_WRITE,
+    // RadiancePRD::direction
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ | OPTIX_PAYLOAD_SEMANTICS_CH_WRITE,
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ | OPTIX_PAYLOAD_SEMANTICS_CH_WRITE,
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ | OPTIX_PAYLOAD_SEMANTICS_CH_WRITE,
+    // RadiancePRD::done
+    OPTIX_PAYLOAD_SEMANTICS_TRACE_CALLER_READ | OPTIX_PAYLOAD_SEMANTICS_CH_WRITE | OPTIX_PAYLOAD_SEMANTICS_MS_WRITE
 };
 
 int main(int argc, const char **argv) {
@@ -57,17 +87,26 @@ int main(int argc, const char **argv) {
     ctx_options.logCallbackLevel = 4;
     auto ctx = create_optix_ctx(&ctx_options);
 
-    OptixModuleCompileOptions mod_options{
-        .optLevel = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0,
-        .debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL
+    OptixPayloadType payload_type {
+        .numPayloadValues = sizeof(payload_semantics) / sizeof(payload_semantics[0]),
+        .payloadSemantics = payload_semantics
     };
+
+    OptixModuleCompileOptions mod_options {
+        .optLevel = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0,
+        .debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL,
+        .numPayloadTypes = 1,
+        .payloadTypes = &payload_type
+    };
+
     OptixPipelineCompileOptions ppl_compile_options {
         .usesMotionBlur = false,
-        .numPayloadValues = 2,
+        .numPayloadValues = 0,
         .numAttributeValues = 2,
         .exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE,
         .pipelineLaunchParamsVariableName = "params"
     };
+
     OptixModule mod;
     load_optix_module_cu("../src/kernel/device/optix/kernels.cu",
         ctx, &mod_options, &ppl_compile_options, &mod);
@@ -90,7 +129,7 @@ int main(int argc, const char **argv) {
         .kind = OPTIX_PROGRAM_GROUP_KIND_MISS,
         .miss = {
             .module = mod,
-            .entryFunctionName = "__miss_radiance"
+            .entryFunctionName = "__miss__radiance"
         }
     };
     create_optix_pg(ctx, &miss_pg_desc, 1, &pg_options, &miss_pg);
@@ -99,7 +138,7 @@ int main(int argc, const char **argv) {
         .kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP,
         .hitgroup = {
             .moduleCH = mod,
-            .entryFunctionNameCH = "__closesthit_radiance"
+            .entryFunctionNameCH = "__closesthit__radiance"
         }
     };
     create_optix_pg(ctx, &ch_pg_desc, 1, &pg_options, &ch_pg);

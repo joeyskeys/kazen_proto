@@ -16,7 +16,7 @@
 
 #include "core/scene.h"
 #include "core/optix_utils.h"
-#include "kernel/mathutils.h"
+#include "kernel/hostutils.h"
 #include "shading/shader.h"
 
 enum ETag {

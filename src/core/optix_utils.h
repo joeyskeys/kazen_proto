@@ -75,7 +75,7 @@ enum OPTIX_STAGE {
 };
 
 #define CUDA_NVRTC_OPTIONS \
-    "-std=c++14", \
+    "-std=c++20", \
     "-arch", \
     "compute_50", \
     "-use_fast_math", \

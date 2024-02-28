@@ -3,7 +3,7 @@
 #include <cuda/random.h>
 
 #include "types.h"
-#include "vec_math.h"
+#include "mathutils.h"
 
 extern "C" {
     __constant__ Params params;
@@ -109,7 +109,7 @@ __global__ void __raygen__main() {
             static_cast<float>(idx.x) / static_cast<float>(w),
             static_cast<float>(idx.y) / static_cast<float>(h)
             ) - 1.f;
-        float3 ray_dir = normalize(d.x * U + d.y * V + w);
+        float3 ray_dir = normalize(d.x * U + d.y * V + W);
         float3 ray_pos = eye;
 
         ShaderGlobalTmp sg {
@@ -121,7 +121,7 @@ __global__ void __raygen__main() {
         radiance += integrator_li(params.handle, ray_pos, ray_dir, sg);
     } while(--i);
 
-    radiance /= sample_cnt;
+    radiance /= params.sample_cnt;
     auto output = reinterpret_cast<float3*>(params.image);
     output[idx.y * w + idx.x] = radiance;
 }
@@ -255,7 +255,7 @@ static __forceinline__ __device__ bool trace_occlusion(
     return optixHitObjectIsHit();
 }
 
-extern "C" __global__ void __closesthit_radiance() {
+extern "C" __global__ void __closesthit__radiance() {
     optixSetPayloadTypes(PAYLOAD_TYPE_RADIANCE);
     HitGroupData* rt_data = reinterpret_cast<HitGroupData*>(optixGetSbtDataPointer());
 
@@ -263,7 +263,7 @@ extern "C" __global__ void __closesthit_radiance() {
     auto gas = optixGetGASTraversableHandle();
     auto sbt_idx = optixGetSbtGASIndex();
     const float3 ray_dir = optixGetWorldRayDirection();
-    const int vert_idx_offset = prim_idx * 3;
+    //const int vert_idx_offset = prim_idx * 3;
 
     //const float3 v0 = make_float3(rt_data->vertices[vert_idx_offset    ]);
     //const float3 v1 = make_float3(rt_data->vertices[vert_idx_offset + 1]);
@@ -315,7 +315,8 @@ extern "C" __global__ void __closesthit_radiance() {
         }
     }
 
-    sg.radiance = light.emission * weight;
+    //sg.radiance = light.emission * weight;
+    sg.radiance = make_float3(2.f, 2.f, 2.f) * weight;
     sg.done = false;
 
     store_CH_sg(sg);
