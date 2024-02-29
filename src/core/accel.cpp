@@ -526,11 +526,99 @@ void OptixAccel::add_triangle(std::shared_ptr<Triangle>& t) {
 
 }
 
+void OptixAccel::add_trianglearray(std::shared_ptr<TriangleArray>& t) {
+    CUdeviceptr d_vertices, d_trans;
+    const size_t vertices_size = t->converted_verts.size() * sizeof(Vec4f);
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_vertices), vertices_size));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_vertices), t->converted_verts.data(),
+        vertices_size, cudaMemcpyHostToDevice));
+    const size_t trans_size = sizeof(float) * 12;
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_trans), trans_size));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_trans), t->local_to_world.mat.transpose().data(),
+        trans_size, cudaMemcpyHostToDevice));
+
+    uint32_t input_flags[1] = { OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT };
+    OptixBuildInput gas_input {
+        .type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES,
+        .triangleArray = {
+            .vertexBuffers = &d_vertices,
+            .numVertices = static_cast<uint32_t>(t->converted_verts.size()),
+            .vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3,
+            .vertexStrideInBytes = sizeof(float4),
+            .preTransform = d_trans,
+            .flags = input_flags,
+            .numSbtRecords = 1,
+            .sbtIndexOffsetBuffer = 0,
+            .sbtIndexOffsetSizeInBytes = sizeof(uint32_t),
+            .sbtIndexOffsetStrideInBytes = sizeof(uint32_t),
+            .transformFormat = OPTIX_TRANSFORM_FORMAT_MATRIX_FLOAT12
+        }
+    };
+
+    OptixAccelBuildOptions gas_accel_options = {
+        .buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS,
+        .operation = OPTIX_BUILD_OPERATION_BUILD
+    };
+
+    OptixAccelBufferSizes gas_buf_sizes;
+    OPTIX_CHECK(optixAccelComputeMemoryUsage(
+        ctx,
+        &gas_accel_options,
+        &gas_input,
+        1,
+        &gas_buf_sizes
+    ));
+
+    CUdeviceptr d_tmp_buf;
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_tmp_buf), gas_buf_sizes.tempSizeInBytes));
+
+    CUdeviceptr d_non_compact_output;
+    size_t compact_size_offset = round_up<size_t>(gas_buf_sizes.outputSizeInBytes, 8ull);
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_non_compact_output), compact_size_offset + 8));
+
+    OptixAccelEmitDesc emit_prop = {
+        .result = (CUdeviceptr)((char*)d_non_compact_output + compact_size_offset),
+        .type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE
+    };
+
+    OptixTraversableHandle gas_handle;
+    OPTIX_CHECK(optixAccelBuild(ctx, \
+                                0, \
+                                &gas_accel_options, \
+                                &gas_input, \
+                                1, \
+                                d_tmp_buf, \
+                                gas_buf_sizes.tempSizeInBytes, \
+                                d_non_compact_output, \
+                                gas_buf_sizes.outputSizeInBytes, \
+                                &gas_handle, \
+                                &emit_prop, \
+                                1));
+    
+    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_tmp_buf)));
+    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_vertices)));
+
+    size_t compact_size;
+    CUDA_CHECK(cudaMemcpy(&compact_size, (void*)emit_prop.result, sizeof(size_t), cudaMemcpyDeviceToHost));
+
+    CUdeviceptr d_output;
+    if (compact_size < gas_buf_sizes.outputSizeInBytes) {
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_output), compact_size));
+        OPTIX_CHECK(optixAccelCompact(ctx, 0, gas_handle, d_output, compact_size, &gas_handle));
+        CUDA_CHECK(cudaFree((void*)d_non_compact_output));
+    }
+    else {
+        d_output = d_non_compact_output;
+    }
+
+    handles.emplace(t->name, std::make_pair(gas_handle, d_output));
+}
+
 void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
     CUdeviceptr d_vertices, d_indices, d_trans;
-    const size_t vertices_size = t->verts.size() * sizeof(Vec3f);
+    const size_t vertices_size = t->converted_verts.size() * sizeof(Vec4f);
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_vertices), vertices_size));
-    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_vertices), t->verts.data(),
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_vertices), t->converted_verts.data(),
         vertices_size, cudaMemcpyHostToDevice));
     const size_t indices_size = t->indice.size() * sizeof(Vec3i);
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_indices), indices_size));
@@ -541,15 +629,14 @@ void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_trans), t->local_to_world.mat.transpose().data(),
         trans_size, cudaMemcpyHostToDevice));
 
-    uint32_t input_flags[2] = {OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT,
-        OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS};
+    uint32_t input_flags[1] = { OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT };
     OptixBuildInput gas_input {
         .type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES,
         .triangleArray = {
             .vertexBuffers = &d_vertices,
-            .numVertices = static_cast<uint32_t>(t->verts.size()),
+            .numVertices = static_cast<uint32_t>(t->converted_verts.size()),
             .vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3,
-            .vertexStrideInBytes = sizeof(float3),
+            .vertexStrideInBytes = sizeof(float4),
             .indexBuffer = d_indices,
             .numIndexTriplets = static_cast<uint32_t>(t->indice.size()),
             .indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3,
@@ -566,12 +653,13 @@ void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
              */
             .sbtIndexOffsetBuffer = 0,
             .sbtIndexOffsetSizeInBytes = sizeof(uint32_t),
-            .sbtIndexOffsetStrideInBytes = sizeof(uint32_t)
+            .sbtIndexOffsetStrideInBytes = sizeof(uint32_t),
+            .transformFormat = OPTIX_TRANSFORM_FORMAT_MATRIX_FLOAT12
         }
     };
 
     OptixAccelBuildOptions gas_accel_options = {
-        .buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION & OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS,
+        .buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS,
         .operation = OPTIX_BUILD_OPERATION_BUILD
     };
 

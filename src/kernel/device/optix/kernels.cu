@@ -27,16 +27,18 @@ static __forceinline__ __device__ float3 integrator_li(
     float                   tmax = 1e16f)
 {
     float3 ret = make_float3(0.f);
+
+    unsigned int u0, u1, u2, u3, u4, u5, u6, u7, u8, u9, u10, u11,
+        u12, u13, u14, u15, u16, u17;
+
+    u0 = __float_as_uint(sg.attenuation.x);
+    u1 = __float_as_uint(sg.attenuation.y);
+    u2 = __float_as_uint(sg.attenuation.z);
+    u3 = sg.seed;
+    u4 = sg.depth;
+
     while (true) {
         // SER opted ray tracing
-        unsigned int u0, u1, u2, u3, u4, u5, u6, u7, u8, u9, u10, u11,
-            u12, u13, u14, u15, u16, u17;
-
-        u0 = __float_as_uint(sg.attenuation.x);
-        u1 = __float_as_uint(sg.attenuation.y);
-        u2 = __float_as_uint(sg.attenuation.z);
-        u3 = sg.seed;
-        u4 = sg.depth;
 
         optixTraverse(
             PAYLOAD_TYPE_RADIANCE,
@@ -72,8 +74,9 @@ static __forceinline__ __device__ float3 integrator_li(
         sg.done = u17;
 
         // Trace result computation
-        ret += sg.emitted;
-        ret += sg.radiance * sg.attenuation;
+        //ret += sg.emitted;
+        //ret += sg.radiance * sg.attenuation;
+        ret += sg.radiance;
 
         const float p = dot( sg.attenuation, make_float3( 0.30f, 0.59f, 0.11f ) );
         const bool done = sg.done  || rnd( sg.seed ) > p;
@@ -86,6 +89,7 @@ static __forceinline__ __device__ float3 integrator_li(
 
         ++sg.depth;
     }
+    return ret;
 }
 
 
@@ -316,7 +320,8 @@ extern "C" __global__ void __closesthit__radiance() {
     }
 
     //sg.radiance = light.emission * weight;
-    sg.radiance = make_float3(2.f, 2.f, 2.f) * weight;
+    //sg.radiance = make_float3(2.f, 2.f, 2.f) * weight;
+    sg.radiance = make_float3(1.f, 0.2f, 0.3f);
     sg.done = false;
 
     store_CH_sg(sg);

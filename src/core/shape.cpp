@@ -522,6 +522,12 @@ void Triangle::print_info() const {
     print_bound();
 }
 
+void TriangleArray::convert_to_4f_alignment() {
+    for (const auto& vert : verts) {
+        converted_verts.emplace_back(Vec4f(vert, 0.f));
+    }
+}
+
 bool TriangleMesh::intersect(const Ray& r, Intersection& isect) const {
     auto local_r = world_to_local.apply(r);
     bool hit = false;
@@ -697,6 +703,12 @@ void TriangleMesh::setup_dpdf() {
             m_dpdf.append(area);
         }
         m_area = m_dpdf.normalize();
+    }
+}
+
+void TriangleMesh::convert_to_4f_alignment() {
+    for (const auto& vert : verts) {
+        converted_verts.emplace_back(Vec4f(vert, 0.f));
     }
 }
 

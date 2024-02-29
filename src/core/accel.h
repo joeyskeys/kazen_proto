@@ -22,6 +22,7 @@ public:
     virtual void add_sphere(std::shared_ptr<Sphere>& s);
     virtual void add_quad(std::shared_ptr<Quad>& q);
     virtual void add_triangle(std::shared_ptr<Triangle>& t);
+    virtual void add_trianglearray(std::shared_ptr<TriangleArray>& t) {}
     virtual void add_trianglemesh(std::shared_ptr<TriangleMesh>& t);
     virtual void add_spheres(std::vector<std::shared_ptr<Sphere>>& ss) {}
     virtual void add_instances(const std::string& name,
@@ -95,6 +96,7 @@ public:
     void add_sphere(std::shared_ptr<Sphere>& s) override;
     void add_quad(std::shared_ptr<Quad>& q) override;
     void add_triangle(std::shared_ptr<Triangle>& t) override;
+    void add_trianglearray(std::shared_ptr<TriangleArray>&) override;
     void add_trianglemesh(std::shared_ptr<TriangleMesh>&) override;
     void add_spheres(std::vector<std::shared_ptr<Sphere>>& ss) override;
     void add_instances(const std::string& name,

@@ -156,6 +156,35 @@ public:
     Vec3f normal;
 };
 
+class TriangleArray: public Shape {
+public:
+    TriangleArray(const size_t id)
+        : Shape(id)
+    {}
+
+    TriangleArray(const Transform& l2w, std::vector<Vec3f>&& vs, const std::string& n,
+        const std::string& m = "", const bool is_light = false)
+        : Shape(l2w, n, m, is_light, 0)
+        , verts(vs)
+    {}
+
+    TriangleArray(const Transform& l2w, const std::vector<Vec4f>& vs, const std::string& n,
+        const std::string& m = "", const bool is_light = false)
+        : Shape(l2w, n, m, is_light, 0)
+        , converted_verts(vs)
+    {}
+
+    bool intersect(const Ray& r, Intersection& isect) const override { return false; }
+    bool intersect(const Ray& r, float& t) const override { return false; }
+    void sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const override {}
+    float area() const override { return 0.f; }
+
+    std::vector<Vec3f> verts;
+    std::vector<Vec4f> converted_verts;
+
+    void convert_to_4f_alignment();
+};
+
 class TriangleMesh : public Shape {
 public:
     TriangleMesh(const size_t id)
@@ -193,8 +222,10 @@ public:
 
     float surface_area(uint32_t i) const;
     void setup_dpdf();
+    void convert_to_4f_alignment();
 
     std::vector<Vec3f>  verts;
+    std::vector<Vec4f>  converted_verts;
     std::vector<Vec3f>  norms;
     std::vector<Vec2f>  uvs;
     std::vector<Vec3i>  uv_idx;
