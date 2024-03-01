@@ -26,6 +26,21 @@ struct ParamsForTest {
     unsigned        image_width;
 };
 
+struct ParamsTriangle {
+    CUdeviceptr             image;
+    unsigned int            w;
+    unsigned int            h;
+    float3                  eye;
+    float3                  U, V, W;
+    OptixTraversableHandle  handle;
+};
+
+struct RaygenDataTriangle {};
+struct MissDataTriangle {
+    float3 bg_color;
+};
+struct HitgroupDataTriangle {};
+
 struct Params {
     // Output
     CUdeviceptr     image;

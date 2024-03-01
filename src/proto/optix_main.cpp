@@ -196,7 +196,7 @@ int main(int argc, const char **argv) {
     sbt.hitgroupRecordCount         = RAY_TYPE_COUNT * MAT_COUNT;
 
     CUdeviceptr output;
-    auto buf_size = w * h * 3 *sizeof(float);
+    auto buf_size = w * h * 4 * sizeof(float);
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&output), buf_size));
     CUDA_CHECK(cudaMemset(reinterpret_cast<void*>(output), 0, buf_size));
 
@@ -413,11 +413,14 @@ int main(int argc, const char **argv) {
     OPTIX_CHECK(optixLaunch(ppl, stream, param_ptr, sizeof(Params),
         &sbt, w, h, 1));
 
+    CUDA_CHECK(cudaStreamSynchronize(stream));
+    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(param_ptr)));
+
     // Output the image
-    std::vector<float> host_data(w * h * 3);
+    std::vector<float> host_data(w * h * 4);
     CUDA_CHECK(cudaMemcpy(host_data.data(), reinterpret_cast<void*>(output),
         buf_size, cudaMemcpyDeviceToHost));
-    auto spec = OIIO::ImageSpec(w, h, 3, OIIO::TypeDesc::UINT8);
+    auto spec = OIIO::ImageSpec(w, h, 4, OIIO::TypeDesc::UINT8);
     auto oiio_out = OIIO::ImageOutput::create("test.png");
     oiio_out->open("test.png", spec);
     oiio_out->write_image(OIIO::TypeDesc::FLOAT, host_data.data());

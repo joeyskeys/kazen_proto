@@ -84,7 +84,8 @@ enum OPTIX_STAGE {
     "-rdc", \
     "true", \
     "-D__x86_64", \
-    "-DOPTIX_OPTIONAL_FEATURE_OPTIX7"
+    "-DOPTIX_OPTIONAL_FEATURE_OPTIX7", \
+    "--device-debug"
 
 // TODO : remove it later
 #define OPTIX_INC_DIRS \

@@ -6,7 +6,7 @@
 #include "mathutils.h"
 
 extern "C" {
-    __constant__ Params params;
+    __constant__ ParamsTriangle params;
 }
 
 extern "C"
@@ -16,6 +16,57 @@ __global__ void __raygen__fixed() {
     float3* output = reinterpret_cast<float3*>(params.image);
     output[launch_idx.y * params.width + launch_idx.x] =
         make_float3(data->r, data->g, data->b);
+}
+
+static __forceinline__ __device__ void set_payload_triangle(float3 p) {
+    optixSetPayload_0(__float_as_uint(p.x));
+    optixSetPayload_1(__float_as_uint(p.y));
+    optixSetPayload_2(__float_as_uint(p.z));
+}
+
+extern "C" __global__ void __raygen_rg_triangle() {
+    const uint3 idx = optixGetLaunchIndex();
+    const uint3 dim = optixGetLaunchDimensions();
+
+    float3 ray_origin, ray_direction;
+    ray_origin = params.eye;
+    const float2 d = 2.f * make_float2(
+        static_cast<float>(idx.x) / static_cast<float>(dim.x),
+        static_cast<float>(idx.y) / static_cast<float>(dim.y)
+    ) - 1.f;
+    ray_direction = normalize(d.x * params.U + d.y * params.V + W);
+    
+    unsigned int p0, p1, p2;
+    optixTrace(
+        params.handle,
+        ray_origin,
+        ray_direction,
+        0.f,
+        1e16f,
+        0.f,
+        OptixVisibilityMask(255),
+        OPTIX_RAY_FLAG_NONE,
+        0,
+        1,
+        0,
+        p0, p1, p2);
+    float3 result;
+    result.x = __uint_as_float(p0);
+    result.y = __uint_as_float(p1);
+    result.z = __uint_as_float(p2);
+
+    auto output = reinterpret_cast<float3*>(params.image);
+    output[idx.y * params.w + idx.x] = result;
+}
+
+extern "C" __global__ void __miss__ms_triangle() {
+    MissDataTriangle* miss_data = reinterpret_cast<MissDataTriangle*>(optixGetSbtDataPointer());
+    set_payload_triangle(miss_data->bg_color);
+}
+
+extern "C" __global__ void __closesthit_ch_triangle() {
+    const float2 barycentrics = optixGetTriangeBarycentrics();
+    set_payload_triangle(make_float3(barycentrics, 1.0f));
 }
 
 static __forceinline__ __device__ float3 integrator_li(
@@ -126,8 +177,9 @@ __global__ void __raygen__main() {
     } while(--i);
 
     radiance /= params.sample_cnt;
-    auto output = reinterpret_cast<float3*>(params.image);
-    output[idx.y * w + idx.x] = radiance;
+    auto output = reinterpret_cast<float4*>(params.image);
+    output[idx.y * w + idx.x] = make_float4(radiance.x, radiance.y, radiance.z, 1.0f);
+    //output[idx.y * w + idx.x] = make_float4(1.f, 1.f, 0.f, 1.f);
 }
 
 static __forceinline__ __device__ void store_MS_sg(ShaderGlobalTmp sg) {
