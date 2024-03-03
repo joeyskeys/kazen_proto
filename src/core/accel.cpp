@@ -528,9 +528,19 @@ void OptixAccel::add_triangle(std::shared_ptr<Triangle>& t) {
 
 void OptixAccel::add_trianglearray(std::shared_ptr<TriangleArray>& t) {
     CUdeviceptr d_vertices, d_trans;
-    const size_t vertices_size = t->converted_verts.size() * sizeof(Vec4f);
+    size_t vertices_size = 0;
+    void* data_ptr = nullptr;
+    if (t->use_v3f) {
+        vertices_size = t->verts.size() * sizeof(Vec3f);
+        data_ptr = t->verts.data();
+    }
+    else {
+        vertices_size = t->converted_verts.size() * sizeof(Vec4f);
+        data_ptr = t->converted_verts.data();
+    }
+
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_vertices), vertices_size));
-    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_vertices), t->converted_verts.data(),
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_vertices), data_ptr,
         vertices_size, cudaMemcpyHostToDevice));
     const size_t trans_size = sizeof(float) * 12;
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_trans), trans_size));
@@ -542,7 +552,7 @@ void OptixAccel::add_trianglearray(std::shared_ptr<TriangleArray>& t) {
         .type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES,
         .triangleArray = {
             .vertexBuffers = &d_vertices,
-            .numVertices = static_cast<uint32_t>(t->converted_verts.size()),
+            .numVertices = static_cast<uint32_t>(vertices_size),
             .vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3,
             .vertexStrideInBytes = sizeof(float4),
             .preTransform = d_trans,
@@ -616,9 +626,19 @@ void OptixAccel::add_trianglearray(std::shared_ptr<TriangleArray>& t) {
 
 void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
     CUdeviceptr d_vertices, d_indices, d_trans;
-    const size_t vertices_size = t->converted_verts.size() * sizeof(Vec4f);
+    size_t vertices_size = 0;
+    void* data_ptr = nullptr;
+    if (t->use_v3f) {
+        vertices_size = t->verts.size() * sizeof(Vec3f);
+        data_ptr = t->verts.data();
+    }
+    else {
+        vertices_size = t->converted_verts.size() * sizeof(Vec4f);
+        data_ptr = t->converted_verts.data();
+    }
+
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_vertices), vertices_size));
-    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_vertices), t->converted_verts.data(),
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_vertices), data_ptr,
         vertices_size, cudaMemcpyHostToDevice));
     const size_t indices_size = t->indice.size() * sizeof(Vec3i);
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_indices), indices_size));
@@ -634,7 +654,7 @@ void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
         .type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES,
         .triangleArray = {
             .vertexBuffers = &d_vertices,
-            .numVertices = static_cast<uint32_t>(t->converted_verts.size()),
+            .numVertices = static_cast<uint32_t>(vertices_size),
             .vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3,
             .vertexStrideInBytes = sizeof(float4),
             .indexBuffer = d_indices,

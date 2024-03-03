@@ -526,6 +526,8 @@ void TriangleArray::convert_to_4f_alignment() {
     for (const auto& vert : verts) {
         converted_verts.emplace_back(Vec4f(vert, 0.f));
     }
+    verts.clear();
+    use_v3f = false;
 }
 
 bool TriangleMesh::intersect(const Ray& r, Intersection& isect) const {
@@ -710,6 +712,8 @@ void TriangleMesh::convert_to_4f_alignment() {
     for (const auto& vert : verts) {
         converted_verts.emplace_back(Vec4f(vert, 0.f));
     }
+    verts.clear();
+    use_v3f = false;
 }
 
 static std::shared_ptr<TriangleMesh> process_mesh(aiMesh* mesh, const aiScene* scene, const std::string& m) {

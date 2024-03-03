@@ -28,11 +28,12 @@ struct ParamsForTest {
 
 struct ParamsTriangle {
     CUdeviceptr             image;
-    unsigned int            w;
-    unsigned int            h;
+    unsigned int            width;
+    unsigned int            height;
     float3                  eye;
     float3                  U, V, W;
     OptixTraversableHandle  handle;
+    int                     sample_cnt;
 };
 
 struct RaygenDataTriangle {};

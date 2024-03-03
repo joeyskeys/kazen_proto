@@ -178,11 +178,11 @@ public:
     bool intersect(const Ray& r, float& t) const override { return false; }
     void sample(Vec3f& p, Vec3f& n, Vec2f& uv, float& pdf) const override {}
     float area() const override { return 0.f; }
+    void convert_to_4f_alignment();
 
     std::vector<Vec3f> verts;
     std::vector<Vec4f> converted_verts;
-
-    void convert_to_4f_alignment();
+    bool use_v3f = true;
 };
 
 class TriangleMesh : public Shape {
@@ -232,6 +232,7 @@ public:
     std::vector<Vec3i>  indice;
     DiscrectPDF         m_dpdf;
     float               m_area;
+    bool                use_v3f = true;
 };
 
 std::vector<std::shared_ptr<TriangleMesh>> load_triangle_mesh(const std::string& file_path, const size_t start_id, const std::string& m="");

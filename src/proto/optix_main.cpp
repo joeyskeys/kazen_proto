@@ -99,17 +99,20 @@ int main(int argc, const char **argv) {
         .payloadTypes = &payload_type
     };
 
+    OptixModuleCompileOptions mod_options_triangle = {};
+
     OptixPipelineCompileOptions ppl_compile_options {
         .usesMotionBlur = false,
-        .numPayloadValues = 0,
-        .numAttributeValues = 2,
+        .numPayloadValues = 3,
+        .numAttributeValues = 3,
         .exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE,
         .pipelineLaunchParamsVariableName = "params"
+        //.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE
     };
 
     OptixModule mod;
-    load_optix_module_cu("../src/kernel/device/optix/kernels.cu",
-        ctx, &mod_options, &ppl_compile_options, &mod);
+    load_optix_module_cu("../src/kernel/device/optix/kernels_triangle.cu",
+        ctx, &mod_options_triangle, &ppl_compile_options, &mod);
 
     OptixProgramGroup rg_pg = nullptr;
     OptixProgramGroup miss_pg = nullptr;
@@ -120,7 +123,7 @@ int main(int argc, const char **argv) {
         .kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN,
         .raygen = {
             .module = mod,
-            .entryFunctionName = "__raygen__main"
+            .entryFunctionName = "__raygen__rg_triangle"
         }
     };
     create_optix_pg(ctx, &rg_pg_desc, 1, &pg_options, &rg_pg);
@@ -129,7 +132,7 @@ int main(int argc, const char **argv) {
         .kind = OPTIX_PROGRAM_GROUP_KIND_MISS,
         .miss = {
             .module = mod,
-            .entryFunctionName = "__miss__radiance"
+            .entryFunctionName = "__miss__ms_triangle"
         }
     };
     create_optix_pg(ctx, &miss_pg_desc, 1, &pg_options, &miss_pg);
@@ -138,13 +141,13 @@ int main(int argc, const char **argv) {
         .kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP,
         .hitgroup = {
             .moduleCH = mod,
-            .entryFunctionNameCH = "__closesthit__radiance"
+            .entryFunctionNameCH = "__closesthit__ch_triangle"
         }
     };
     create_optix_pg(ctx, &ch_pg_desc, 1, &pg_options, &ch_pg);
 
     OptixPipeline ppl = nullptr;
-    const uint32_t max_trace_depth = 2;
+    const uint32_t max_trace_depth = 1;
     //std::vector<OptixProgramGroup> pgs { rg_pg, miss_pg };
     std::vector<OptixProgramGroup> pgs { rg_pg, miss_pg, ch_pg };
     OptixPipelineLinkOptions ppl_link_options{};
@@ -158,21 +161,24 @@ int main(int argc, const char **argv) {
 
     std::array<CUdeviceptr, 3> records;
 
-    const size_t rg_record_size = sizeof(RaygenRecord);
+    //const size_t rg_record_size = sizeof(RaygenRecord);
+    const size_t rg_record_size = sizeof(RaygenDataTriangle);
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&records[RAYGEN]), rg_record_size));
     RaygenRecord rg_sbt = {};
     OPTIX_CHECK(optixSbtRecordPackHeader(rg_pg, &rg_sbt));
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(records[RAYGEN]),
         &rg_sbt, rg_record_size, cudaMemcpyHostToDevice));
 
-    const size_t ms_record_size = sizeof(MissRecord);
+    //const size_t ms_record_size = sizeof(MissRecord);
+    const size_t ms_record_size = sizeof(MissDataTriangle);
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&records[MISS]), ms_record_size * RAY_TYPE_COUNT));
     MissRecord ms_sbt[1];
     OPTIX_CHECK(optixSbtRecordPackHeader(miss_pg, &ms_sbt[0]));
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(records[MISS]), ms_sbt,
         ms_record_size * RAY_TYPE_COUNT, cudaMemcpyHostToDevice));
 
-    size_t hg_record_size = sizeof(HitGroupRecord);
+    //size_t hg_record_size = sizeof(HitGroupRecord);
+    size_t hg_record_size = sizeof(HitgroupDataTriangle);
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&records[CLOSESTHIT]),
         hg_record_size * RAY_TYPE_COUNT * MAT_COUNT));
     HitGroupRecord hg_records[RAY_TYPE_COUNT * MAT_COUNT];
@@ -367,15 +373,25 @@ int main(int argc, const char **argv) {
     {  213.0f,  548.6f,  332.0f, 0.0f },
     {  343.0f,  548.6f,  332.0f, 0.0f }};
 
+    std::vector<Vec3f> verts_triangle = {
+        {-0.5f, -0.5f, 0.f},
+        { 0.5f,  0.5f, 0.f},
+        { 0.f,   0.5f, 0.f}
+    };
+
     /*
     auto mesh_ptr = std::make_shared<TriangleMesh>(base::Mat4f::identity(), vs,
         std::vector<Vec3f>(), std::vector<Vec2f>(), idx, "test", "shader");
     mesh_ptr->convert_to_4f_alignment();
     */
-    auto mesh_ptr = std::make_shared<TriangleArray>(base::Mat4f::identity(), g_vertices,
+    auto mesh_ptr = std::make_shared<TriangleArray>(base::Mat4f::identity(), std::move(verts_triangle),
         "test", "test");
     OptixAccel accel(ctx);
     accel.add_trianglearray(mesh_ptr);
+    auto root_instance_list = std::vector<std::string> {
+        "test"
+    };
+    accel.build(root_instance_list);
 
     CUstream stream;
     CUDA_CHECK(cudaStreamCreate(&stream));
@@ -392,11 +408,24 @@ int main(int argc, const char **argv) {
     float ratio = static_cast<float>(w) / h;
     float fov = to_radian(60.f);
     float scaled_height = std::tan(fov);
+    /*
     Params params {
         .image = output,
         .width = static_cast<int>(w),
         .height = static_cast<int>(h),
         .sample_cnt = 5,
+        .eye = eye,
+        .U = up * scaled_height,
+        .V = right * ratio * scaled_height,
+        .W = front,
+        .handle = accel.get_root_handle()
+    };
+    */
+
+    ParamsTriangle params {
+        .image = output,
+        .width = w,
+        .height = h,
         .eye = eye,
         .U = up * scaled_height,
         .V = right * ratio * scaled_height,
