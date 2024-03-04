@@ -46,8 +46,8 @@ extern "C" __global__ void __raygen__rg_triangle() {
     result.y = __uint_as_float(p1);
     result.z = __uint_as_float(p2);
 
-    auto output = reinterpret_cast<float3*>(params.image);
-    output[idx.y * params.width + idx.x] = result;
+    auto output = reinterpret_cast<float4*>(params.image);
+    output[idx.y * params.width + idx.x] = make_float4(result.x, result.y, result.z, 1.f);
 }
 
 extern "C" __global__ void __miss__ms_triangle() {
@@ -57,5 +57,6 @@ extern "C" __global__ void __miss__ms_triangle() {
 
 extern "C" __global__ void __closesthit__ch_triangle() {
     const float2 barycentrics = optixGetTriangleBarycentrics();
-    set_payload_triangle(make_float3(barycentrics, 1.0f));
+    //set_payload_triangle(make_float3(barycentrics, 1.0f));
+    set_payload_triangle(make_float3(0.5, 0.7, 0.9));
 }

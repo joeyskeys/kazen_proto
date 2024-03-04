@@ -1,4 +1,5 @@
 #include <OpenImageIO/imageio.h>
+#include <OpenImageIO/imagebufalgo.h>
 #include <OpenImageIO/argparse.h>
 
 //#include <optix_function_table_definition.h>
@@ -10,9 +11,12 @@
 #include "kernel/hostutils.h"
 #include "kernel/mathutils.h"
 
-using RaygenRecord   = GenericLocalRecord<RaygenData>;
-using MissRecord     = GenericLocalRecord<MissData>;
-using HitGroupRecord = GenericLocalRecord<HitGroupData>;
+//using RaygenRecord   = GenericLocalRecord<RaygenData>;
+//using MissRecord     = GenericLocalRecord<MissData>;
+//using HitGroupRecord = GenericLocalRecord<HitGroupData>;
+using RaygenRecord   = GenericLocalRecord<RaygenDataTriangle>;
+using MissRecord     = GenericLocalRecord<MissDataTriangle>;
+using HitGroupRecord = GenericLocalRecord<HitgroupDataTriangle>;
 
 const size_t MAT_COUNT = 1;
 
@@ -106,8 +110,8 @@ int main(int argc, const char **argv) {
         .numPayloadValues = 3,
         .numAttributeValues = 3,
         .exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE,
-        .pipelineLaunchParamsVariableName = "params"
-        //.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE
+        .pipelineLaunchParamsVariableName = "params",
+        .usesPrimitiveTypeFlags = static_cast<unsigned int>(OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE)
     };
 
     OptixModule mod;
@@ -161,33 +165,33 @@ int main(int argc, const char **argv) {
 
     std::array<CUdeviceptr, 3> records;
 
-    //const size_t rg_record_size = sizeof(RaygenRecord);
-    const size_t rg_record_size = sizeof(RaygenDataTriangle);
+    const size_t rg_record_size = sizeof(RaygenRecord);
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&records[RAYGEN]), rg_record_size));
     RaygenRecord rg_sbt = {};
     OPTIX_CHECK(optixSbtRecordPackHeader(rg_pg, &rg_sbt));
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(records[RAYGEN]),
         &rg_sbt, rg_record_size, cudaMemcpyHostToDevice));
 
-    //const size_t ms_record_size = sizeof(MissRecord);
-    const size_t ms_record_size = sizeof(MissDataTriangle);
+    const size_t ms_record_size = sizeof(MissRecord);
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&records[MISS]), ms_record_size * RAY_TYPE_COUNT));
     MissRecord ms_sbt[1];
+    ms_sbt[0].data.bg_color = {0.3f, 0.1f, 0.2f};
     OPTIX_CHECK(optixSbtRecordPackHeader(miss_pg, &ms_sbt[0]));
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(records[MISS]), ms_sbt,
         ms_record_size * RAY_TYPE_COUNT, cudaMemcpyHostToDevice));
 
-    //size_t hg_record_size = sizeof(HitGroupRecord);
-    size_t hg_record_size = sizeof(HitgroupDataTriangle);
+    size_t hg_record_size = sizeof(HitGroupRecord);
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&records[CLOSESTHIT]),
         hg_record_size * RAY_TYPE_COUNT * MAT_COUNT));
     HitGroupRecord hg_records[RAY_TYPE_COUNT * MAT_COUNT];
     for (int i = 0; i < MAT_COUNT; ++i) {
         const int sbt_idx = i * RAY_TYPE_COUNT + 0;
         OPTIX_CHECK(optixSbtRecordPackHeader(ch_pg, &hg_records[sbt_idx]));
+        /*
         hg_records[sbt_idx].data.emission_color = g_emission_colors[i];
         hg_records[sbt_idx].data.diffuse_color = g_diffuse_colors[i];
         hg_records[sbt_idx].data.vertices = nullptr;
+        */
     }
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(records[CLOSESTHIT]), hg_records,
         hg_record_size * RAY_TYPE_COUNT * MAT_COUNT, cudaMemcpyHostToDevice));
@@ -375,7 +379,7 @@ int main(int argc, const char **argv) {
 
     std::vector<Vec3f> verts_triangle = {
         {-0.5f, -0.5f, 0.f},
-        { 0.5f,  0.5f, 0.f},
+        { 0.5f, -0.5f, 0.f},
         { 0.f,   0.5f, 0.f}
     };
 
@@ -391,7 +395,8 @@ int main(int argc, const char **argv) {
     auto root_instance_list = std::vector<std::string> {
         "test"
     };
-    accel.build(root_instance_list);
+    //accel.build(root_instance_list);
+    auto gas_handle = accel.handles["test"].second;
 
     CUstream stream;
     CUDA_CHECK(cudaStreamCreate(&stream));
@@ -400,13 +405,15 @@ int main(int argc, const char **argv) {
     float3 eye = make_float3(0.f, 5.f, 10.f);
     float3 lookat = make_float3(0.f, 0.f, 0.f);
     */
-    float3 eye = make_float3(278.f, 273.f, -900.f);
-    float3 lookat = make_float3(278.f, 273.f, 330.f);
+    //float3 eye = make_float3(278.f, 273.f, -900.f);
+    //float3 lookat = make_float3(278.f, 273.f, 330.f);
+    float3 eye = make_float3(0.f, 0.f, 2.f);
+    float3 lookat = make_float3(0.f, 0.f, 0.f);
     float3 front = normalize(lookat - eye);
     float3 right = cross(front, make_float3(0, 1, 0));
     float3 up = cross(right, front);
     float ratio = static_cast<float>(w) / h;
-    float fov = to_radian(60.f);
+    float fov = to_radian(45.f / 2.f);
     float scaled_height = std::tan(fov);
     /*
     Params params {
@@ -427,10 +434,11 @@ int main(int argc, const char **argv) {
         .width = w,
         .height = h,
         .eye = eye,
-        .U = up * scaled_height,
-        .V = right * ratio * scaled_height,
+        .U = right * ratio * scaled_height,
+        .V = up * scaled_height,
         .W = front,
-        .handle = accel.get_root_handle()
+        //.handle = accel.get_root_handle()
+        .handle = gas_handle
     };
 
     CUdeviceptr param_ptr;
@@ -449,10 +457,10 @@ int main(int argc, const char **argv) {
     std::vector<float> host_data(w * h * 4);
     CUDA_CHECK(cudaMemcpy(host_data.data(), reinterpret_cast<void*>(output),
         buf_size, cudaMemcpyDeviceToHost));
-    auto spec = OIIO::ImageSpec(w, h, 4, OIIO::TypeDesc::UINT8);
-    auto oiio_out = OIIO::ImageOutput::create("test.png");
-    oiio_out->open("test.png", spec);
-    oiio_out->write_image(OIIO::TypeDesc::FLOAT, host_data.data());
+    auto buf_spec = OIIO::ImageSpec(w, h, 4, OIIO::TypeDesc::FLOAT);
+    auto image_buf = OIIO::ImageBuf(buf_spec, host_data.data());
+    image_buf = OIIO::ImageBufAlgo::flip(image_buf);
+    image_buf.write("test.png", OIIO::TypeDesc::UINT8);
 
     cudaFree(reinterpret_cast<void*>(sbt.raygenRecord));
     cudaFree(reinterpret_cast<void*>(sbt.missRecordBase));

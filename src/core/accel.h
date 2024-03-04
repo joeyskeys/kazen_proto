@@ -112,10 +112,12 @@ public:
         return root_handle;
     }
 
+public:
+    handle_map                          handles;
+    
 private:
     OptixDeviceContext                  ctx;
-    handle_map                          handles;
     OptixTraversableHandle              root_handle;
-    CUdeviceptr                         root_buf;
+    //CUdeviceptr                         root_buf;
     uint32_t                            inst_cnt = 0;
 };

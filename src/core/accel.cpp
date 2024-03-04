@@ -443,7 +443,7 @@ OptixAccel::~OptixAccel() {
     if (handles.size() > 0) {
         for (const auto& handle_pair : handles)
             CUDA_CHECK(cudaFree(reinterpret_cast<void*>(handle_pair.second.second)));
-        CUDA_CHECK(cudaFree(reinterpret_cast<void*>(root_buf)));
+        //CUDA_CHECK(cudaFree(reinterpret_cast<void*>(root_buf)));
     }
 }
 
@@ -547,14 +547,14 @@ void OptixAccel::add_trianglearray(std::shared_ptr<TriangleArray>& t) {
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_trans), t->local_to_world.mat.transpose().data(),
         trans_size, cudaMemcpyHostToDevice));
 
-    uint32_t input_flags[1] = { OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT };
+    uint32_t input_flags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
     OptixBuildInput gas_input {
         .type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES,
         .triangleArray = {
             .vertexBuffers = &d_vertices,
             .numVertices = static_cast<uint32_t>(vertices_size),
             .vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3,
-            .vertexStrideInBytes = sizeof(float4),
+            .vertexStrideInBytes = static_cast<unsigned int>(t->use_v3f ? sizeof(float3) : sizeof(float4)),
             .preTransform = d_trans,
             .flags = input_flags,
             .numSbtRecords = 1,
@@ -656,7 +656,7 @@ void OptixAccel::add_trianglemesh(std::shared_ptr<TriangleMesh>& t) {
             .vertexBuffers = &d_vertices,
             .numVertices = static_cast<uint32_t>(vertices_size),
             .vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3,
-            .vertexStrideInBytes = sizeof(float4),
+            .vertexStrideInBytes = static_cast<unsigned int>(t->use_v3f ? sizeof(float3) : sizeof(float4)),
             .indexBuffer = d_indices,
             .numIndexTriplets = static_cast<uint32_t>(t->indice.size()),
             .indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3,
