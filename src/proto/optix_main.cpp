@@ -395,8 +395,8 @@ int main(int argc, const char **argv) {
     auto root_instance_list = std::vector<std::string> {
         "test"
     };
-    //accel.build(root_instance_list);
-    auto gas_handle = accel.handles["test"].second;
+    //auto gas_handle = accel.handles["test"].second;
+    accel.build(root_instance_list);
 
     CUstream stream;
     CUDA_CHECK(cudaStreamCreate(&stream));
@@ -437,8 +437,8 @@ int main(int argc, const char **argv) {
         .U = right * ratio * scaled_height,
         .V = up * scaled_height,
         .W = front,
-        //.handle = accel.get_root_handle()
-        .handle = gas_handle
+        .handle = accel.get_root_handle()
+        //.handle = gas_handle
     };
 
     CUdeviceptr param_ptr;

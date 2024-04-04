@@ -748,7 +748,7 @@ void OptixAccel::add_instances(const std::string& name, const std::vector<std::s
     // Create an array of instances input first
     CUdeviceptr d_inst;
     size_t inst_size = handle_names.size() * sizeof(OptixInstance);
-    std::vector<OptixInstance> insts(handle_names.size());
+    std::vector<OptixInstance> insts;
     for (const auto& handle_name : handle_names) {
         auto handle_found = handles.find(handle_name);
         assert(handle_found != handles.end());
@@ -756,7 +756,7 @@ void OptixAccel::add_instances(const std::string& name, const std::vector<std::s
         OptixInstance inst;
         const auto optix_transform = base::transpose(trans.mat);
         memcpy(inst.transform, optix_transform.data(), sizeof(float) * 12);
-        inst.instanceId             = handles.size();
+        inst.instanceId             = insts.size();
         inst.visibilityMask         = 255;
         inst.sbtOffset              = inst_cnt;
         inst.flags                  = OPTIX_INSTANCE_FLAG_NONE;
