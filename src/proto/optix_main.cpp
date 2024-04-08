@@ -241,194 +241,54 @@ int main(int argc, const char **argv) {
         Vec3i{7, 2, 3}
     };
 
-    std::vector<base::Vec4f> g_vertices = {
-    // Floor  -- white lambert
-    {    0.0f,    0.0f,    0.0f, 0.0f },
-    {    0.0f,    0.0f,  559.2f, 0.0f },
-    {  556.0f,    0.0f,  559.2f, 0.0f },
-    {    0.0f,    0.0f,    0.0f, 0.0f },
-    {  556.0f,    0.0f,  559.2f, 0.0f },
-    {  556.0f,    0.0f,    0.0f, 0.0f },
-
-    // Ceiling -- white lambert
-    {    0.0f,  548.8f,    0.0f, 0.0f },
-    {  556.0f,  548.8f,    0.0f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-
-    {    0.0f,  548.8f,    0.0f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-    {    0.0f,  548.8f,  559.2f, 0.0f },
-
-    // Back wall -- white lambert
-    {    0.0f,    0.0f,  559.2f, 0.0f },
-    {    0.0f,  548.8f,  559.2f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-
-    {    0.0f,    0.0f,  559.2f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-    {  556.0f,    0.0f,  559.2f, 0.0f },
-
-    // Right wall -- green lambert
-    {    0.0f,    0.0f,    0.0f, 0.0f },
-    {    0.0f,  548.8f,    0.0f, 0.0f },
-    {    0.0f,  548.8f,  559.2f, 0.0f },
-
-    {    0.0f,    0.0f,    0.0f, 0.0f },
-    {    0.0f,  548.8f,  559.2f, 0.0f },
-    {    0.0f,    0.0f,  559.2f, 0.0f },
-
-    // Left wall -- red lambert
-    {  556.0f,    0.0f,    0.0f, 0.0f },
-    {  556.0f,    0.0f,  559.2f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-
-    {  556.0f,    0.0f,    0.0f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-    {  556.0f,  548.8f,    0.0f, 0.0f },
-
-    // Short block -- white lambert
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-    {   82.0f,  165.0f,  225.0f, 0.0f },
-    {  242.0f,  165.0f,  274.0f, 0.0f },
-
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-    {  242.0f,  165.0f,  274.0f, 0.0f },
-    {  290.0f,  165.0f,  114.0f, 0.0f },
-
-    {  290.0f,    0.0f,  114.0f, 0.0f },
-    {  290.0f,  165.0f,  114.0f, 0.0f },
-    {  240.0f,  165.0f,  272.0f, 0.0f },
-
-    {  290.0f,    0.0f,  114.0f, 0.0f },
-    {  240.0f,  165.0f,  272.0f, 0.0f },
-    {  240.0f,    0.0f,  272.0f, 0.0f },
-
-    {  130.0f,    0.0f,   65.0f, 0.0f },
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-    {  290.0f,  165.0f,  114.0f, 0.0f },
-
-    {  130.0f,    0.0f,   65.0f, 0.0f },
-    {  290.0f,  165.0f,  114.0f, 0.0f },
-    {  290.0f,    0.0f,  114.0f, 0.0f },
-
-    {   82.0f,    0.0f,  225.0f, 0.0f },
-    {   82.0f,  165.0f,  225.0f, 0.0f },
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-
-    {   82.0f,    0.0f,  225.0f, 0.0f },
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-    {  130.0f,    0.0f,   65.0f, 0.0f },
-
-    {  240.0f,    0.0f,  272.0f, 0.0f },
-    {  240.0f,  165.0f,  272.0f, 0.0f },
-    {   82.0f,  165.0f,  225.0f, 0.0f },
-
-    {  240.0f,    0.0f,  272.0f, 0.0f },
-    {   82.0f,  165.0f,  225.0f, 0.0f },
-    {   82.0f,    0.0f,  225.0f, 0.0f },
-
-    // Tall block -- white lambert
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-    {  265.0f,  330.0f,  296.0f, 0.0f },
-    {  314.0f,  330.0f,  455.0f, 0.0f },
-
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-    {  314.0f,  330.0f,  455.0f, 0.0f },
-    {  472.0f,  330.0f,  406.0f, 0.0f },
-
-    {  423.0f,    0.0f,  247.0f, 0.0f },
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-    {  472.0f,  330.0f,  406.0f, 0.0f },
-
-    {  423.0f,    0.0f,  247.0f, 0.0f },
-    {  472.0f,  330.0f,  406.0f, 0.0f },
-    {  472.0f,    0.0f,  406.0f, 0.0f },
-
-    {  472.0f,    0.0f,  406.0f, 0.0f },
-    {  472.0f,  330.0f,  406.0f, 0.0f },
-    {  314.0f,  330.0f,  456.0f, 0.0f },
-
-    {  472.0f,    0.0f,  406.0f, 0.0f },
-    {  314.0f,  330.0f,  456.0f, 0.0f },
-    {  314.0f,    0.0f,  456.0f, 0.0f },
-
-    {  314.0f,    0.0f,  456.0f, 0.0f },
-    {  314.0f,  330.0f,  456.0f, 0.0f },
-    {  265.0f,  330.0f,  296.0f, 0.0f },
-
-    {  314.0f,    0.0f,  456.0f, 0.0f },
-    {  265.0f,  330.0f,  296.0f, 0.0f },
-    {  265.0f,    0.0f,  296.0f, 0.0f },
-
-    {  265.0f,    0.0f,  296.0f, 0.0f },
-    {  265.0f,  330.0f,  296.0f, 0.0f },
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-
-    {  265.0f,    0.0f,  296.0f, 0.0f },
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-    {  423.0f,    0.0f,  247.0f, 0.0f },
-
-    // Ceiling light -- emmissive
-    {  343.0f,  548.6f,  227.0f, 0.0f },
-    {  213.0f,  548.6f,  227.0f, 0.0f },
-    {  213.0f,  548.6f,  332.0f, 0.0f },
-
-    {  343.0f,  548.6f,  227.0f, 0.0f },
-    {  213.0f,  548.6f,  332.0f, 0.0f },
-    {  343.0f,  548.6f,  332.0f, 0.0f }};
-
     std::vector<Vec3f> verts_triangle = {
         {-0.5f, -0.5f, 0.f},
         { 0.5f, -0.5f, 0.f},
         { 0.f,   0.5f, 0.f}
     };
 
-    /*
     auto mesh_ptr = std::make_shared<TriangleMesh>(base::Mat4f::identity(), vs,
         std::vector<Vec3f>(), std::vector<Vec2f>(), idx, "test", "shader");
     mesh_ptr->convert_to_4f_alignment();
-    */
+    /*
     auto mesh_ptr = std::make_shared<TriangleArray>(base::Mat4f::identity(), std::move(verts_triangle),
         "test", "test");
+    */
     OptixAccel accel(ctx);
-    accel.add_trianglearray(mesh_ptr);
+    //accel.add_trianglearray(mesh_ptr);
+    accel.add_trianglemesh(mesh_ptr);
     auto root_instance_list = std::vector<std::string> {
         "test"
     };
-    //auto gas_handle = accel.handles["test"].second;
     accel.build(root_instance_list);
 
     CUstream stream;
     CUDA_CHECK(cudaStreamCreate(&stream));
 
-    /*
     float3 eye = make_float3(0.f, 5.f, 10.f);
     float3 lookat = make_float3(0.f, 0.f, 0.f);
-    */
-    //float3 eye = make_float3(278.f, 273.f, -900.f);
-    //float3 lookat = make_float3(278.f, 273.f, 330.f);
-    float3 eye = make_float3(0.f, 0.f, 2.f);
-    float3 lookat = make_float3(0.f, 0.f, 0.f);
+    //float3 eye = make_float3(0.f, 0.f, 2.f);
+    //float3 lookat = make_float3(0.f, 0.f, 0.f);
     float3 front = normalize(lookat - eye);
     float3 right = cross(front, make_float3(0, 1, 0));
     float3 up = cross(right, front);
     float ratio = static_cast<float>(w) / h;
     float fov = to_radian(45.f / 2.f);
     float scaled_height = std::tan(fov);
-    /*
+
     Params params {
         .image = output,
         .width = static_cast<int>(w),
         .height = static_cast<int>(h),
-        .sample_cnt = 5,
         .eye = eye,
-        .U = up * scaled_height,
-        .V = right * ratio * scaled_height,
+        .U = right * ratio * scaled_height,
+        .V = up * scaled_height,
         .W = front,
-        .handle = accel.get_root_handle()
+        .handle = accel.get_root_handle(),
+        .sample_cnt = 5
     };
-    */
 
+    /*
     ParamsTriangle params {
         .image = output,
         .width = w,
@@ -438,8 +298,8 @@ int main(int argc, const char **argv) {
         .V = up * scaled_height,
         .W = front,
         .handle = accel.get_root_handle()
-        //.handle = gas_handle
     };
+    */
 
     CUdeviceptr param_ptr;
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&param_ptr),

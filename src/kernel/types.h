@@ -48,8 +48,6 @@ struct Params {
     // Film info
     int             width;
     int             height;
-    // Sampling info
-    int             sample_cnt;
     // Camera info
     float3          eye;
     float3          U;
@@ -57,6 +55,8 @@ struct Params {
     float3          W;
     // Accel
     OptixTraversableHandle handle;
+    // Sampling info
+    int             sample_cnt;
 };
 
 struct ShaderGlobalTmp {
