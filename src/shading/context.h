@@ -10,7 +10,7 @@
 #include "core/intersection.h"
 
 using ShaderMap = std::unordered_map<std::string, OSL::ShaderGroupRef>;
-using PTXMap = std::unordered_map<std::string, std::string>;
+using PTXMap = std::unordered_map<std::string, std::pair<std::string, void*>>;
 
 struct ShadingEngine {
     OSL::ShadingSystem*     osl_shading_sys;
@@ -34,7 +34,6 @@ struct ShadingEngine {
     PTXMap gen_ptx() {
         PTXMap ptx_map;
         std::vector<const char*> outputs { "Cout" };
-        std::vector<void*> material_interactive_params;
         for (const auto&[name, groupref] : *shaders) {
             std::string group_name, fused_name;
             osl_shading_sys->getattribute(groupref.get(), "groupname", group_name);
@@ -59,12 +58,11 @@ struct ShadingEngine {
 
             // TODO: Save PTX if necessary
 
-            // TODO: Save the params in another place
             void* interactive_params = nullptr;
             osl_shading_sys->getattribute(groupref.get(), "device_interactive_params",
                 OSL::TypeDesc::PTR, &interactive_params);
             
-            ptx_map.emplace(name, std::move(osl_ptx));
+            ptx_map.emplace(name, std::make_pair(std::move(osl_ptx), interactive_params));
         }
 
         return ptx_map;
