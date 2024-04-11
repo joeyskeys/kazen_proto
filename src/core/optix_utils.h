@@ -11,6 +11,7 @@
 #include <nvrtc.h>
 
 #include "kernel/types.h"
+#include "kernel/oslutils.h"
 
 #define CUDA_CHECK( call )                                                          \
     {                                                                               \
@@ -111,3 +112,7 @@ bool                create_optix_pg(const OptixDeviceContext, const OptixProgram
 bool                create_optix_ppl(const OptixDeviceContext, const OptixPipelineCompileOptions&,
     const OptixPipelineLinkOptions&, const std::vector<OptixProgramGroup>&, OptixPipeline*);
 std::vector<GenericRecord> generate_records(const uint32_t group_size);
+
+std::vector<OptixProgramGroup> create_osl_pgs(const OptixDeviceContext,
+    const OptixModuleCompileOptions&, const OptixPipelineCompileOptions&,
+    const PTXMap&);

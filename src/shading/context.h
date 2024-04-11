@@ -8,9 +8,9 @@
 #include "base/utils.h"
 #include "core/accel.h"
 #include "core/intersection.h"
+#include "kernel/oslutils.h"
 
 using ShaderMap = std::unordered_map<std::string, OSL::ShaderGroupRef>;
-using PTXMap = std::unordered_map<std::string, std::pair<std::string, void*>>;
 
 struct ShadingEngine {
     OSL::ShadingSystem*     osl_shading_sys;
@@ -62,7 +62,7 @@ struct ShadingEngine {
             osl_shading_sys->getattribute(groupref.get(), "device_interactive_params",
                 OSL::TypeDesc::PTR, &interactive_params);
             
-            ptx_map.emplace(name, std::make_pair(std::move(osl_ptx), interactive_params));
+            ptx_map.emplace(name, std::make_tuple(fused_name, std::move(osl_ptx), interactive_params));
         }
 
         return ptx_map;

@@ -92,7 +92,6 @@ static __forceinline__ __device__ float3 integrator_li(
     return ret;
 }
 
-
 extern "C"
 __global__ void __raygen__main() {
     const int    w   = params.width;

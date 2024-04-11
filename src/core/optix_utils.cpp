@@ -181,3 +181,51 @@ std::vector<GenericRecord> generate_records(const std::vector<OptixProgramGroup>
         OPTIX_CHECK(optixSbtRecordPackHeader(gps[i], &recs[i]));
     return recs;
 }
+
+std::pair<std::vector<OptixProgramGroup>, std::vector<void*>> create_osl_pgs(
+    const OptixDeviceContext ctx,
+    const OptixModuleCompileOptions& module_compile_options,
+    const OptixPipelineCompileOptions& pipeline_compile_options,
+    const OptixProgramGroupOptions& pg_options,
+    const PTXMap& ptx_map)
+{
+    std::vector<OptixProgramGroup> pgs;
+    std::vector<void*> params;
+    for (const auto&[name, tup] : ptx_map) {
+        OptixModule mod;
+        auto& [fused_name, ptx, param_ptr] = tup;
+        params.push_back(param_ptr);
+
+        // Create the module
+        OPTIX_CHECK_MSG(optixModuleCreate(ctx,
+                                          module_compile_options,
+                                          pipeline_compile_options,
+                                          ptx.c_str(),
+                                          ptx.size(), log_buf,
+                                          &log_size, mod),
+                        fmt::format("Creating module from OSL PTX", log_buf));
+        
+        // Create program group from the module
+        OptixProgramGroupDesc pg_desc = {
+            .kind = OPTIX_PROGRAM_GROUP_KIND_CALLABLES,
+            .callables = {
+                .moduleDC = mod,
+                .entryFunctionNameDC = fused_name.c_str(),
+                .moduleCC = 0;
+                .entryFunctionNameCC = nullptr;
+            }
+        };
+        OptixProgramGroup pg {};
+        OPTIX_CHECK_MSG(optixProgramGroupCreate(ctx, pg_desc, 1,
+                                                &pg_options, log_buf,
+                                                &log_size, &pg),
+                        fmt::format("Creating OSL program group: {}", log_buf));
+        
+        // Clearup module
+        optixProgramGroupDestroy(pg);
+
+        pgs.emplace_back(std::move(pg));
+    }
+
+    return std::make_pair(pgs, params);
+}
