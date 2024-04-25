@@ -126,6 +126,29 @@ bool load_optix_module_cu(
     return true;
 }
 
+bool load_raw_ptx(
+    const char* ptx,
+    const OptixDeviceContext ctx,
+    const OptixModuleCompileOptions* module_compile_options,
+    const OptixPipelineCompileOptions* pipeline_comile_options,
+    OptixModule* module)
+{
+    if (ptx == nullptr) {
+        std::cout << "PTX ptr is null" << std::endl;
+        return false;
+    }
+
+    OPTIX_CHECK_MSG(optixModuleCreate(ctx,
+                                      module_compile_options,
+                                      pipeline_compile_options,
+                                      ptx.c_str(),
+                                      strlen(ptx), log_buf,
+                                      &log_size, module),
+                    fmt::format("Creating module from PTX-file {}", log_buf));
+
+    return true;
+}
+
 bool create_optix_pg(
     const OptixDeviceContext ctx,
     const OptixProgramGroupDesc* pg_desc,

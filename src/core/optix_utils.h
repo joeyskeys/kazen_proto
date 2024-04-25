@@ -107,6 +107,9 @@ bool                load_optix_module_ptx(const char*, const OptixDeviceContext,
 bool                load_optix_module_cu(const char*, const OptixDeviceContext,
     const OptixModuleCompileOptions*, const OptixPipelineCompileOptions*,
     OptixModule*);
+bool                load_raw_ptx(const char*, const OptixDeviceContext,
+    const OptixModuleCompileOptions*, const OptixPipleineCompileOptions*,
+    OptixModule*);
 bool                create_optix_pg(const OptixDeviceContext, const OptixProgramGroupDesc*,
     const int, OptixProgramGroupOptions*, OptixProgramGroup*);
 bool                create_optix_ppl(const OptixDeviceContext, const OptixPipelineCompileOptions&,
