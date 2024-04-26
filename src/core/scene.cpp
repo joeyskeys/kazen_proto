@@ -867,3 +867,33 @@ void SceneGPU::add_mesh(const Mat4f& world, const std::vector<Vec3f>& vs,
 void SceneGPU::build_bvh(const std::vector<std::string>& names) {
     accel->build(names);
 }
+
+void SceneGPU::begin_shader_group(const std::string& name) {
+    current_shader_group = shadingsys->ShaderGroupBegin(name.c_str());
+    shaders[name] = current_shader_group;
+}
+
+void SceneGPU::end_shader_group() {
+    shadingsys->ShaderGroupEnd(*current_shader_group);
+}
+
+bool SceneGPU::load_oso_shader(const std::string& type, const std::string& name,
+    const std::string& layer, const std::string& lib_path)
+{
+    auto builtin_path = (fs::path(lib_path) / name).concat(".oso");
+    if (fs::exists(builtin_path)) {
+        std::string oso_code = load_file(builtin_path);
+        shadingsys->LoadMemoryCompiledShader(layer, oso_code);
+    }
+    else {
+        throw std::runtime_error(fmt::format("Shader {} does not exists", layer));
+    }
+
+    return shadingsys->Shader(*current_shader_group, type, name, layer);
+}
+
+void SceneGPU::connect_shader(const std::string& src_layer, const std::string& src_param,
+    const std::string& dst_layer, cosnt std::string& dst_param)
+{
+    shadingsys->ConnectShaders(src_layer, src_param, dst_layer, dst_param);
+}

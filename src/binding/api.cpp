@@ -180,7 +180,17 @@ void bind_api(py::module_& m) {
              .def("add_mesh", &SceneGPU::add_mesh,
                 "add a triangle mesh")
              .def("build_bvh", &SceneGPU::build_bvh,
-                "build bvh");
+                "build bvh")
+             .def("set_shader_search_path", &SceneGPU::set_shader_search_path,
+                "set shader search path for OSL shading system")
+             .def("begin_shader_group", &SceneGPU::begin_shader_group,
+                "BeginShaderGroup call to OSL")
+             .def("end_shader_group", &SceneGPU::end_shader_group,
+                "EndShaderGroup call to OSL")
+             .def("load_oso_shader", &SceneGPU::load_oso_shader,
+                "load the built-in oso shader")
+             .def("connect_shader", &SceneGPU::connect_shader,
+                "connect shader's attributes");
 
     py::enum_<AcceleratorType>(api, "AcceleratorType", "Accelerator type enum")
         .value("BVH", AcceleratorType::BVH)

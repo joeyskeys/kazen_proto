@@ -251,6 +251,41 @@ public:
         const std::string& shader_name, bool is_light = false);
     void build_bvh(const std::vector<std::string>& names);
 
+    // Considering inheriting or something else to share the OSL stuffs
+    // since it's common
+    inline void set_shader_search_path(const std::string& path) {
+        shadingsys->attribute("searchpath:shader", path.c_str());
+    }
+
+    void begin_shader_group(const std::string& name);
+    void end_shader_group();
+    bool load_oso_shader(const std::string&, const std::string&, const std::string&,
+        const std::string&);
+    void connect_shader(const std::string&, const std::string&, const std::string&,
+        const std::string&);
+
+    template <typename T>
+    void set_shader_param(const std::string& name, const T& value) {
+        if constexpr (is_bool_v<T> || is_int_v<T>)
+            shadingsys->Parameter(*current_shader_group, name,
+                OSL::TypeDesc::TypeInt, &value);
+        else if constexpr (is_float_v<T>)
+            shadingsys->Parameter(*current_shader_group, name,
+                OSL::TypeDesc::TypeFloat, &value);
+        else if constexpr (is_vec3f_v<T>)
+            shadingsys->Parameter(*current_shader_group, name,
+                OSL::TypeDesc::TypeVector, &value);
+        else if constexpr (is_vec4f_v<T>)
+            shadingsys->Parameter(*current_shader_group, name,
+                OSL::TypeDesc::TypeString, &value);
+        else if constexpr (is_str_v<T> || is_ustr_v<T>)
+            shadingsys->Parameter(*current_shader_group, name,
+                OSL::TypeDesc::TypeString, &value);
+        else
+            throw std::runtime_error(fmt::format(
+                "Type {} is not supported for OSL parameter", typeid(T).name()));
+    }
+
 private:
     OptixDeviceContext          ctx;
     OptixPipeline               ppl = nullptr;
@@ -259,4 +294,17 @@ private:
     Params                      params = {};
     std::vector<std::unique_ptr<Light>> lights;
     std::string                 output = "./test.png";
+
+public:
+    // OSL related
+    ShaderCompiler compiler;
+    KazenRenderServices rend;
+    std::unique_ptr<OSL::ShadingSystem> shadingsys;
+    std::unordered_map<std::string, OSL::ShaderGroupRef> shaders;
+    OSL::ShaderGroupRef background_shader;
+    OSL::ErrorHandler   errhandler;
+
+private:
+    // This is a temprory variable for use of shader group begin&end
+    OSL::ShaderGroupRef current_shader_group;
 };
