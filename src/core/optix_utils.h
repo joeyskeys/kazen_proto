@@ -116,6 +116,6 @@ bool                create_optix_ppl(const OptixDeviceContext, const OptixPipeli
     const OptixPipelineLinkOptions&, const std::vector<OptixProgramGroup>&, OptixPipeline*);
 std::vector<GenericRecord> generate_records(const uint32_t group_size);
 
-std::vector<OptixProgramGroup> create_osl_pgs(const OptixDeviceContext,
-    const OptixModuleCompileOptions&, const OptixPipelineCompileOptions&,
+std::pair<std::vector<OptixProgramGroup>, std::vector<void*>> create_osl_pgs(
+    const OptixDeviceContext, const OptixModuleCompileOptions&, const OptixPipelineCompileOptions&,
     const PTXMap&);

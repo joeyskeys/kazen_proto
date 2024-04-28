@@ -897,3 +897,57 @@ void SceneGPU::connect_shader(const std::string& src_layer, const std::string& s
 {
     shadingsys->ConnectShaders(src_layer, src_param, dst_layer, dst_param);
 }
+
+auto SceneGPU::create_osl_pgs() const {
+    std::vector<const char*> outputs { "Cout" };
+    std::vector<OptixProgramGroup> pgs;
+    std::vector<void*>> param_ptrs;
+
+    // Store data into PTXMap
+    PTXMap ptx_map;
+    for (const auto& [name, groupref] : shaders) {
+        // Get basic information of the ShaderGroup
+        std::string group_name, fused_name;
+        shadingsys->getattribute(groupref.get(), "groupname", group_name);
+        shadingsys->getattribute(groupref.get(), "group_fused_name", fused_name);
+
+        shadingsys->attribute(groupref.get(), "renderer_outputs",
+            TypeDesc(TypeDesc::STRING, outputs.size(), outputs.data()));
+        shadingsys->optimize_group(groupref.get(), nullptr);
+
+        if (!shadingsys->find_symbol(*groupref.get(), ustring(outputs[0])))
+            throw std::runtime_error(fmt::format("requested output {} not found", outputs[0]));
+
+        // Generate PTX code
+        std::string ptx;
+        shadingsys->getattribute(groupref.get(), "ptx_compiled_version",
+            OSL::TypeDesc::PTR, &ptx);
+        if (ptx.empty())
+            throw std::runtime_error(fmt::format("failed to generate PTX for ShaderGroup {}", group_name));
+
+        // Get params pointer
+        void* param_ptr = nullptr;
+        shadingsys->getattribute(groupref.get(), "device_interactive_params",
+            TypeDesc::PTR, &param_ptr);
+        param_ptrs.push_back(param_ptr);
+
+        // Create the optix program group
+        OptixModule mod;
+        load_raw_ptx(ptx.c_str(), ctx, /*op1*/, /*op2*/, &mod);
+
+        OptixProgramGroupDesc pg_desc {
+            .kind = OPTIX_PROGRAM_GROUP_KIND_CALLABLE,
+            .callables = {
+                .moduleDC = mod,
+                .entryFunctionNameDC = fused_name.c_str(),
+                .moduleCC = 0,
+                .entryFunctionNameCC = nullptr
+            }
+        };
+        OptixProgramGroup pg;
+        create_optix_pg(ctx, &pg_desc, 1, /*op*/, &pg);
+        pgs.emplace_back(std::move(pg));
+    }
+    
+    return std::make_pair(std::move(pgs), std::move(param_ptrs));
+}

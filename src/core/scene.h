@@ -285,6 +285,8 @@ public:
             throw std::runtime_error(fmt::format(
                 "Type {} is not supported for OSL parameter", typeid(T).name()));
     }
+    
+    auto create_osl_pgs() const;
 
 private:
     OptixDeviceContext          ctx;

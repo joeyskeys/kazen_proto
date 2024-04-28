@@ -190,7 +190,9 @@ void bind_api(py::module_& m) {
              .def("load_oso_shader", &SceneGPU::load_oso_shader,
                 "load the built-in oso shader")
              .def("connect_shader", &SceneGPU::connect_shader,
-                "connect shader's attributes");
+                "connect shader's attributes")
+             .def("prepare_gpu_shaders", &SceneGPU::prepare_gpu_shaders,
+               "Get PTX code ready for OSL execution on GPU");
 
     py::enum_<AcceleratorType>(api, "AcceleratorType", "Accelerator type enum")
         .value("BVH", AcceleratorType::BVH)
