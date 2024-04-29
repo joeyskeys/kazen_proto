@@ -173,6 +173,8 @@ void bind_api(py::module_& m) {
     scene_gpu.def(py::init<bool>())
              .def("create_default_pipleine", &SceneGPU::create_default_pipeline,
                 "create default pipeline")
+             .def("create pipeline", &SceneGPU::create_pipeline,
+                "create pipeline")
              .def("set_film", &SceneGPU::set_film,
                 "set film parameters")
              .def("set_camera", &SceneGPU::set_camera,

@@ -755,8 +755,12 @@ SceneGPU::SceneGPU(bool default_pipeline) {
     ctx = create_optix_ctx(&ctx_options);
     accel.reset(new OptixAccel(ctx));
 
-    if (default_pipeline)
-        create_default_pipeline();
+    ppl_compile_options.usesMotionBlur = false;
+    ppl_compile_options.numPayloadValues = 0;
+    ppl_compile_options.numAttributeValues = 2;
+    ppl_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
+    ppl_compile_options.pipelineLaunchParamsVariableName = "params";
+    ppl_compile_options.usesPrimitiveTypeFlags = static_cast<unsigned int>(OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE);
 }
 
 SceneGPU::~SceneGPU() {
@@ -799,7 +803,7 @@ void SceneGPU::create_default_pipeline() {
         .kind = OPTIX_PROGRAM_GROUP_KIND_MISS,
         .miss = {
             .module = mod,
-            .entryFunctionName = "__miss_radiance"
+            .entryFunctionName = "__miss__radiance"
         }
     };
     create_optix_pg(ctx, &miss_pg_desc, 1, &pg_options, &miss_pg);
@@ -808,7 +812,7 @@ void SceneGPU::create_default_pipeline() {
         .kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP,
         .hitgroup = {
             .moduleCH = mod,
-            .entryFunctionNameCH = "__closesthit_radiance"
+            .entryFunctionNameCH = "__closesthit__radiance"
         }
     };
     create_optix_pg(ctx, &ch_pg_desc, 1, &pg_options, &ch_pg);
@@ -824,6 +828,10 @@ void SceneGPU::create_default_pipeline() {
     optixProgramGroupDestroy(miss_pg);
     optixProgramGroupDestroy(ch_pg);
     optixModuleDestroy(mod);
+}
+
+void SceneGPU::create_pipeline(const std::string& pg_family) {
+
 }
 
 void SceneGPU::set_film(uint32_t w, uint32_t h, const std::string& out) {
@@ -933,7 +941,7 @@ auto SceneGPU::create_osl_pgs() const {
 
         // Create the optix program group
         OptixModule mod;
-        load_raw_ptx(ptx.c_str(), ctx, /*op1*/, /*op2*/, &mod);
+        load_raw_ptx(ptx.c_str(), ctx, &mod_options, &ppl_compile_options, &mod);
 
         OptixProgramGroupDesc pg_desc {
             .kind = OPTIX_PROGRAM_GROUP_KIND_CALLABLE,
@@ -945,7 +953,7 @@ auto SceneGPU::create_osl_pgs() const {
             }
         };
         OptixProgramGroup pg;
-        create_optix_pg(ctx, &pg_desc, 1, /*op*/, &pg);
+        create_optix_pg(ctx, &pg_desc, 1, &pg_options, &pg);
         pgs.emplace_back(std::move(pg));
     }
     

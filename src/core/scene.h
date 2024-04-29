@@ -236,10 +236,11 @@ private:
 
 class SceneGPU {
 public:
-    SceneGPU(bool default_pipeline = true);
+    SceneGPU();
     virtual ~SceneGPU();
 
     void create_default_pipeline();
+    void create_pipeline(const std::string& pg_family);
     void set_film(uint32_t w, uint32_t h, const std::string& out);
     void set_camera(const Vec3f& p, const Vec3f& l, const Vec3f& u,
         const float ratio, const float near_plane = 1,
@@ -292,6 +293,10 @@ private:
     OptixDeviceContext          ctx;
     OptixPipeline               ppl = nullptr;
     OptixShaderBindingTable     sbt = {};
+    OptixModuleCompileOptions   mod_options = {};
+    OptixProgramGroupOptions    pg_options = {};
+    OptixPipelineCompileOptions ppl_compile_options = {};
+    OptixPipelineLinkOptions    ppl_link_options = {};
     std::unique_ptr<OptixAccel> accel = nullptr;
     Params                      params = {};
     std::vector<std::unique_ptr<Light>> lights;
