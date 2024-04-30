@@ -831,7 +831,91 @@ void SceneGPU::create_default_pipeline() {
 }
 
 void SceneGPU::create_pipeline(const std::string& pg_family) {
+    OptixModule mod;
+    // We assume kernels of a family lives in a single file named with
+    // pg_family.cu
+    std::string cu_file_path = "../src/kernel/device/optix/";
+    cu_file_path += (pg_family + ".cu");
+    load_optix_module_cu(cu_file_path, ctx, &mod_options, &ppl_compile_options,
+        &mod);
 
+    OptixProgramGroup rg_pg, miss_pg, ch_pg;
+    
+    OptixProgramGroupDesc rg_pg_desc {
+        .kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN,
+        .raygen = {
+            .module = mod,
+            .entryFunctionName = (std::string("__raygen__") + pg_family).c_str()
+        }
+    };
+    create_optix_pg(ctx, &rg_pg_desc, 1, &pg_options, &rg_pg);
+
+    OptixProgramGroupDesc miss_pg_desc {
+        .kind = OPTIX_PROGRAM_GROUP_KIND_MISS,
+        .miss = {
+            .module = mod,
+            .entryFunctionName = (std::string("__miss__") + pg_family).c_str()
+        }
+    };
+    create_optix_pg(ctx, &miss_pg_desc, 1, &pg_options, &miss_pg);
+
+    OptixProgramGroupDesc ch_pg_desc {
+        .kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP,
+        .hitgroup = {
+            .moduleCH = mod,
+            .entryFunctionNameCH = (std::string("__closesthit__") + pg_family).c_str()
+        }
+    };
+    create_optix_pg(ctx, &ch_pg_desc, 1, &pg_options, &ch_pg);
+
+    // Built-in function DCs
+    OptixModule rend_lib_mod, shadeops_mod;
+    OptixProgramGroup rend_lib_pg, shadeops_pg;
+    load_optix_module_cu("../src/kernel/device/optix/render_lib.cu",
+        ctx, &mod_options, &ppl_compile_options, &rend_lib_mod);
+    OptixProgramGroupDesc render_lib_desc = {
+        .kind = OPTIX_PROGRAM_GROUP_KIND_CALLABLES,
+        .callables = {
+            .moduleDC = rend_lib_mod,
+            .entryFunctionNameDC = "__direct_callable__dummy_rend_lib",
+            .moduleCC = 0,
+            .entryFunctionNameCC = nullptr
+        }
+    };
+    create_optix_pg(ctx, &rend_lib_desc, 1, &pg_options, &rend_lib_pg);
+
+    const char* shadeops_ptx = nullptr;
+    shadingsys->getattribute("shadeops_cuda_ptx", OSL::TypeDesc::PTR,
+        &shadeops_ptx);
+    int shadeops_ptx_size = 0;
+    shadingsys->getattribute("shadeops_cuda_ptx_size", OSL::TypeDesc::INT,
+        &shadeops_ptx_size);
+    if (shadeops_ptx == nullptr || shadeops_ptx_size == 0)
+        throw std::runtime_error("Could not retrieve PTX for shadeops library");
+    load_raw_ptx(shadeops_ptx, ctx, &mod_options, &ppl_compile_options, &shadeops_mod);
+    OptixProgramGroupDesc shadeops_desc = {
+        .kind = OPTIX_PROGRAM_GROUP_KIND_CALLABLES,
+        .callables = {
+            .moduleDC = shadeops_mod,
+            .entryFunctionNameDC = "__direct_callable__dummy_shadeops",
+            .moduleCC = 0,
+            .entryFunctionNameCC = nullptr
+        }
+    };
+    create_optix_pg(ctx, &shadeops_ptx, 1, &pg_options, &shadeops_pg);
+
+    // Material DCs
+    auto& [mat_pgs, param_ptrs] = create_osl_pgs();
+
+    // Put all pgs into an array for pipeline creation
+    // Not finished...
+    std::vector<OptixProgramGroup> pgs { rg_pg, miss_pg, ch_pg };
+    create_optix_ppl(ctx, ppl_compile_options, ppl_link_options, pgs, &ppl);
+
+    optixProgramGroupDestroy(rg_pg);
+    optixProgramGroupDestroy(miss_pg);
+    optixProgramGroupDestroy(ch_pg);
+    optixModuleDestroy(mod);
 }
 
 void SceneGPU::set_film(uint32_t w, uint32_t h, const std::string& out) {
