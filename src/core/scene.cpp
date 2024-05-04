@@ -908,13 +908,16 @@ void SceneGPU::create_pipeline(const std::string& pg_family) {
     auto& [mat_pgs, param_ptrs] = create_osl_pgs();
 
     // Put all pgs into an array for pipeline creation
-    // Not finished...
-    std::vector<OptixProgramGroup> pgs { rg_pg, miss_pg, ch_pg };
+    std::vector<OptixProgramGroup> pgs { rend_lib_pg, rg_pg, miss_pg, ch_pg };
+    pgs.insert(pgs.end(), mat_pgs.begin(), mat_pgs.end());
+    pgs.push_back(shadeops_pg);
     create_optix_ppl(ctx, ppl_compile_options, ppl_link_options, pgs, &ppl);
 
     optixProgramGroupDestroy(rg_pg);
     optixProgramGroupDestroy(miss_pg);
     optixProgramGroupDestroy(ch_pg);
+    optixProgramGroupDestroy(rend_lib_mod);
+    optixProgramGroupDestroy(shadeops_mod);
     optixModuleDestroy(mod);
 }
 
