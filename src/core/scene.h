@@ -299,6 +299,7 @@ private:
     OptixPipelineLinkOptions    ppl_link_options = {};
     std::unique_ptr<OptixAccel> accel = nullptr;
     Params                      params = {};
+    CUdeviceptr                 d_interactive_params = 0;
     std::vector<std::unique_ptr<Light>> lights;
     std::string                 output = "./test.png";
 

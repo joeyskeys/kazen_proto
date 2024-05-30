@@ -913,11 +913,58 @@ void SceneGPU::create_pipeline(const std::string& pg_family) {
     pgs.push_back(shadeops_pg);
     create_optix_ppl(ctx, ppl_compile_options, ppl_link_options, pgs, &ppl);
 
+    // Create SBT
+    std::vector<GenericRecord> sbt_records(pgs.size());
+    for (int i = 0; i < pgs.size(); ++i)
+        OPTIX_CHECK(optixSbtRecordPackHeader(pgs[i], &sbt_records[i]));
+
+    const int callalbe_record_start = 4;
+    const int callable_cnt = 2 + mat_pgs.size();
+    CUdeviceptr d_raygen_record;
+    CUdeviceptr d_miss_record;
+    CUdeviceptr d_hitgroup_records;
+    CUdeviceptr d_callable_records;
+
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_raygen_record),
+        sizeof(GenericRecord)));
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_miss_record),
+        sizeof(GenericRecord)));
+    //CUDA_CHECK(cudaMalloc()); // HGs
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_callable_records),
+        callable_cnt * sizeof(GenericRecord)));
+
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_raygen_record,
+        &sbt_records[1], sizeof(GenericRecord), cudaMemcpyHostToDevice)));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_miss_record,
+        &sbt_records[2], sizeof(GenericRecord), cudaMemcpyHostToDevice)));
+    //CUDA_CHECK() // HGs
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_callable_records,
+        &sbt_records[callalbe_record_start], callable_cnt,
+        cudaMemcpyHostToDevice)));
+
+    sbt                                 = {};
+    //sbt.raygenRecord                    = d_raygen_record; // SetGlobal?
+    //sbt.missRecordBase;
+    sbt.missRecordStrideBytes;          = sizeof(GenericRecord);
+    sbt.missRecordCount                 = 1;
+
+    // Upload material interactive buffer table
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_interactive_params),
+        sizeof(void*) * param_ptrs.size()));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_interactive_params),
+        param_ptrs.data(), sizeof(void*) * param_ptrs.size(),
+        cudaMemcpyHostToDevice));
+
+    // Clearup
     optixProgramGroupDestroy(rg_pg);
     optixProgramGroupDestroy(miss_pg);
     optixProgramGroupDestroy(ch_pg);
-    optixProgramGroupDestroy(rend_lib_mod);
-    optixProgramGroupDestroy(shadeops_mod);
+
+    for (auto& mat_pg : mat_pgs)
+        optixProgramGroupDestroy(mat_pg);
+
+    optixModuleDestroy(rend_lib_mod);
+    optixModuleDestroy(shadeops_mod);
     optixModuleDestroy(mod);
 }
 
