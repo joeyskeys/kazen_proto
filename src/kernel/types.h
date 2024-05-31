@@ -55,6 +55,10 @@ struct Params {
     float3          W;
     // Accel
     OptixTraversableHandle handle;
+    // OSL related
+    CUdeviceptr     interactive_params;
+    CUdeviceptr     osl_printf_buffer_start;
+    CUdeviceptr     osl_printf_buffer_end;
     // Sampling info
     int             sample_cnt;
 };
@@ -84,4 +88,8 @@ struct HitGroupData {
     float3 emission_color;
     float3 diffuse_color;
     float4* vertices;
+};
+
+enum PrimitiveType {
+    PRIMITIVE_NONE = 0,
 };

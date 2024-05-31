@@ -835,7 +835,7 @@ void SceneGPU::create_pipeline(const std::string& pg_family) {
     // We assume kernels of a family lives in a single file named with
     // pg_family.cu
     std::string cu_file_path = "../src/kernel/device/optix/";
-    cu_file_path += (pg_family + ".cu");
+    cu_file_path += (std::string("kernels_") + pg_family + ".cu");
     load_optix_module_cu(cu_file_path, ctx, &mod_options, &ppl_compile_options,
         &mod);
 

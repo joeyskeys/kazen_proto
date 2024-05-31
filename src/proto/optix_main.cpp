@@ -250,12 +250,7 @@ int main(int argc, const char **argv) {
     auto mesh_ptr = std::make_shared<TriangleMesh>(base::Mat4f::identity(), vs,
         std::vector<Vec3f>(), std::vector<Vec2f>(), idx, "test", "shader");
     mesh_ptr->convert_to_4f_alignment();
-    /*
-    auto mesh_ptr = std::make_shared<TriangleArray>(base::Mat4f::identity(), std::move(verts_triangle),
-        "test", "test");
-    */
     OptixAccel accel(ctx);
-    //accel.add_trianglearray(mesh_ptr);
     accel.add_trianglemesh(mesh_ptr);
     auto root_instance_list = std::vector<std::string> {
         "test"
@@ -267,8 +262,6 @@ int main(int argc, const char **argv) {
 
     float3 eye = make_float3(0.f, 5.f, 10.f);
     float3 lookat = make_float3(0.f, 0.f, 0.f);
-    //float3 eye = make_float3(0.f, 0.f, 2.f);
-    //float3 lookat = make_float3(0.f, 0.f, 0.f);
     float3 front = normalize(lookat - eye);
     float3 right = cross(front, make_float3(0, 1, 0));
     float3 up = cross(right, front);
@@ -287,19 +280,6 @@ int main(int argc, const char **argv) {
         .handle = accel.get_root_handle(),
         .sample_cnt = 5
     };
-
-    /*
-    ParamsTriangle params {
-        .image = output,
-        .width = w,
-        .height = h,
-        .eye = eye,
-        .U = right * ratio * scaled_height,
-        .V = up * scaled_height,
-        .W = front,
-        .handle = accel.get_root_handle()
-    };
-    */
 
     CUdeviceptr param_ptr;
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&param_ptr),
