@@ -2,8 +2,8 @@
 #include <cuda/helpers.h>
 #include <cuda/random.h>
 
-#include "types.h"
-#include "mathutils.h"
+#include "kernel/types.h"
+#include "kernel/mathutils.h"
 
 extern "C" {
     __constant__ ParamsTriangle params;
